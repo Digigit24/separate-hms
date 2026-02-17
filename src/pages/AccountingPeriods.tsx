@@ -294,96 +294,51 @@ export const AccountingPeriods: React.FC = () => {
   }, [periods]);
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Accounting Periods</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            Manage financial reporting periods
-          </p>
+    <div className="p-4 md:p-5 w-full space-y-3">
+      {/* Row 1: Title + inline stats + action */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-lg font-bold leading-none">Accounting Periods</h1>
+          {periodsData && (
+            <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
+              <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> <span className="font-semibold text-foreground">{totalCount}</span> total</span>
+              <span className="text-border">|</span>
+              <span className="flex items-center gap-1"><Unlock className="h-3 w-3" /> <span className="font-semibold text-foreground">{stats.openCount}</span> open</span>
+              <span className="text-border">|</span>
+              <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> <span className="font-semibold text-foreground">{stats.closedCount}</span> closed</span>
+              <span className="text-border">|</span>
+              <span className="flex items-center gap-1">{stats.netProfit >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />} net <span className="font-semibold text-foreground">₹{stats.netProfit.toLocaleString()}</span></span>
+            </div>
+          )}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1">
           <Button
             variant="outline"
             size="sm"
             onClick={() => mutatePeriods()}
             disabled={periodsLoading}
+            className="h-7 text-[12px]"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${periodsLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3.5 w-3.5 mr-1 ${periodsLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button onClick={handleCreatePeriod} size="default" className="w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" />
+          <Button onClick={handleCreatePeriod} size="sm" className="w-full sm:w-auto h-7 text-[12px]">
+            <Plus className="h-3.5 w-3.5 mr-1" />
             New Period
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Mobile-only stats */}
       {periodsData && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                  <Calendar className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Total Periods</p>
-                  <p className="text-xl sm:text-2xl font-bold">{totalCount}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                  <Unlock className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Open Periods</p>
-                  <p className="text-xl sm:text-2xl font-bold">{stats.openCount}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                  <Lock className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Closed Periods</p>
-                  <p className="text-xl sm:text-2xl font-bold">{stats.closedCount}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800">
-                  {stats.netProfit >= 0 ? (
-                    <TrendingUp className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-                  ) : (
-                    <TrendingDown className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-                  )}
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Total Net Profit</p>
-                  <p className="text-xl sm:text-2xl font-bold">
-                    ₹{stats.netProfit.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex sm:hidden items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+          <span><span className="font-semibold text-foreground">{totalCount}</span> total</span>
+          <span className="text-border">|</span>
+          <span><span className="font-semibold text-foreground">{stats.openCount}</span> open</span>
+          <span className="text-border">|</span>
+          <span><span className="font-semibold text-foreground">{stats.closedCount}</span> closed</span>
+          <span className="text-border">|</span>
+          <span>net ₹<span className="font-semibold text-foreground">{stats.netProfit.toLocaleString()}</span></span>
         </div>
       )}
 

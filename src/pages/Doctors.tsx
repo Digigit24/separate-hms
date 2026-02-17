@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useDoctor } from '@/hooks/useDoctor';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -267,155 +267,57 @@ export const Doctors: React.FC = () => {
   };
 
   return (
-    <div className="p-6 w-full space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Doctors</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            Manage your medical staff
-          </p>
+    <div className="p-4 md:p-5 w-full space-y-3">
+      {/* Row 1: Title + inline stats + action */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-lg font-bold leading-none">Doctors</h1>
+          <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1"><Stethoscope className="h-3 w-3" /> <span className="font-semibold text-foreground">{totalCount}</span> total</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><UserPlus className="h-3 w-3" /> <span className="font-semibold text-foreground">{doctors.filter((d) => d.status === 'active').length}</span> active</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> <span className="font-semibold text-foreground">{doctors.filter((d) => d.status === 'on_leave').length}</span> on leave</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><IndianRupee className="h-3 w-3" /> avg fee <span className="font-semibold text-foreground">₹{doctors.length > 0 ? Math.round(doctors.reduce((sum, d) => sum + parseFloat(d.consultation_fee), 0) / doctors.length) : 0}</span></span>
+          </div>
         </div>
-        <Button onClick={handleCreate} size="default" className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={handleCreate} size="sm" className="w-full sm:w-auto h-7 text-[12px]">
+          <Plus className="h-3.5 w-3.5 mr-1" />
           Add Doctor
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <UserPlus className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Total Doctors</p>
-                <p className="text-xl sm:text-2xl font-bold">{totalCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <Stethoscope className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  {doctors.filter((d) => d.status === 'active').length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <Calendar className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">On Leave</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  {doctors.filter((d) => d.status === 'on_leave').length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <IndianRupee className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Avg Fee</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  $
-                  {doctors.length > 0
-                    ? Math.round(
-                        doctors.reduce(
-                          (sum, d) => sum + parseFloat(d.consultation_fee),
-                          0
-                        ) / doctors.length
-                      )
-                    : 0}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Mobile-only stats */}
+      <div className="flex sm:hidden items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+        <span><span className="font-semibold text-foreground">{totalCount}</span> total</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{doctors.filter((d) => d.status === 'active').length}</span> active</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{doctors.filter((d) => d.status === 'on_leave').length}</span> on leave</span>
       </div>
 
-      {/* Filters & Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search doctors by name, email..."
-                value={searchTerm}
-                onChange={handleSearch}
-                className="pl-10"
-              />
-            </div>
-
-            {/* Status Filter */}
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant={statusFilter === '' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('')}
-              >
-                All
-              </Button>
-              <Button
-                variant={statusFilter === 'active' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('active')}
-              >
-                Active
-              </Button>
-              <Button
-                variant={statusFilter === 'on_leave' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('on_leave')}
-              >
-                On Leave
-              </Button>
-              <Button
-                variant={statusFilter === 'inactive' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('inactive')}
-              >
-                Inactive
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Row 2: Search + filters */}
+      <div className="flex gap-2 items-center flex-wrap">
+        <div className="relative w-full sm:w-52">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className="pl-8 h-7 text-[12px]"
+          />
+        </div>
+        <div className="flex gap-1 flex-wrap">
+          <Button variant={statusFilter === '' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => handleStatusFilter('')}>All</Button>
+          <Button variant={statusFilter === 'active' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => handleStatusFilter('active')}>Active</Button>
+          <Button variant={statusFilter === 'on_leave' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => handleStatusFilter('on_leave')}>On Leave</Button>
+          <Button variant={statusFilter === 'inactive' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => handleStatusFilter('inactive')}>Inactive</Button>
+        </div>
+      </div>
 
       {/* Doctors Table */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Doctors List</CardTitle>
-            {doctorsLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-          </div>
-        </CardHeader>
         <CardContent className="p-0">
           {doctorsError ? (
             <div className="p-8 text-center">
@@ -423,6 +325,7 @@ export const Doctors: React.FC = () => {
             </div>
           ) : (
             <>
+              {doctorsLoading && <div className="flex justify-end px-4 py-2"><Loader2 className="h-4 w-4 animate-spin" /></div>}
               <DataTable
                 rows={doctors}
                 isLoading={doctorsLoading}

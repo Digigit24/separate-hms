@@ -1,7 +1,7 @@
 // src/pages/opd-production/ProcedurePackages.tsx
 import React, { useState } from 'react';
 import { useProcedurePackage } from '@/hooks/useProcedurePackage';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -125,136 +125,79 @@ export const ProcedurePackages: React.FC = () => {
   ];
 
   return (
-    <div className="p-6 w-full space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Procedure Packages</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            Manage procedure bundles and discounts
-          </p>
+    <div className="p-4 md:p-5 w-full space-y-3">
+      {/* Row 1: Title + inline stats + action */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-lg font-bold leading-none">Procedure Packages</h1>
+          <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1"><Package className="h-3 w-3" /> <span className="font-semibold text-foreground">{totalCount}</span> Total</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><CheckCircle className="h-3 w-3" /> <span className="font-semibold text-foreground">{packages.filter(p => p.is_active).length}</span> Active</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><TrendingDown className="h-3 w-3" /> <span className="font-semibold text-foreground">{packages.length > 0 ? (packages.reduce((sum, p) => sum + parseFloat(p.discount_percent || '0'), 0) / packages.length).toFixed(1) : '0'}%</span> Avg Discount</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><Package className="h-3 w-3" /> <span className="font-semibold text-foreground">₹{packages.reduce((sum, p) => sum + parseFloat(p.savings_amount || p.savings || '0'), 0).toFixed(0)}</span> Savings</span>
+          </div>
         </div>
-        <Button onClick={() => { setDrawerMode('create'); setSelectedPackageId(null); setDrawerOpen(true); }} size="default" className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={() => { setDrawerMode('create'); setSelectedPackageId(null); setDrawerOpen(true); }} size="sm" className="w-full sm:w-auto h-7 text-[12px]">
+          <Plus className="h-3.5 w-3.5 mr-1" />
           New Package
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <Package className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Total Packages</p>
-                <p className="text-xl sm:text-2xl font-bold">{totalCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <CheckCircle className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  {packages.filter(p => p.is_active).length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <TrendingDown className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Avg Discount</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  {packages.length > 0
-                    ? (packages.reduce((sum, p) => sum + parseFloat(p.discount_percent || '0'), 0) / packages.length).toFixed(1)
-                    : '0'}%
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <Package className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Total Savings</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  ₹{packages.reduce((sum, p) => sum + parseFloat(p.savings_amount || p.savings || '0'), 0).toFixed(0)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Mobile-only stats */}
+      <div className="flex sm:hidden items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+        <span><span className="font-semibold text-foreground">{totalCount}</span> Total</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{packages.filter(p => p.is_active).length}</span> Active</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{packages.length > 0 ? (packages.reduce((sum, p) => sum + parseFloat(p.discount_percent || '0'), 0) / packages.length).toFixed(1) : '0'}%</span> Avg Discount</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">₹{packages.reduce((sum, p) => sum + parseFloat(p.savings_amount || p.savings || '0'), 0).toFixed(0)}</span> Savings</span>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, code..."
-                value={searchTerm}
-                onChange={handleSearch}
-                className="pl-10"
-              />
-            </div>
+      {/* Row 2: Search + filters */}
+      <div className="flex gap-2 items-center flex-wrap">
+        <div className="relative w-full sm:w-52">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, code..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className="pl-8 h-7 text-[12px]"
+          />
+        </div>
+        <div className="flex gap-1 flex-wrap">
+          <Button
+            variant={activeFilter === undefined ? 'default' : 'outline'}
+            size="sm"
+            className="h-7 text-[11px] px-2"
+            onClick={() => setActiveFilter(undefined)}
+          >
+            All Status
+          </Button>
+          <Button
+            variant={activeFilter === true ? 'default' : 'outline'}
+            size="sm"
+            className="h-7 text-[11px] px-2"
+            onClick={() => setActiveFilter(true)}
+          >
+            Active
+          </Button>
+          <Button
+            variant={activeFilter === false ? 'default' : 'outline'}
+            size="sm"
+            className="h-7 text-[11px] px-2"
+            onClick={() => setActiveFilter(false)}
+          >
+            Inactive
+          </Button>
+        </div>
+      </div>
 
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant={activeFilter === undefined ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveFilter(undefined)}
-              >
-                All Status
-              </Button>
-              <Button
-                variant={activeFilter === true ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveFilter(true)}
-              >
-                Active
-              </Button>
-              <Button
-                variant={activeFilter === false ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveFilter(false)}
-              >
-                Inactive
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
+      {/* Table Card */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Packages List</CardTitle>
-            {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-          </div>
-        </CardHeader>
         <CardContent className="p-0">
           {error ? (
             <div className="p-8 text-center">

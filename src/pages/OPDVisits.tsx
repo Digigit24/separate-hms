@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOpdVisit } from '@/hooks/useOpdVisit';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -420,12 +420,6 @@ export const OPDVisits: React.FC = () => {
 
       {/* Visits Table */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">OPD Visits List</CardTitle>
-            {visitsLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-          </div>
-        </CardHeader>
         <CardContent className="p-0">
           {visitsError ? (
             <div className="p-8 text-center">
@@ -433,6 +427,7 @@ export const OPDVisits: React.FC = () => {
             </div>
           ) : (
             <>
+              {visitsLoading && <div className="flex justify-end px-4 py-2"><Loader2 className="h-4 w-4 animate-spin" /></div>}
               <DataTable
                 rows={visits}
                 isLoading={visitsLoading}

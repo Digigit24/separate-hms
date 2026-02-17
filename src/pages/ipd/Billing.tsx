@@ -8,7 +8,7 @@ import { useProcedureMaster } from '@/hooks/useProcedureMaster';
 import { useProcedurePackage } from '@/hooks/useProcedurePackage';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
 import { SideDrawer, DrawerActionButton } from '@/components/SideDrawer';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -339,20 +339,19 @@ export default function IPDBillingPage() {
         ];
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-6 border-b flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">IPD Billing</h1>
-          <p className="text-sm text-muted-foreground">Manage inpatient bills and payments</p>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Billing
+    <div className="p-4 md:p-5 w-full space-y-3">
+      {/* Row 1: Title + action */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-lg font-bold leading-none">IPD Billing</h1>
+        <Button size="sm" className="w-full sm:w-auto h-7 text-[12px]" onClick={openCreate}>
+          <Plus className="h-3.5 w-3.5 mr-1" /> New Billing
         </Button>
       </div>
 
-      <div className="flex-1 overflow-auto p-6">
-        <DataTable
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          <DataTable
           rows={rows}
           isLoading={isLoading}
           columns={columns}
@@ -362,7 +361,8 @@ export default function IPDBillingPage() {
           emptyTitle="No IPD bills"
           emptySubtitle="Create a billing record to get started"
         />
-      </div>
+        </CardContent>
+      </Card>
 
       <SideDrawer
         open={drawerOpen}

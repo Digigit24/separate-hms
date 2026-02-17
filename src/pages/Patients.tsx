@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePatient } from '@/hooks/usePatient';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,6 @@ import {
   Loader2,
   Plus,
   Search,
-  UserPlus,
   Users,
   Activity,
   Heart,
@@ -265,151 +264,57 @@ export const Patients: React.FC = () => {
   };
 
   return (
-    <div className="p-6 w-full space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Patients</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            Manage patient records and information
-          </p>
+    <div className="p-4 md:p-5 w-full space-y-3">
+      {/* Row 1: Title + inline stats + action */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-lg font-bold leading-none">Patients</h1>
+          <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1"><Users className="h-3 w-3" /> <span className="font-semibold text-foreground">{totalCount}</span> total</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><Activity className="h-3 w-3" /> <span className="font-semibold text-foreground">{patients.filter((p) => p.status === 'active').length}</span> active</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><Heart className="h-3 w-3" /> <span className="font-semibold text-foreground">{patients.filter((p) => p.insurance_provider).length}</span> insured</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3" /> avg age <span className="font-semibold text-foreground">{patients.length > 0 ? Math.round(patients.reduce((sum, p) => sum + p.age, 0) / patients.length) : 0}</span></span>
+          </div>
         </div>
-        <Button onClick={handleCreate} size="default" className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={handleCreate} size="sm" className="w-full sm:w-auto h-7 text-[12px]">
+          <Plus className="h-3.5 w-3.5 mr-1" />
           Add Patient
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <Users className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Total Patients</p>
-                <p className="text-xl sm:text-2xl font-bold">{totalCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <Activity className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  {patients.filter((p) => p.status === 'active').length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <Heart className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">With Insurance</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  {patients.filter((p) => p.insurance_provider).length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Avg Age</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  {patients.length > 0
-                    ? Math.round(
-                        patients.reduce((sum, p) => sum + p.age, 0) / patients.length
-                      )
-                    : 0}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Mobile-only stats */}
+      <div className="flex sm:hidden items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+        <span><span className="font-semibold text-foreground">{totalCount}</span> total</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{patients.filter((p) => p.status === 'active').length}</span> active</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{patients.filter((p) => p.insurance_provider).length}</span> insured</span>
       </div>
 
-      {/* Filters & Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search patients by name, ID, phone..."
-                value={searchTerm}
-                onChange={handleSearch}
-                className="pl-10"
-              />
-            </div>
-
-            {/* Status Filter */}
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant={statusFilter === '' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('')}
-              >
-                All
-              </Button>
-              <Button
-                variant={statusFilter === 'active' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('active')}
-              >
-                Active
-              </Button>
-              <Button
-                variant={statusFilter === 'inactive' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('inactive')}
-              >
-                Inactive
-              </Button>
-              <Button
-                variant={statusFilter === 'deceased' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('deceased')}
-              >
-                Deceased
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Row 2: Search + filters */}
+      <div className="flex gap-2 items-center flex-wrap">
+        <div className="relative w-full sm:w-52">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className="pl-8 h-7 text-[12px]"
+          />
+        </div>
+        <div className="flex gap-1 flex-wrap">
+          <Button variant={statusFilter === '' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => handleStatusFilter('')}>All</Button>
+          <Button variant={statusFilter === 'active' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => handleStatusFilter('active')}>Active</Button>
+          <Button variant={statusFilter === 'inactive' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => handleStatusFilter('inactive')}>Inactive</Button>
+          <Button variant={statusFilter === 'deceased' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => handleStatusFilter('deceased')}>Deceased</Button>
+        </div>
+      </div>
 
       {/* Patients Table */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Patients List</CardTitle>
-            {patientsLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-          </div>
-        </CardHeader>
         <CardContent className="p-0">
           {patientsError ? (
             <div className="p-8 text-center">
@@ -417,6 +322,7 @@ export const Patients: React.FC = () => {
             </div>
           ) : (
             <>
+              {patientsLoading && <div className="flex justify-end px-4 py-2"><Loader2 className="h-4 w-4 animate-spin" /></div>}
               <DataTable
                 rows={patients}
                 isLoading={patientsLoading}

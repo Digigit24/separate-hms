@@ -6,7 +6,7 @@ import { Bed, BED_TYPE_LABELS, BED_STATUS_LABELS } from '@/types/ipd.types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Bed as BedIcon, Wind, Activity } from 'lucide-react';
+import { Plus, Bed as BedIcon, Wind, Activity, Search, CheckCircle, XCircle } from 'lucide-react';
 import { BedFormDrawer } from '@/components/ipd/BedFormDrawer';
 import {
   Select,
@@ -15,15 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import {
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-} from 'recharts';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function Beds() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -46,8 +38,8 @@ export default function Beds() {
   if (fetchError && !isLoading && beds.length === 0) {
     return (
       <div className="flex flex-col h-full">
-        <div className="p-6 border-b">
-          <h1 className="text-2xl font-bold">Bed Management</h1>
+        <div className="p-4 md:p-5">
+          <h1 className="text-lg font-bold leading-none">Bed Management</h1>
         </div>
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -99,31 +91,9 @@ export default function Beds() {
     const total = beds.length;
     const occupied = beds.filter((b) => b.status === 'occupied').length;
     const available = beds.filter((b) => b.status === 'available').length;
-    const others = total - occupied - available;
+    const maintenance = beds.filter((b) => b.status === 'maintenance').length;
 
-    const wardCounts = beds.reduce<Record<string, { total: number; occupied: number }>>(
-      (acc, bed) => {
-        const ward = bed.ward_name || 'Unknown';
-        if (!acc[ward]) acc[ward] = { total: 0, occupied: 0 };
-        acc[ward].total += 1;
-        if (bed.status === 'occupied') acc[ward].occupied += 1;
-        return acc;
-      },
-      {}
-    );
-
-    return {
-      total,
-      occupied,
-      available,
-      others,
-      wardCounts,
-      pieData: [
-        { name: 'Occupied', value: occupied, color: '#171717' },
-        { name: 'Available', value: available, color: '#a3a3a3' },
-        { name: 'Other', value: others, color: '#e5e5e5' },
-      ],
-    };
+    return { total, occupied, available, maintenance };
   }, [beds]);
 
   // DataTable columns
@@ -231,208 +201,145 @@ export default function Beds() {
   ];
 
   return (
-    <div className="flex flex-col h-full overflow-auto">
-      {/* Header */}
-      <div className="p-6 border-b">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Bed Management</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Manage individual beds across all wards
-            </p>
+    <div className="p-4 md:p-5 w-full space-y-3">
+      {/* Row 1: Title + inline stats + action */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-lg font-bold leading-none">Bed Management</h1>
+          <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1"><BedIcon className="h-3 w-3" /> <span className="font-semibold text-foreground">{occupancyStats.total}</span> Total</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><CheckCircle className="h-3 w-3" /> <span className="font-semibold text-foreground">{occupancyStats.available}</span> Available</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><XCircle className="h-3 w-3" /> <span className="font-semibold text-foreground">{occupancyStats.occupied}</span> Occupied</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><Activity className="h-3 w-3" /> <span className="font-semibold text-foreground">{occupancyStats.maintenance}</span> Maintenance</span>
           </div>
-          <Button onClick={openCreateDrawer}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Bed
-          </Button>
         </div>
+        <Button size="sm" className="w-full sm:w-auto h-7 text-[12px]" onClick={openCreateDrawer}>
+          <Plus className="h-3.5 w-3.5 mr-1" /> Add Bed
+        </Button>
+      </div>
 
-        {/* Search */}
-        <div className="mt-4 flex gap-3 flex-wrap">
+      {/* Mobile-only stats */}
+      <div className="flex sm:hidden items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+        <span><span className="font-semibold text-foreground">{occupancyStats.total}</span> Total</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{occupancyStats.available}</span> Available</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{occupancyStats.occupied}</span> Occupied</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{occupancyStats.maintenance}</span> Maint.</span>
+      </div>
+
+      {/* Row 2: Search + filters */}
+      <div className="flex gap-2 items-center flex-wrap">
+        <div className="relative w-full sm:w-52">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             placeholder="Search beds..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="max-w-sm"
+            className="pl-8 h-7 text-[12px]"
           />
-          <Select
-            value={wardFilter ? String(wardFilter) : 'all'}
-            onValueChange={(val) =>
-              setWardFilter(val === 'all' ? undefined : Number(val))
-            }
-          >
-            <SelectTrigger className="w-[220px]">
-              <SelectValue placeholder="Filter by ward" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Wards</SelectItem>
-              {wards.map((w: any) => (
-                <SelectItem key={w.id} value={String(w.id)}>
-                  {w.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
+        <Select
+          value={wardFilter ? String(wardFilter) : 'all'}
+          onValueChange={(val) =>
+            setWardFilter(val === 'all' ? undefined : Number(val))
+          }
+        >
+          <SelectTrigger className="w-[180px] h-7 text-[12px]">
+            <SelectValue placeholder="Filter by ward" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Wards</SelectItem>
+            {wards.map((w: any) => (
+              <SelectItem key={w.id} value={String(w.id)}>
+                {w.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Stats */}
-      <div className="px-6 py-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <Card className="lg:col-span-1">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Occupancy</CardTitle>
-            <CardDescription className="text-xs">Overall status</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-1">
-            <div className="flex items-center justify-between mb-3">
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          <DataTable
+            rows={beds}
+            isLoading={isLoading}
+            columns={columns}
+            getRowId={(row) => row.id}
+            getRowLabel={(row) => `${row.ward_name} - ${row.bed_number}`}
+            onEdit={openEditDrawer}
+            onDelete={handleDelete}
+            renderMobileCard={(row, actions) => (
               <div>
-                <p className="text-xs text-muted-foreground">Total</p>
-                <p className="text-xl font-bold">{occupancyStats.total}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">Occupied</p>
-                <p className="text-lg font-semibold text-orange-600">
-                  {occupancyStats.occupied}
-                </p>
-              </div>
-            </div>
-            <ResponsiveContainer width="100%" height={160}>
-              <PieChart>
-                <Pie
-                  data={occupancyStats.pieData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={45}
-                  outerRadius={60}
-                  paddingAngle={3}
-                >
-                  {occupancyStats.pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend verticalAlign="bottom" height={24} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <BedIcon className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-semibold">{row.bed_number}</span>
+                  </div>
+                  {actions.dropdown}
+                </div>
 
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Ward-wise Occupancy</CardTitle>
-            <CardDescription className="text-xs">Occupied vs total per ward</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {Object.keys(occupancyStats.wardCounts).length === 0 && (
-              <p className="text-sm text-muted-foreground">No data</p>
-            )}
-            {Object.entries(occupancyStats.wardCounts).map(
-              ([ward, stats]) => {
-                const available = stats.total - stats.occupied;
-                const percent = stats.total
-                  ? Math.round((stats.occupied / stats.total) * 100)
-                  : 0;
-                return (
-                  <div key={ward} className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="font-medium">{ward}</span>
-                      <span className="text-muted-foreground">
-                        {stats.occupied}/{stats.total} ({percent}%)
-                      </span>
-                    </div>
-                    <div className="h-2 rounded bg-muted overflow-hidden">
-                      <div
-                        className="h-2 bg-neutral-900 dark:bg-neutral-200"
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-                    <div className="flex gap-3 text-[11px] text-muted-foreground">
-                      <span>Available: {available}</span>
-                      <span>Occupied: {stats.occupied}</span>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Ward:</span>
+                    <span>{row.ward_name}</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Type:</span>
+                    <span className="px-2 py-0.5 bg-secondary text-secondary-foreground rounded text-xs">
+                      {BED_TYPE_LABELS[row.bed_type]}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Daily Charge:</span>
+                    <span className="font-medium">₹{parseFloat(row.daily_charge).toFixed(2)}</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Features:</span>
+                    <div className="flex gap-1">
+                      {row.has_oxygen && (
+                        <span className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded text-xs">
+                          O2
+                        </span>
+                      )}
+                      {row.has_ventilator && (
+                        <span className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded text-xs">
+                          Vent
+                        </span>
+                      )}
                     </div>
                   </div>
-                );
-              }
-            )}
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Data Table */}
-      <div className="px-6 pb-6">
-        <DataTable
-          rows={beds}
-          isLoading={isLoading}
-          columns={columns}
-          getRowId={(row) => row.id}
-          getRowLabel={(row) => `${row.ward_name} - ${row.bed_number}`}
-          onEdit={openEditDrawer}
-          onDelete={handleDelete}
-          renderMobileCard={(row, actions) => (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <BedIcon className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-semibold">{row.bed_number}</span>
-                </div>
-                {actions.dropdown}
-              </div>
-
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Ward:</span>
-                  <span>{row.ward_name}</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Type:</span>
-                  <span className="px-2 py-0.5 bg-secondary text-secondary-foreground rounded text-xs">
-                    {BED_TYPE_LABELS[row.bed_type]}
-                  </span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Daily Charge:</span>
-                  <span className="font-medium">₹{parseFloat(row.daily_charge).toFixed(2)}</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Features:</span>
-                  <div className="flex gap-1">
-                    {row.has_oxygen && (
-                      <span className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded text-xs">
-                        O2
-                      </span>
-                    )}
-                    {row.has_ventilator && (
-                      <span className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded text-xs">
-                        Vent
-                      </span>
-                    )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Status:</span>
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs ${
+                        row.status === 'available'
+                          ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                          : row.status === 'occupied'
+                          ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                          : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                      }`}
+                    >
+                      {BED_STATUS_LABELS[row.status]}
+                    </span>
                   </div>
                 </div>
-
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Status:</span>
-                  <span
-                    className={`px-2 py-0.5 rounded text-xs ${
-                      row.status === 'available'
-                        ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
-                        : row.status === 'occupied'
-                        ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
-                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
-                    }`}
-                  >
-                    {BED_STATUS_LABELS[row.status]}
-                  </span>
-                </div>
               </div>
-            </div>
-          )}
-          emptyTitle="No beds found"
-          emptySubtitle="Create your first bed to get started"
-        />
-      </div>
+            )}
+            emptyTitle="No beds found"
+            emptySubtitle="Create your first bed to get started"
+          />
+        </CardContent>
+      </Card>
 
       {/* Bed Form Drawer */}
       <BedFormDrawer

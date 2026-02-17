@@ -1,7 +1,7 @@
 // src/pages/opd-production/ProcedureBills.tsx
 import React, { useState } from 'react';
 import { useProcedureBill } from '@/hooks/useProcedureBill';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -141,125 +141,67 @@ export const ProcedureBills: React.FC = () => {
   ];
 
   return (
-    <div className="p-6 w-full space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Procedure Bills</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            Manage procedure billing and payments
-          </p>
+    <div className="p-4 md:p-5 w-full space-y-3">
+      {/* Row 1: Title + inline stats + action */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-lg font-bold leading-none">Procedure Bills</h1>
+          <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1"><FileText className="h-3 w-3" /> <span className="font-semibold text-foreground">{totalCount}</span> Bills</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><IndianRupee className="h-3 w-3" /> <span className="font-semibold text-foreground">₹{bills.reduce((sum, b) => sum + parseFloat(b.received_amount || '0'), 0).toFixed(0)}</span> Collected</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><AlertCircle className="h-3 w-3" /> <span className="font-semibold text-foreground">₹{bills.reduce((sum, b) => sum + parseFloat(b.balance_amount || '0'), 0).toFixed(0)}</span> Pending</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><CreditCard className="h-3 w-3" /> <span className="font-semibold text-foreground">{bills.filter(b => b.payment_status === 'unpaid').length}</span> Unpaid</span>
+          </div>
         </div>
-        <Button onClick={() => { setDrawerMode('create'); setSelectedBillId(null); setDrawerOpen(true); }} size="default" className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={() => { setDrawerMode('create'); setSelectedBillId(null); setDrawerOpen(true); }} size="sm" className="w-full sm:w-auto h-7 text-[12px]">
+          <Plus className="h-3.5 w-3.5 mr-1" />
           New Bill
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <FileText className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Total Bills</p>
-                <p className="text-xl sm:text-2xl font-bold">{totalCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <IndianRupee className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Collected</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  ₹{bills.reduce((sum, b) => sum + parseFloat(b.received_amount || '0'), 0).toFixed(0)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <AlertCircle className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Pending</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  ₹{bills.reduce((sum, b) => sum + parseFloat(b.balance_amount || '0'), 0).toFixed(0)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <CreditCard className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Unpaid</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  {bills.filter(b => b.payment_status === 'unpaid').length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Mobile-only stats */}
+      <div className="flex sm:hidden items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+        <span><span className="font-semibold text-foreground">{totalCount}</span> Bills</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">₹{bills.reduce((sum, b) => sum + parseFloat(b.received_amount || '0'), 0).toFixed(0)}</span> Collected</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">₹{bills.reduce((sum, b) => sum + parseFloat(b.balance_amount || '0'), 0).toFixed(0)}</span> Pending</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{bills.filter(b => b.payment_status === 'unpaid').length}</span> Unpaid</span>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by bill number, patient..."
-                value={searchTerm}
-                onChange={handleSearch}
-                className="pl-10"
-              />
-            </div>
+      {/* Row 2: Search + filters */}
+      <div className="flex gap-2 items-center flex-wrap">
+        <div className="relative w-full sm:w-52">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search by bill number, patient..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className="pl-8 h-7 text-[12px]"
+          />
+        </div>
+        <div className="flex gap-1 flex-wrap">
+          <Button variant={paymentStatusFilter === '' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => setPaymentStatusFilter('')}>
+            All
+          </Button>
+          <Button variant={paymentStatusFilter === 'paid' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => setPaymentStatusFilter('paid')}>
+            Paid
+          </Button>
+          <Button variant={paymentStatusFilter === 'partial' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => setPaymentStatusFilter('partial')}>
+            Partial
+          </Button>
+          <Button variant={paymentStatusFilter === 'unpaid' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => setPaymentStatusFilter('unpaid')}>
+            Unpaid
+          </Button>
+        </div>
+      </div>
 
-            <div className="flex gap-2 flex-wrap">
-              <Button variant={paymentStatusFilter === '' ? 'default' : 'outline'} size="sm" onClick={() => setPaymentStatusFilter('')}>
-                All
-              </Button>
-              <Button variant={paymentStatusFilter === 'paid' ? 'default' : 'outline'} size="sm" onClick={() => setPaymentStatusFilter('paid')}>
-                Paid
-              </Button>
-              <Button variant={paymentStatusFilter === 'partial' ? 'default' : 'outline'} size="sm" onClick={() => setPaymentStatusFilter('partial')}>
-                Partial
-              </Button>
-              <Button variant={paymentStatusFilter === 'unpaid' ? 'default' : 'outline'} size="sm" onClick={() => setPaymentStatusFilter('unpaid')}>
-                Unpaid
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
+      {/* Table Card */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Bills List</CardTitle>
-            {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-          </div>
-        </CardHeader>
         <CardContent className="p-0">
           {error ? (
             <div className="p-8 text-center">

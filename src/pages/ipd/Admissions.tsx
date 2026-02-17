@@ -5,7 +5,7 @@ import { DataTable, DataTableColumn } from '@/components/DataTable';
 import { useIPD } from '@/hooks/useIPD';
 import { Admission, ADMISSION_STATUS_LABELS } from '@/types/ipd.types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -323,107 +323,51 @@ export default function Admissions() {
   }).length;
 
   return (
-    <div className="p-6 w-full space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">IPD Admissions</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            Manage inpatient department admissions
-          </p>
+    <div className="p-4 md:p-5 w-full space-y-3">
+      {/* Row 1: Title + inline stats + action */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-lg font-bold leading-none">IPD Admissions</h1>
+          <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> <span className="font-semibold text-foreground">{totalAdmissions}</span> total</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><BedIcon className="h-3 w-3" /> <span className="font-semibold text-foreground">{activeAdmissions}</span> active</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> <span className="font-semibold text-foreground">{dischargedToday}</span> discharged today</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> avg <span className="font-semibold text-foreground">{admissions.length > 0 ? Math.round(admissions.reduce((sum, a) => sum + (a.length_of_stay || 0), 0) / admissions.length) : 0}</span> days</span>
+          </div>
         </div>
-        <Button onClick={() => setIsCreateDrawerOpen(true)} size="default" className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={() => setIsCreateDrawerOpen(true)} size="sm" className="w-full sm:w-auto h-7 text-[12px]">
+          <Plus className="h-3.5 w-3.5 mr-1" />
           New Admission
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <Calendar className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Total Admissions</p>
-                <p className="text-xl sm:text-2xl font-bold">{totalAdmissions}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <BedIcon className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
-                <p className="text-xl sm:text-2xl font-bold">{activeAdmissions}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Discharged Today</p>
-                <p className="text-xl sm:text-2xl font-bold">{dischargedToday}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <Clock className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Avg. Stay</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  {admissions.length > 0
-                    ? Math.round(admissions.reduce((sum, a) => sum + (a.length_of_stay || 0), 0) / admissions.length)
-                    : 0} days
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Mobile-only stats */}
+      <div className="flex sm:hidden items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+        <span><span className="font-semibold text-foreground">{totalAdmissions}</span> total</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{activeAdmissions}</span> active</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{dischargedToday}</span> discharged</span>
       </div>
 
-      {/* Filters & Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Search Admissions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by admission ID, patient name, ward..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Row 2: Search */}
+      <div className="flex gap-2 items-center flex-wrap">
+        <div className="relative w-full sm:w-52">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 h-7 text-[12px]"
+          />
+        </div>
+      </div>
 
       {/* Admissions Table */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Admissions List</CardTitle>
-        </CardHeader>
         <CardContent className="p-0">
           <DataTable
             rows={admissions}

@@ -341,24 +341,15 @@ export const AdminSettings: React.FC = () => {
   // Show error if no tenant ID is found
   if (!tenantId) {
     return (
-      <div className="container mx-auto p-4 sm:p-6 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Admin Settings</h1>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Tenant Configuration & System Information
-            </p>
-          </div>
-        </div>
+      <div className="p-4 md:p-5 w-full space-y-3">
+        <h1 className="text-lg font-bold leading-none">Admin Settings</h1>
 
         <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-lg text-destructive flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-destructive font-semibold text-sm mb-2">
+              <AlertCircle className="h-4 w-4" />
               No Tenant Found
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </div>
             <p className="text-sm">
               Unable to retrieve tenant information from your session. Please try logging in again.
             </p>
@@ -369,47 +360,41 @@ export const AdminSettings: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 space-y-6">
+    <div className="p-4 md:p-5 w-full space-y-3">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Admin Settings</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            Tenant Configuration & System Information
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="text-lg font-bold leading-none">Admin Settings</h1>
           {tenantData && (
-            <Badge variant={tenantData.is_active ? 'default' : 'destructive'} className="w-fit">
+            <Badge variant={tenantData.is_active ? 'default' : 'destructive'} className="text-[11px]">
               {tenantData.is_active ? 'Active' : 'Inactive'}
             </Badge>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => mutate()}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-2" />
-            )}
-            Refresh
-          </Button>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full sm:w-auto h-7 text-[12px]"
+          onClick={() => mutate()}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+          ) : (
+            <RefreshCw className="h-3.5 w-3.5 mr-1" />
+          )}
+          Refresh
+        </Button>
       </div>
 
       {/* Error State */}
       {error && (
         <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-lg text-destructive flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-destructive font-semibold text-sm mb-2">
+              <AlertCircle className="h-4 w-4" />
               Error Loading Tenant Data
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </div>
             <p className="text-sm">{error.message || 'Failed to load tenant data'}</p>
             <p className="text-xs text-muted-foreground mt-2">
               Tenant ID: {tenantId}

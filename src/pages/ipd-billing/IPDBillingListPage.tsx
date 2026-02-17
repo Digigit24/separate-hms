@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { DataTable, type DataTableColumn } from '@/components/DataTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useIPDBilling } from '@/hooks/useIPDBilling';
@@ -237,51 +237,42 @@ export const IPDBillingListPage: React.FC = () => {
   );
 
   return (
-    <div className="h-full flex flex-col">
-      <Card className="flex-1 flex flex-col">
-        <CardHeader>
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <CardTitle>IPD Billing</CardTitle>
-              <CardDescription>
-                Manage IPD admission bills and payments
-              </CardDescription>
-            </div>
-            <Button onClick={() => navigate('/ipd/admissions')} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              View Admissions
-            </Button>
-          </div>
+    <div className="p-4 md:p-5 w-full space-y-3">
+      {/* Row 1: Title + action */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-lg font-bold leading-none">IPD Billing</h1>
+        <Button size="sm" className="w-full sm:w-auto h-7 text-[12px]" onClick={() => navigate('/ipd/admissions')}>
+          <Plus className="h-3.5 w-3.5 mr-1" /> View Admissions
+        </Button>
+      </div>
 
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 mt-4">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by bill number, patient name..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+      {/* Row 2: Search + filters */}
+      <div className="flex gap-2 items-center flex-wrap">
+        <div className="relative w-full sm:w-52">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search bills..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-7 text-[12px]"
+          />
+        </div>
+        <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
+          <SelectTrigger className="w-[150px] h-7 text-[12px]">
+            <SelectValue placeholder="Payment Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="paid">Paid</SelectItem>
+            <SelectItem value="partial">Partial</SelectItem>
+            <SelectItem value="unpaid">Unpaid</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-            {/* Payment Status Filter */}
-            <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Payment Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="partial">Partial</SelectItem>
-                <SelectItem value="unpaid">Unpaid</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-
-        <CardContent className="flex-1 flex flex-col min-h-0 p-0">
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
           <DataTable
             rows={bills}
             isLoading={isLoading}

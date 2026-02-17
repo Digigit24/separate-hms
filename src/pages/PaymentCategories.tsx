@@ -205,94 +205,47 @@ export const PaymentCategories: React.FC = () => {
   );
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Payment Categories</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            Manage categories for financial transactions
-          </p>
+    <div className="p-4 md:p-5 w-full space-y-3">
+      {/* Row 1: Title + inline stats + action */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-lg font-bold leading-none">Payment Categories</h1>
+          {categoriesData && (
+            <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
+              <span className="flex items-center gap-1"><Package className="h-3 w-3" /> <span className="font-semibold text-foreground">{totalCount}</span> total</span>
+              <span className="text-border">|</span>
+              <span><span className="font-semibold text-foreground">{categories.filter(c => c.category_type === 'income').length}</span> income</span>
+              <span className="text-border">|</span>
+              <span><span className="font-semibold text-foreground">{categories.filter(c => c.category_type === 'expense').length}</span> expense</span>
+            </div>
+          )}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1">
           <Button
             variant="outline"
             size="sm"
             onClick={() => mutateCategories()}
             disabled={categoriesLoading}
+            className="h-7 text-[12px]"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${categoriesLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3.5 w-3.5 mr-1 ${categoriesLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button onClick={handleCreateCategory} size="default" className="w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" />
+          <Button onClick={handleCreateCategory} size="sm" className="w-full sm:w-auto h-7 text-[12px]">
+            <Plus className="h-3.5 w-3.5 mr-1" />
             New Category
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Mobile-only stats */}
       {categoriesData && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                  <Package className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Total Categories</p>
-                  <p className="text-xl sm:text-2xl font-bold">{totalCount}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                  <Package className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Income Categories</p>
-                  <p className="text-xl sm:text-2xl font-bold">
-                    {categories.filter(c => c.category_type === 'income').length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                  <Package className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Expense Categories</p>
-                  <p className="text-xl sm:text-2xl font-bold">
-                    {categories.filter(c => c.category_type === 'expense').length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                  <Package className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">This Page</p>
-                  <p className="text-xl sm:text-2xl font-bold">{categories.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex sm:hidden items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+          <span><span className="font-semibold text-foreground">{totalCount}</span> total</span>
+          <span className="text-border">|</span>
+          <span><span className="font-semibold text-foreground">{categories.filter(c => c.category_type === 'income').length}</span> income</span>
+          <span className="text-border">|</span>
+          <span><span className="font-semibold text-foreground">{categories.filter(c => c.category_type === 'expense').length}</span> expense</span>
         </div>
       )}
 

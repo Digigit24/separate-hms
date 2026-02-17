@@ -1,7 +1,6 @@
 // src/pages/OPDSettings.tsx
 import { useParams, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Settings2, FileText, Microscope, ListChecks, ClipboardList, Layers } from 'lucide-react';
 import { BillingSettingsTab } from '@/components/opd-settings/BillingSettingsTab';
 import { ProcedureSettingsTab } from '@/components/opd-settings/ProcedureSettingsTab';
@@ -21,18 +20,13 @@ export const OPDSettings: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-8xl mx-auto">
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <Settings2 className="h-6 w-6" />
-          <h1 className="text-3xl font-bold">OPD Settings</h1>
-        </div>
-        <p className="text-muted-foreground">
-          Configure and manage your OPD module settings
-        </p>
+    <div className="p-4 md:p-5 w-full space-y-3">
+      <div className="flex items-center gap-2">
+        <Settings2 className="h-4 w-4" />
+        <h1 className="text-lg font-bold leading-none">OPD Settings</h1>
       </div>
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-3">
         <TabsList className="grid w-full grid-cols-4 h-auto">
           <TabsTrigger
             value="templates"

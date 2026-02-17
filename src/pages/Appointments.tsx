@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useAppointment } from '@/hooks/useAppointment';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -308,197 +308,101 @@ export const Appointments: React.FC = () => {
   };
 
   return (
-    <div className="p-6 w-full space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Appointments</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            Manage patient appointments and types
-          </p>
+    <div className="p-4 md:p-5 w-full space-y-3">
+      {/* Row 1: Title + inline stats + action */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-lg font-bold leading-none">Appointments</h1>
+          <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> <span className="font-semibold text-foreground">{totalCount}</span> total</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> <span className="font-semibold text-foreground">{statistics?.upcoming_count || 0}</span> upcoming</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> <span className="font-semibold text-foreground">{appointments.filter((a) => a.status === 'completed').length}</span> completed</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><IndianRupee className="h-3 w-3" /> <span className="font-semibold text-foreground">{appointments.filter((a) => a.payment_status === 'pending').length}</span> unpaid</span>
+          </div>
         </div>
         {activeTab === 'appointments' && (
           <div className="flex gap-2 w-full sm:w-auto">
-            {/* View Toggle */}
-            <div className="flex border rounded-lg p-1">
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="gap-2"
-              >
-                <List className="h-4 w-4" />
+            <div className="flex border rounded-lg p-0.5">
+              <Button variant={viewMode === 'list' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('list')} className="h-7 text-[11px] px-2 gap-1">
+                <List className="h-3 w-3" />
                 <span className="hidden sm:inline">List</span>
               </Button>
-              <Button
-                variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('calendar')}
-                className="gap-2"
-              >
-                <CalendarDays className="h-4 w-4" />
+              <Button variant={viewMode === 'calendar' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('calendar')} className="h-7 text-[11px] px-2 gap-1">
+                <CalendarDays className="h-3 w-3" />
                 <span className="hidden sm:inline">Calendar</span>
               </Button>
             </div>
-            <Button onClick={handleCreate} size="default" className="flex-1 sm:flex-initial">
-              <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">New Appointment</span>
-              <span className="sm:hidden">New</span>
+            <Button onClick={handleCreate} size="sm" className="flex-1 sm:flex-initial h-7 text-[12px]">
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              New
             </Button>
           </div>
         )}
       </div>
 
+      {/* Mobile-only stats */}
+      <div className="flex sm:hidden items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+        <span><span className="font-semibold text-foreground">{totalCount}</span> total</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{statistics?.upcoming_count || 0}</span> upcoming</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{appointments.filter((a) => a.status === 'completed').length}</span> done</span>
+      </div>
+
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'appointments' | 'types')}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="appointments" className="gap-2">
-            <Calendar className="h-4 w-4" />
+        <TabsList className="grid w-full max-w-xs grid-cols-2 h-8">
+          <TabsTrigger value="appointments" className="gap-1.5 text-[12px] h-7">
+            <Calendar className="h-3 w-3" />
             Appointments
           </TabsTrigger>
-          <TabsTrigger value="types" className="gap-2">
-            <Tag className="h-4 w-4" />
+          <TabsTrigger value="types" className="gap-1.5 text-[12px] h-7">
+            <Tag className="h-3 w-3" />
             Types
           </TabsTrigger>
         </TabsList>
 
         {/* Appointments Tab */}
-        <TabsContent value="appointments" className="space-y-6 mt-6">
+        <TabsContent value="appointments" className="space-y-3 mt-3">
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <Calendar className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Total</p>
-                <p className="text-xl sm:text-2xl font-bold">{totalCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <Clock className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Upcoming</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  {statistics?.upcoming_count || 0}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Completed</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  {appointments.filter((a) => a.status === 'completed').length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <IndianRupee className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Pending Payment</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  {appointments.filter((a) => a.payment_status === 'pending').length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Search + filters */}
+      <div className="flex gap-2 items-center flex-wrap">
+        <div className="relative w-full sm:w-52">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className="pl-8 h-7 text-[12px]"
+          />
+        </div>
+        <div className="flex gap-1 flex-wrap">
+          {[
+            { value: '', label: 'All' },
+            { value: 'scheduled', label: 'Scheduled' },
+            { value: 'confirmed', label: 'Confirmed' },
+            { value: 'in_progress', label: 'In Progress' },
+            { value: 'completed', label: 'Done' },
+          ].map((f) => (
+            <Button
+              key={f.value}
+              variant={statusFilter === f.value ? 'default' : 'outline'}
+              size="sm"
+              className="h-7 text-[11px] px-2"
+              onClick={() => handleStatusFilter(f.value as any)}
+            >
+              {f.label}
+            </Button>
+          ))}
+        </div>
       </div>
-
-      {/* Filters & Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by appointment number, patient, doctor..."
-                value={searchTerm}
-                onChange={handleSearch}
-                className="pl-10"
-              />
-            </div>
-
-            {/* Status Filter */}
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant={statusFilter === '' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('')}
-              >
-                All
-              </Button>
-              <Button
-                variant={statusFilter === 'scheduled' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('scheduled')}
-              >
-                Scheduled
-              </Button>
-              <Button
-                variant={statusFilter === 'confirmed' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('confirmed')}
-              >
-                Confirmed
-              </Button>
-              <Button
-                variant={statusFilter === 'in_progress' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('in_progress')}
-              >
-                In Progress
-              </Button>
-              <Button
-                variant={statusFilter === 'completed' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('completed')}
-              >
-                Completed
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Appointments View - List or Calendar */}
       {viewMode === 'list' ? (
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Appointments List</CardTitle>
-              {appointmentsLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-            </div>
-          </CardHeader>
           <CardContent className="p-0">
             {appointmentsError ? (
               <div className="p-8 text-center">
@@ -506,6 +410,7 @@ export const Appointments: React.FC = () => {
               </div>
             ) : (
               <>
+                {appointmentsLoading && <div className="flex justify-end px-4 py-2"><Loader2 className="h-4 w-4 animate-spin" /></div>}
                 <DataTable
                   rows={appointments}
                   isLoading={appointmentsLoading}
