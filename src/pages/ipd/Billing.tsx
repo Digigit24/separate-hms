@@ -1,7 +1,7 @@
 // src/pages/ipd/Billing.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
-import { Plus, IndianRupee, FileText, Beaker, Package, Bed } from 'lucide-react';
+import { Plus, PlusCircle, IndianRupee, FileText, Beaker, Package, Bed } from 'lucide-react';
 import { useIPD } from '@/hooks/useIPD';
 import { useDiagnostics } from '@/hooks/useDiagnostics';
 import { useProcedureMaster } from '@/hooks/useProcedureMaster';

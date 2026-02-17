@@ -66,24 +66,23 @@ export const IPDBillingDetailsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 md:p-5 w-full space-y-3">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/ipd/billing')}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Bills
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">IPD Bill Details</h1>
-            <p className="text-sm text-muted-foreground">
-              {bill.bill_number} • {bill.patient_name}
-            </p>
-          </div>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-[12px]"
+          onClick={() => navigate('/ipd/billing')}
+        >
+          <ArrowLeft className="h-3.5 w-3.5 mr-1" />
+          Back
+        </Button>
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className="text-lg font-bold leading-none">IPD Bill Details</h1>
+          <span className="text-[12px] text-muted-foreground truncate">
+            {bill.bill_number} • {bill.patient_name}
+          </span>
         </div>
       </div>
 
