@@ -752,31 +752,61 @@ export const IPDBillingContent: React.FC<IPDBillingContentProps> = ({ admission,
     toast.success(isEditMode ? 'Updating bill...' : 'Creating bill...');
 
     try {
-      const billData = {
+      // Build metadata (without payment info for updates)
+      const billMetadata = {
         admission: admission.id,
         doctor_id: admission.doctor_id || user?.id,
         diagnosis: billingFormData.diagnosis || '',
         remarks: billingFormData.remarks || '',
-        discount_percent: billingData.discountPercent || '0',
-        discount_amount: billingData.discount || '0',
-        payment_mode: billingData.paymentMode || 'cash',
-        received_amount: billingData.receivedAmount || '0',
         bill_date: billingFormData.billDate,
       };
 
       if (isEditMode && existingBill) {
-        await updateBilling(existingBill.id, billData);
+        // Step 1: Update bill metadata only (no payment fields yet)
+        await updateBilling(existingBill.id, billMetadata);
 
+        // Step 2: Delete all existing items
         for (const item of existingBill.items || []) {
           if (item.id) {
             await ipdBillingService.deleteBillItem(item.id);
           }
         }
 
+        // Step 3: Create all new bill items
+        for (const item of billItems) {
+          const itemData: IPDBillItemCreateData = {
+            bill: existingBill.id,
+            item_name: item.item_name,
+            source: item.source,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            system_calculated_price: item.system_calculated_price || item.unit_price,
+            notes: item.notes || '',
+          };
+          await ipdBillingService.createBillItem(itemData);
+        }
+
+        // Step 4: Now update payment info (backend has items, so payable_amount is correct)
+        await updateBilling(existingBill.id, {
+          discount_percent: billingData.discountPercent || '0',
+          discount_amount: billingData.discount || '0',
+          payment_mode: billingData.paymentMode || 'cash',
+          received_amount: billingData.receivedAmount || '0',
+        });
+
         toast.success('Bill updated successfully');
       } else {
-        const savedBill = await createBilling(billData);
+        // Create new bill with all fields
+        const createData = {
+          ...billMetadata,
+          discount_percent: billingData.discountPercent || '0',
+          discount_amount: billingData.discount || '0',
+          payment_mode: billingData.paymentMode || 'cash',
+          received_amount: billingData.receivedAmount || '0',
+        };
+        const savedBill = await createBilling(createData);
 
+        // Create all bill items
         for (const item of billItems) {
           const itemData: IPDBillItemCreateData = {
             bill: savedBill!.id,
@@ -787,7 +817,6 @@ export const IPDBillingContent: React.FC<IPDBillingContentProps> = ({ admission,
             system_calculated_price: item.system_calculated_price || item.unit_price,
             notes: item.notes || '',
           };
-
           await ipdBillingService.createBillItem(itemData);
         }
 

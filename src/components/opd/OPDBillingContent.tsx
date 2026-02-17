@@ -1179,58 +1179,83 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
       return;
     }
 
-    // OPTIMISTIC: Show success immediately
+    // OPTIMISTIC: Show progress immediately
     toast.success(isEditMode ? 'Updating bill...' : 'Creating bill...');
 
     try {
-      const billData = {
+      // Build metadata (without payment info for the initial update)
+      const billMetadata = {
         visit: visit.id,
         doctor: parseInt(opdFormData.doctor) || visit.doctor || 0,
         opd_type: (opdFormData.opdType as OPDType) || 'consultation',
         charge_type: (opdFormData.chargeType as ChargeType) || 'first_visit',
         diagnosis: opdFormData.diagnosis || '',
         remarks: opdFormData.remarks || '',
-        total_amount: billingData.subtotal || '0',
-        discount_percent: billingData.discountPercent || '0',
-        discount_amount: billingData.discount || '0',
-        payment_mode: billingData.paymentMode || 'cash',
-        received_amount: billingData.receivedAmount || '0',
         bill_date: opdFormData.billDate,
       };
 
       let savedBill: OPDBill;
 
       if (isEditMode && existingBill) {
-        // Update existing bill
-        savedBill = await updateBill(existingBill.id, billData);
+        // Step 1: Update bill metadata only (no payment fields yet)
+        savedBill = await updateBill(existingBill.id, billMetadata);
 
-        // Delete all existing items
+        // Step 2: Delete all existing items
         for (const item of existingBill.items || []) {
           if (item.id) {
             await opdBillService.deleteBillItem(item.id);
           }
         }
 
+        // Step 3: Create all new bill items
+        for (const item of billItems) {
+          const itemData: OPDBillItemCreateData = {
+            bill: savedBill.id,
+            item_name: item.item_name,
+            source: item.source,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            system_calculated_price: item.system_calculated_price || item.unit_price,
+            notes: item.notes || '',
+          };
+          await opdBillService.createBillItem(itemData);
+        }
+
+        // Step 4: Now update payment info (backend has items, so payable_amount is correct)
+        await updateBill(existingBill.id, {
+          discount_percent: billingData.discountPercent || '0',
+          discount_amount: billingData.discount || '0',
+          payment_mode: billingData.paymentMode || 'cash',
+          received_amount: billingData.receivedAmount || '0',
+        });
+
         toast.success('Bill updated successfully');
       } else {
-        // Create new bill
-        savedBill = await createBill(billData);
-        toast.success('Bill created successfully');
-      }
-
-      // Create all bill items
-      for (const item of billItems) {
-        const itemData: OPDBillItemCreateData = {
-          bill: savedBill.id,
-          item_name: item.item_name,
-          source: item.source,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          system_calculated_price: item.system_calculated_price || item.unit_price,
-          notes: item.notes || '',
+        // Create new bill with all fields
+        const createData = {
+          ...billMetadata,
+          discount_percent: billingData.discountPercent || '0',
+          discount_amount: billingData.discount || '0',
+          payment_mode: billingData.paymentMode || 'cash',
+          received_amount: billingData.receivedAmount || '0',
         };
+        savedBill = await createBill(createData);
 
-        await opdBillService.createBillItem(itemData);
+        // Create all bill items
+        for (const item of billItems) {
+          const itemData: OPDBillItemCreateData = {
+            bill: savedBill.id,
+            item_name: item.item_name,
+            source: item.source,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            system_calculated_price: item.system_calculated_price || item.unit_price,
+            notes: item.notes || '',
+          };
+          await opdBillService.createBillItem(itemData);
+        }
+
+        toast.success('Bill created successfully');
       }
 
       // Refresh in background
