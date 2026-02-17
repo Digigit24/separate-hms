@@ -259,11 +259,6 @@ export function UniversalSidebar({
                 <Stethoscope className="w-4 h-4 text-white dark:text-neutral-900" />
               </div>
             )}
-            {!collapsed && (
-              <span className="text-[13px] font-semibold text-sidebar-foreground truncate">
-                {tenantName}
-              </span>
-            )}
           </div>
           {mobileOpen && setMobileOpen && (
             <button
