@@ -244,20 +244,37 @@ export function UniversalSidebar({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
             {isTenantLoading ? (
-              <div className="w-8 h-8 rounded-lg bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center shrink-0">
-                <Loader2 className="w-4 h-4 animate-spin text-neutral-500" />
+              <div className={cn(
+                "rounded-lg bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center shrink-0",
+                collapsed ? "w-8 h-8" : "w-10 h-10"
+              )}>
+                <Loader2 className="w-5 h-5 animate-spin text-neutral-500" />
               </div>
             ) : tenantLogo && !logoError ? (
               <img
                 src={tenantLogo}
                 alt={tenantName}
-                className="w-8 h-8 rounded-lg object-contain shrink-0"
+                className={cn(
+                  "rounded-lg object-contain shrink-0",
+                  collapsed ? "w-8 h-8" : "w-10 h-10"
+                )}
                 onError={() => setLogoError(true)}
               />
             ) : (
-              <div className="w-8 h-8 rounded-lg bg-neutral-900 dark:bg-white flex items-center justify-center shrink-0">
-                <Stethoscope className="w-4 h-4 text-white dark:text-neutral-900" />
+              <div className={cn(
+                "rounded-lg bg-neutral-900 dark:bg-white flex items-center justify-center shrink-0",
+                collapsed ? "w-8 h-8" : "w-10 h-10"
+              )}>
+                <Stethoscope className={cn(
+                  "text-white dark:text-neutral-900",
+                  collapsed ? "w-4 h-4" : "w-5 h-5"
+                )} />
               </div>
+            )}
+            {!collapsed && (
+              <span className="text-sm font-semibold text-sidebar-foreground truncate">
+                {tenantName}
+              </span>
             )}
           </div>
           {mobileOpen && setMobileOpen && (

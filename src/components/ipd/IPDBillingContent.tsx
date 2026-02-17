@@ -467,9 +467,9 @@ export const IPDBillingContent: React.FC<IPDBillingContentProps> = ({ admission,
       item_name: investigation.name,
       source: 'Lab',
       quantity: 1,
-      system_calculated_price: investigation.price || '0',
-      unit_price: investigation.price || '0',
-      total_price: investigation.price || '0',
+      system_calculated_price: investigation.base_charge || '0',
+      unit_price: investigation.base_charge || '0',
+      total_price: investigation.base_charge || '0',
       notes: investigation.category || '',
     };
 
@@ -988,15 +988,15 @@ export const IPDBillingContent: React.FC<IPDBillingContentProps> = ({ admission,
                       <DialogTitle>Procedures & Packages</DialogTitle>
                     </DialogHeader>
                     <ProcedureBillingTab
-                      procedures={[]}
+                      billItems={billItems}
                       proceduresData={proceduresData}
                       packagesData={packagesData}
                       proceduresLoading={false}
                       packagesLoading={false}
                       onAddProcedure={handleAddProcedure}
                       onAddPackage={handleAddPackage}
-                      onUpdateProcedure={() => {}}
-                      onRemoveProcedure={() => {}}
+                      onUpdateBillItem={handleUpdateBillItem}
+                      onRemoveBillItem={handleRemoveBillItem}
                     />
                   </DialogContent>
                 </Dialog>
