@@ -355,47 +355,46 @@ export const OPDVisits: React.FC = () => {
 
   return (
     <div className="p-4 md:p-5 w-full space-y-3">
-      {/* Header + Stats inline */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold">OPD Visits</h1>
-          <p className="text-muted-foreground text-[12px]">
-            Manage outpatient department visits
-          </p>
+      {/* Row 1: Title + inline stats + action */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-lg font-bold leading-none">OPD Visits</h1>
+          <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> <span className="font-semibold text-foreground">{totalCount}</span> total</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> <span className="font-semibold text-foreground">{statistics?.waiting_patients || 0}</span> waiting</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> <span className="font-semibold text-foreground">{statistics?.today_visits || 0}</span> today</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><IndianRupee className="h-3 w-3" /> <span className="font-semibold text-foreground">₹{statistics?.revenue_today || '0'}</span></span>
+          </div>
         </div>
-        <Button onClick={handleCreate} size="sm" className="w-full sm:w-auto">
-          <Plus className="h-3.5 w-3.5 mr-1.5" />
+        <Button onClick={handleCreate} size="sm" className="w-full sm:w-auto h-7 text-[12px]">
+          <Plus className="h-3.5 w-3.5 mr-1" />
           New Visit
         </Button>
       </div>
 
-      {/* Compact Stats Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {[
-          { label: 'Total', value: totalCount, icon: Calendar },
-          { label: 'Waiting', value: statistics?.waiting_patients || 0, icon: Clock },
-          { label: 'Today', value: statistics?.today_visits || 0, icon: CheckCircle2 },
-          { label: 'Revenue', value: `₹${statistics?.revenue_today || '0'}`, icon: IndianRupee },
-        ].map((s) => (
-          <div key={s.label} className="flex items-center gap-2.5 rounded-md border border-border px-3 py-2">
-            <s.icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <div className="min-w-0">
-              <p className="text-[11px] text-muted-foreground leading-none">{s.label}</p>
-              <p className="text-sm font-semibold text-foreground mt-0.5">{s.value}</p>
-            </div>
-          </div>
-        ))}
+      {/* Mobile-only stats (hidden on desktop since they're inline above) */}
+      <div className="flex sm:hidden items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+        <span><span className="font-semibold text-foreground">{totalCount}</span> total</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{statistics?.waiting_patients || 0}</span> waiting</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{statistics?.today_visits || 0}</span> today</span>
+        <span className="text-border">|</span>
+        <span>₹<span className="font-semibold text-foreground">{statistics?.revenue_today || '0'}</span></span>
       </div>
 
-      {/* Compact Filters */}
-      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-        <div className="relative flex-1 w-full sm:max-w-xs">
+      {/* Row 2: Search + filters on same line */}
+      <div className="flex gap-2 items-center flex-wrap">
+        <div className="relative w-full sm:w-52">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
-            placeholder="Search visits..."
+            placeholder="Search..."
             value={searchTerm}
             onChange={handleSearch}
-            className="pl-8 h-8 text-[12px]"
+            className="pl-8 h-7 text-[12px]"
           />
         </div>
         <div className="flex gap-1 flex-wrap">
@@ -404,13 +403,13 @@ export const OPDVisits: React.FC = () => {
             { value: 'waiting', label: 'Waiting' },
             { value: 'in_consultation', label: 'Consulting' },
             { value: 'in_progress', label: 'In Progress' },
-            { value: 'completed', label: 'Completed' },
+            { value: 'completed', label: 'Done' },
           ].map((f) => (
             <Button
               key={f.value}
               variant={statusFilter === f.value ? 'default' : 'outline'}
               size="sm"
-              className="h-7 text-[11px] px-2.5"
+              className="h-7 text-[11px] px-2"
               onClick={() => handleStatusFilter(f.value)}
             >
               {f.label}
