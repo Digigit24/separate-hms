@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { formatLocalDate, parseLocalDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -135,7 +136,7 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
       ? {
           patient_id: 0,
           doctor_id: 0,
-          visit_date: new Date().toISOString().split('T')[0],
+          visit_date: formatLocalDate(new Date()),
           visit_time: new Date().toTimeString().slice(0, 5),
           visit_type: 'new' as const,
           priority: 'normal' as const,
@@ -558,11 +559,11 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
                           Date of Birth
                         </Label>
                         <DatePicker
-                          date={inlinePatientData.date_of_birth ? new Date(inlinePatientData.date_of_birth) : undefined}
+                          date={inlinePatientData.date_of_birth ? parseLocalDate(inlinePatientData.date_of_birth) : undefined}
                           onDateChange={(date) =>
                             setInlinePatientData(prev => ({
                               ...prev,
-                              date_of_birth: date ? date.toISOString().split('T')[0] : ''
+                              date_of_birth: date ? formatLocalDate(date) : ''
                             }))
                           }
                           placeholder="Select date of birth"
@@ -684,8 +685,8 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
                   control={control}
                   render={({ field }) => (
                     <DatePicker
-                      date={field.value ? new Date(field.value) : undefined}
-                      onDateChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')}
+                      date={field.value ? parseLocalDate(field.value) : undefined}
+                      onDateChange={(date) => field.onChange(date ? formatLocalDate(date) : '')}
                       disabled={isReadOnly}
                       placeholder="Select visit date"
                     />

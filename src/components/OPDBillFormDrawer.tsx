@@ -28,7 +28,7 @@ import { useVisit } from '@/hooks/useVisit';
 import { useProcedureMaster } from '@/hooks/useProcedureMaster';
 import { useProcedurePackage } from '@/hooks/useProcedurePackage';
 import { opdBillService } from '@/services/opdBill.service';
-import { cn } from '@/lib/utils';
+import { cn, formatLocalDate } from '@/lib/utils';
 import type { OPDType, ChargeType, PaymentMode, OPDBillItemCreateData } from '@/types/opdBill.types';
 
 interface BillItem {
@@ -219,7 +219,7 @@ export const OPDBillFormDrawer: React.FC<OPDBillFormDrawerProps> = ({
         discount_amount: discountAmount.toFixed(2),
         payment_mode: paymentMode,
         received_amount: '0',
-        bill_date: new Date().toISOString().split('T')[0],
+        bill_date: formatLocalDate(new Date()),
       });
 
       if (!newBill) {

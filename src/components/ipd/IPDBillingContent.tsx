@@ -8,6 +8,7 @@ import { useDiagnostics } from '@/hooks/useDiagnostics';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenant } from '@/hooks/useTenant';
 import { ipdBillingService } from '@/services/ipdBilling.service';
+import { formatLocalDate } from '@/lib/utils';
 import { procedurePackageService } from '@/services/procedurePackage.service';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -329,7 +330,7 @@ export const IPDBillingContent: React.FC<IPDBillingContentProps> = ({ admission,
   // IPD Form Data
   const [billingFormData, setBillingFormData] = useState({
     billNumber: '',
-    billDate: new Date().toISOString().split('T')[0],
+    billDate: formatLocalDate(new Date()),
     diagnosis: '',
     remarks: '',
   });
@@ -365,7 +366,7 @@ export const IPDBillingContent: React.FC<IPDBillingContentProps> = ({ admission,
 
       setBillingFormData({
         billNumber: existingBill.bill_number || '',
-        billDate: existingBill.bill_date?.split('T')[0] || new Date().toISOString().split('T')[0],
+        billDate: existingBill.bill_date?.split('T')[0] || formatLocalDate(new Date()),
         diagnosis: existingBill.diagnosis || '',
         remarks: existingBill.remarks || '',
       });

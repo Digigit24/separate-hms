@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { formatLocalDate, parseLocalDate } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -400,8 +401,8 @@ const PatientBasicInfo = forwardRef<PatientBasicInfoHandle, PatientBasicInfoProp
                       control={control}
                       render={({ field }) => (
                         <DatePicker
-                          date={field.value ? new Date(field.value) : undefined}
-                          onDateChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')}
+                          date={field.value ? parseLocalDate(field.value) : undefined}
+                          onDateChange={(date) => field.onChange(date ? formatLocalDate(date) : '')}
                           disabled={isReadOnly}
                           placeholder="Select date of birth"
                           mode="birth-date"
@@ -801,8 +802,8 @@ const PatientBasicInfo = forwardRef<PatientBasicInfoHandle, PatientBasicInfoProp
                   control={control}
                   render={({ field }) => (
                     <DatePicker
-                      date={field.value ? new Date(field.value) : undefined}
-                      onDateChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')}
+                      date={field.value ? parseLocalDate(field.value) : undefined}
+                      onDateChange={(date) => field.onChange(date ? formatLocalDate(date) : '')}
                       disabled={isReadOnly}
                       placeholder="Select expiry date"
                     />
