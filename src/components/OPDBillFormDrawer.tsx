@@ -20,11 +20,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { IndianRupee, Plus, X, Package, FileText, Check, ChevronsUpDown } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { IndianRupee, Plus, X, Package, FileText, Loader2, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
+import { useOPDBill } from '@/hooks/useOPDBill';
+import { useVisit } from '@/hooks/useVisit';
 import { useProcedureMaster } from '@/hooks/useProcedureMaster';
 import { useProcedurePackage } from '@/hooks/useProcedurePackage';
+import { opdBillService } from '@/services/opdBill.service';
 import { cn } from '@/lib/utils';
+import type { OPDType, ChargeType, PaymentMode, OPDBillItemCreateData } from '@/types/opdBill.types';
 
 interface BillItem {
   id: string;
@@ -55,10 +60,23 @@ export const OPDBillFormDrawer: React.FC<OPDBillFormDrawerProps> = ({
   const [billItems, setBillItems] = useState<BillItem[]>([]);
   const [procedureOpen, setProcedureOpen] = useState(false);
   const [packageOpen, setPackageOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Fetch procedures and packages
+  // Form state
+  const [selectedVisitId, setSelectedVisitId] = useState<string>('');
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>('cash');
+  const [discountPercent, setDiscountPercent] = useState('0');
+  const [receivedAmount, setReceivedAmount] = useState('0');
+
+  // Hooks
+  const { createBill } = useOPDBill();
+  const { useVisits } = useVisit();
   const { useActiveProcedureMasters } = useProcedureMaster();
   const { useActiveProcedurePackages } = useProcedurePackage();
+
+  // Fetch recent visits (for selection)
+  const { data: visitsData, isLoading: visitsLoading } = useVisits({ page_size: 50, ordering: '-visit_date' });
+  const visits = visitsData?.results || [];
 
   const { data: proceduresData, isLoading: proceduresLoading } = useActiveProcedureMasters();
   const { data: packagesData, isLoading: packagesLoading } = useActiveProcedurePackages();
@@ -66,10 +84,21 @@ export const OPDBillFormDrawer: React.FC<OPDBillFormDrawerProps> = ({
   const procedures = proceduresData?.results || [];
   const packages = packagesData?.results || [];
 
+  // Selected visit details
+  const selectedVisit = visits.find(v => String(v.id) === selectedVisitId);
+
   // Calculate totals
   const subtotal = useMemo(() => {
     return billItems.reduce((sum, item) => sum + item.amount, 0);
   }, [billItems]);
+
+  const discountAmount = useMemo(() => {
+    const pct = parseFloat(discountPercent) || 0;
+    return (subtotal * pct) / 100;
+  }, [subtotal, discountPercent]);
+
+  const totalAmount = Math.max(0, subtotal - discountAmount);
+  const balanceAmount = Math.max(0, totalAmount - (parseFloat(receivedAmount) || 0));
 
   const getTitle = () => {
     if (mode === 'create') return 'Create OPD Bill';
@@ -77,12 +106,24 @@ export const OPDBillFormDrawer: React.FC<OPDBillFormDrawerProps> = ({
     return 'OPD Bill Details';
   };
 
+  const resetForm = () => {
+    setBillItems([]);
+    setSelectedVisitId('');
+    setPaymentMode('cash');
+    setDiscountPercent('0');
+    setReceivedAmount('0');
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   // Add procedure to bill
   const handleAddProcedure = (procedureId: number) => {
     const procedure = procedures.find(p => p.id === procedureId);
     if (!procedure) return;
 
-    // Check if already added
     const alreadyAdded = billItems.some(item => item.type === 'procedure' && item.itemId === procedureId);
     if (alreadyAdded) {
       toast.error('This procedure is already added to the bill');
@@ -110,7 +151,6 @@ export const OPDBillFormDrawer: React.FC<OPDBillFormDrawerProps> = ({
     const pkg = packages.find(p => p.id === packageId);
     if (!pkg) return;
 
-    // Check if already added
     const alreadyAdded = billItems.some(item => item.type === 'package' && item.itemId === packageId);
     if (alreadyAdded) {
       toast.error('This package is already added to the bill');
@@ -151,46 +191,156 @@ export const OPDBillFormDrawer: React.FC<OPDBillFormDrawerProps> = ({
     toast.success('Item removed from bill');
   };
 
+  // Create the bill
+  const handleCreateBill = async () => {
+    if (!selectedVisitId) {
+      toast.error('Please select a visit');
+      return;
+    }
+    if (billItems.length === 0) {
+      toast.error('Add at least one procedure or package');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Determine OPD type and charge type from visit
+      const visit = selectedVisit;
+      const opdType: OPDType = visit?.is_follow_up ? 'follow_up' : 'consultation';
+      const chargeType: ChargeType = visit?.is_follow_up ? 'revisit' : 'first_visit';
+
+      // Step 1: Create the bill (without received_amount to avoid payable validation)
+      const newBill = await createBill({
+        visit: parseInt(selectedVisitId),
+        doctor: visit?.doctor || 0,
+        opd_type: opdType,
+        charge_type: chargeType,
+        discount_percent: discountPercent || '0',
+        discount_amount: discountAmount.toFixed(2),
+        payment_mode: paymentMode,
+        received_amount: '0',
+        bill_date: new Date().toISOString().split('T')[0],
+      });
+
+      if (!newBill) {
+        throw new Error('Failed to create bill');
+      }
+
+      // Step 2: Create all bill items
+      for (const item of billItems) {
+        const itemData: OPDBillItemCreateData = {
+          bill: newBill.id,
+          item_name: item.name,
+          source: item.type === 'package' ? 'Package' : 'Procedure',
+          quantity: item.quantity,
+          unit_price: item.rate.toFixed(2),
+          system_calculated_price: item.rate.toFixed(2),
+          notes: item.code,
+        };
+        await opdBillService.createBillItem(itemData);
+      }
+
+      // Step 3: Update with received amount now that items exist
+      const recv = parseFloat(receivedAmount) || 0;
+      if (recv > 0) {
+        await opdBillService.updateOPDBill(newBill.id, {
+          received_amount: receivedAmount,
+        });
+      }
+
+      toast.success('Bill created successfully');
+      resetForm();
+      onSuccess?.();
+      onClose();
+    } catch (error: any) {
+      console.error('Failed to create bill:', error);
+      toast.error(error?.message || 'Failed to create bill');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <SideDrawer
       open={isOpen}
-      onOpenChange={(open) => { if (!open) onClose(); }}
+      onOpenChange={(open) => { if (!open) handleClose(); }}
       title={getTitle()}
       description="Manage OPD billing and procedures"
     >
-      <Tabs defaultValue="procedures" className="w-full">
+      <Tabs defaultValue="basic" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="basic">Basic Info</TabsTrigger>
-          <TabsTrigger value="procedures">Procedures</TabsTrigger>
+          <TabsTrigger value="basic">Visit</TabsTrigger>
+          <TabsTrigger value="procedures">
+            Procedures
+            {billItems.length > 0 && (
+              <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
+                {billItems.length}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="payment">Payment</TabsTrigger>
         </TabsList>
 
-        {/* Basic Info Tab */}
+        {/* Visit Selection Tab */}
         <TabsContent value="basic" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Bill Information</CardTitle>
+              <CardTitle className="text-base">Select Visit</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="patient">Patient</Label>
-                <Input id="patient" placeholder="Select patient..." />
+                <Label>Visit</Label>
+                {visitsLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading visits...
+                  </div>
+                ) : (
+                  <Select value={selectedVisitId} onValueChange={setSelectedVisitId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a visit..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {visits.map((visit) => (
+                        <SelectItem key={visit.id} value={String(visit.id)}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs">{visit.visit_number}</span>
+                            <span className="font-medium">{visit.patient_name || `Patient #${visit.patient}`}</span>
+                            <span className="text-xs text-muted-foreground">{visit.visit_date}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="visit">Visit</Label>
-                <Input id="visit" placeholder="Select visit..." />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="bill-date">Bill Date</Label>
-                <Input id="bill-date" type="date" />
-              </div>
+
+              {selectedVisit && (
+                <div className="rounded-lg border p-3 space-y-1.5 text-sm bg-muted/30">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Patient</span>
+                    <span className="font-medium">{selectedVisit.patient_name || `#${selectedVisit.patient}`}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Doctor</span>
+                    <span className="font-medium">{selectedVisit.doctor_name || `#${selectedVisit.doctor}`}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Type</span>
+                    <Badge variant="outline" className="text-xs capitalize">{selectedVisit.visit_type}</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Date</span>
+                    <span>{selectedVisit.visit_date}</span>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Procedures Tab */}
         <TabsContent value="procedures" className="space-y-4">
-          {/* Quick Actions - Prominent Add Buttons */}
           <div className="grid grid-cols-2 gap-3">
             <Popover open={procedureOpen} onOpenChange={setProcedureOpen}>
               <PopoverTrigger asChild>
@@ -217,18 +367,14 @@ export const OPDBillFormDrawer: React.FC<OPDBillFormDrawerProps> = ({
                           <CommandItem
                             key={procedure.id}
                             value={`${procedure.name} ${procedure.code}`}
-                            onSelect={() => {
-                              handleAddProcedure(procedure.id);
-                            }}
+                            onSelect={() => handleAddProcedure(procedure.id)}
                             className="flex items-start gap-3 py-3"
                           >
                             <FileText className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
                             <div className="flex flex-col flex-1 gap-1">
                               <span className="font-medium">{procedure.name}</span>
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Badge variant="outline" className="text-xs">
-                                  {procedure.code}
-                                </Badge>
+                                <Badge variant="outline" className="text-xs">{procedure.code}</Badge>
                                 <span>{procedure.category}</span>
                                 <span className="font-semibold text-foreground">₹{procedure.default_charge}</span>
                               </div>
@@ -268,18 +414,14 @@ export const OPDBillFormDrawer: React.FC<OPDBillFormDrawerProps> = ({
                           <CommandItem
                             key={pkg.id}
                             value={`${pkg.name} ${pkg.code}`}
-                            onSelect={() => {
-                              handleAddPackage(pkg.id);
-                            }}
+                            onSelect={() => handleAddPackage(pkg.id)}
                             className="flex items-start gap-3 py-3"
                           >
                             <Package className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                             <div className="flex flex-col flex-1 gap-1">
                               <span className="font-medium">{pkg.name}</span>
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Badge variant="outline" className="text-xs">
-                                  {pkg.code}
-                                </Badge>
+                                <Badge variant="outline" className="text-xs">{pkg.code}</Badge>
                                 <span className="font-semibold text-foreground">₹{pkg.discounted_charge}</span>
                                 {pkg.discount_percent && (
                                   <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
@@ -389,16 +531,47 @@ export const OPDBillFormDrawer: React.FC<OPDBillFormDrawerProps> = ({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
+                <Label>Payment Mode</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['cash', 'card', 'upi'] as PaymentMode[]).map((m) => (
+                    <Button
+                      key={m}
+                      variant={paymentMode === m ? 'default' : 'outline'}
+                      size="sm"
+                      className="w-full capitalize"
+                      onClick={() => setPaymentMode(m)}
+                    >
+                      {m === 'cash' && <IndianRupee className="h-3.5 w-3.5 mr-1" />}
+                      {(m === 'card' || m === 'upi') && <CreditCard className="h-3.5 w-3.5 mr-1" />}
+                      {m}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="discount">Discount (%)</Label>
-                <Input id="discount" type="number" placeholder="0" />
+                <Input
+                  id="discount"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={discountPercent}
+                  onChange={(e) => setDiscountPercent(e.target.value)}
+                  placeholder="0"
+                />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="tax">Tax (%)</Label>
-                <Input id="tax" type="number" placeholder="0" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="payment-mode">Payment Mode</Label>
-                <Input id="payment-mode" placeholder="Cash, Card, UPI..." />
+                <Label htmlFor="received">Received Amount</Label>
+                <Input
+                  id="received"
+                  type="number"
+                  min="0"
+                  value={receivedAmount}
+                  onChange={(e) => setReceivedAmount(e.target.value)}
+                  placeholder="0.00"
+                />
               </div>
 
               {/* Summary */}
@@ -407,10 +580,30 @@ export const OPDBillFormDrawer: React.FC<OPDBillFormDrawerProps> = ({
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-medium">₹{subtotal.toFixed(2)}</span>
                 </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Discount ({discountPercent}%)</span>
+                    <span className="font-medium text-green-600">-₹{discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total Amount</span>
-                  <span>₹{subtotal.toFixed(2)}</span>
+                  <span>₹{totalAmount.toFixed(2)}</span>
                 </div>
+                {parseFloat(receivedAmount) > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Received</span>
+                      <span className="font-medium text-blue-600">₹{parseFloat(receivedAmount).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Balance</span>
+                      <span className={cn("font-medium", balanceAmount > 0 ? "text-orange-600" : "text-green-600")}>
+                        ₹{balanceAmount.toFixed(2)}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -419,12 +612,16 @@ export const OPDBillFormDrawer: React.FC<OPDBillFormDrawerProps> = ({
 
       {/* Actions */}
       <div className="flex gap-3 pt-4 mt-6 border-t">
-        <Button variant="outline" onClick={onClose} className="flex-1">
+        <Button variant="outline" onClick={handleClose} className="flex-1" disabled={isSaving}>
           Cancel
         </Button>
-        <Button className="flex-1">
-          <IndianRupee className="h-4 w-4 mr-2" />
-          {mode === 'create' ? 'Create Bill' : 'Update Bill'}
+        <Button className="flex-1" onClick={handleCreateBill} disabled={isSaving}>
+          {isSaving ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <IndianRupee className="h-4 w-4 mr-2" />
+          )}
+          {isSaving ? 'Creating...' : mode === 'create' ? 'Create Bill' : 'Update Bill'}
         </Button>
       </div>
     </SideDrawer>
