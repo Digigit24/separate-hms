@@ -8,6 +8,7 @@ import { useDiagnostics } from '@/hooks/useDiagnostics';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenant } from '@/hooks/useTenant';
 import { opdBillService } from '@/services/opdBill.service';
+import { formatLocalDate } from '@/lib/utils';
 import { procedurePackageService } from '@/services/procedurePackage.service';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -379,7 +380,7 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
   // OPD Form Data (simplified - just essential fields)
   const [opdFormData, setOpdFormData] = useState({
     receiptNo: '',
-    billDate: new Date().toISOString().split('T')[0],
+    billDate: formatLocalDate(new Date()),
     billTime: new Date().toTimeString().split(' ')[0].slice(0, 5),
     doctor: '',
     opdType: 'consultation',
@@ -456,7 +457,7 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
       setOpdFormData((prev) => ({
         ...prev,
         receiptNo,
-        billDate: visit.visit_date || new Date().toISOString().split('T')[0],
+        billDate: visit.visit_date || formatLocalDate(new Date()),
         doctor: visit.doctor?.toString() || '',
         opdType: 'consultation',
         chargeType,

@@ -1,5 +1,6 @@
 // src/pages/AdminSettings.tsx
 import React, { useState, useEffect } from 'react';
+import { formatLocalDate } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -95,7 +96,7 @@ export const AdminSettings: React.FC = () => {
       setName(tenantData.name || '');
       setSlug(tenantData.slug || '');
       setIsActive(tenantData.is_active ?? true);
-      setTrialEndsAt(tenantData.trial_ends_at ? new Date(tenantData.trial_ends_at).toISOString().split('T')[0] : '');
+      setTrialEndsAt(tenantData.trial_ends_at ? formatLocalDate(new Date(tenantData.trial_ends_at)) : '');
       setDatabaseName(tenantData.database_name || '');
       setDatabaseUrl(tenantData.database_url || '');
       setEnabledModules(tenantData.enabled_modules || []);
