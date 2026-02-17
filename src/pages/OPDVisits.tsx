@@ -354,145 +354,70 @@ export const OPDVisits: React.FC = () => {
   };
 
   return (
-    <div className="p-6 w-full space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="p-4 md:p-5 w-full space-y-3">
+      {/* Header + Stats inline */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">OPD Visits</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
+          <h1 className="text-xl font-bold">OPD Visits</h1>
+          <p className="text-muted-foreground text-[12px]">
             Manage outpatient department visits
           </p>
         </div>
-        <Button onClick={handleCreate} size="default" className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={handleCreate} size="sm" className="w-full sm:w-auto">
+          <Plus className="h-3.5 w-3.5 mr-1.5" />
           New Visit
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <Calendar className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Total Visits</p>
-                <p className="text-xl sm:text-2xl font-bold">{totalCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <Clock className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Waiting</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  {statistics?.waiting_patients || 0}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Today</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  {statistics?.today_visits || 0}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <IndianRupee className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Revenue Today</p>
-                <p className="text-xl sm:text-2xl font-bold">
-                  ₹{statistics?.revenue_today || '0'}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters & Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by visit number, patient, doctor..."
-                value={searchTerm}
-                onChange={handleSearch}
-                className="pl-10"
-              />
-            </div>
-
-            {/* Status Filter */}
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant={statusFilter === '' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('')}
-              >
-                All
-              </Button>
-              <Button
-                variant={statusFilter === 'waiting' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('waiting')}
-              >
-                Waiting
-              </Button>
-              <Button
-                variant={statusFilter === 'in_consultation' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('in_consultation')}
-              >
-                In Consultation
-              </Button>
-              <Button
-                variant={statusFilter === 'in_progress' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('in_progress')}
-              >
-                In Progress
-              </Button>
-              <Button
-                variant={statusFilter === 'completed' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusFilter('completed')}
-              >
-                Completed
-              </Button>
+      {/* Compact Stats Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {[
+          { label: 'Total', value: totalCount, icon: Calendar },
+          { label: 'Waiting', value: statistics?.waiting_patients || 0, icon: Clock },
+          { label: 'Today', value: statistics?.today_visits || 0, icon: CheckCircle2 },
+          { label: 'Revenue', value: `₹${statistics?.revenue_today || '0'}`, icon: IndianRupee },
+        ].map((s) => (
+          <div key={s.label} className="flex items-center gap-2.5 rounded-md border border-border px-3 py-2">
+            <s.icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[11px] text-muted-foreground leading-none">{s.label}</p>
+              <p className="text-sm font-semibold text-foreground mt-0.5">{s.value}</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        ))}
+      </div>
+
+      {/* Compact Filters */}
+      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+        <div className="relative flex-1 w-full sm:max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search visits..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className="pl-8 h-8 text-[12px]"
+          />
+        </div>
+        <div className="flex gap-1 flex-wrap">
+          {[
+            { value: '', label: 'All' },
+            { value: 'waiting', label: 'Waiting' },
+            { value: 'in_consultation', label: 'Consulting' },
+            { value: 'in_progress', label: 'In Progress' },
+            { value: 'completed', label: 'Completed' },
+          ].map((f) => (
+            <Button
+              key={f.value}
+              variant={statusFilter === f.value ? 'default' : 'outline'}
+              size="sm"
+              className="h-7 text-[11px] px-2.5"
+              onClick={() => handleStatusFilter(f.value)}
+            >
+              {f.label}
+            </Button>
+          ))}
+        </div>
+      </div>
 
       {/* Visits Table */}
       <Card>
