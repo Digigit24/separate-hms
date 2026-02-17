@@ -119,9 +119,9 @@ export default function Beds() {
       others,
       wardCounts,
       pieData: [
-        { name: 'Occupied', value: occupied, color: '#f97316' },
-        { name: 'Available', value: available, color: '#10b981' },
-        { name: 'Other', value: others, color: '#94a3b8' },
+        { name: 'Occupied', value: occupied, color: '#171717' },
+        { name: 'Available', value: available, color: '#a3a3a3' },
+        { name: 'Other', value: others, color: '#e5e5e5' },
       ],
     };
   }, [beds]);
@@ -176,13 +176,13 @@ export default function Beds() {
       cell: (row) => (
         <div className="flex gap-2">
           {row.has_oxygen && (
-            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs flex items-center gap-1">
+            <span className="px-2 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded text-xs flex items-center gap-1">
               <Wind className="h-3 w-3" />
               O2
             </span>
           )}
           {row.has_ventilator && (
-            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs flex items-center gap-1">
+            <span className="px-2 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded text-xs flex items-center gap-1">
               <Activity className="h-3 w-3" />
               Vent
             </span>
@@ -199,12 +199,12 @@ export default function Beds() {
         <span
           className={`px-2 py-1 rounded text-xs ${
             row.status === 'available'
-              ? 'bg-green-100 text-green-700'
+              ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
               : row.status === 'occupied'
-              ? 'bg-orange-100 text-orange-700'
+              ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
               : row.status === 'maintenance'
-              ? 'bg-red-100 text-red-700'
-              : 'bg-gray-100 text-gray-700'
+              ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
           }`}
         >
           {BED_STATUS_LABELS[row.status]}
@@ -220,8 +220,8 @@ export default function Beds() {
         <span
           className={`px-2 py-1 rounded text-xs ${
             row.is_active
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-100 text-red-700'
+              ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
           }`}
         >
           {row.is_active ? 'Yes' : 'No'}
@@ -342,7 +342,7 @@ export default function Beds() {
                     </div>
                     <div className="h-2 rounded bg-muted overflow-hidden">
                       <div
-                        className="h-2 bg-orange-500"
+                        className="h-2 bg-neutral-900 dark:bg-neutral-200"
                         style={{ width: `${percent}%` }}
                       />
                     </div>
@@ -400,12 +400,12 @@ export default function Beds() {
                   <span className="text-muted-foreground">Features:</span>
                   <div className="flex gap-1">
                     {row.has_oxygen && (
-                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                      <span className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded text-xs">
                         O2
                       </span>
                     )}
                     {row.has_ventilator && (
-                      <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">
+                      <span className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded text-xs">
                         Vent
                       </span>
                     )}
@@ -417,10 +417,10 @@ export default function Beds() {
                   <span
                     className={`px-2 py-0.5 rounded text-xs ${
                       row.status === 'available'
-                        ? 'bg-green-100 text-green-700'
+                        ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
                         : row.status === 'occupied'
-                        ? 'bg-orange-100 text-orange-700'
-                        : 'bg-red-100 text-red-700'
+                        ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
                     }`}
                   >
                     {BED_STATUS_LABELS[row.status]}

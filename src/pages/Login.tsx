@@ -90,7 +90,7 @@ const Login = () => {
 
             {/* Error Message */}
             {error && (
-              <Alert variant="destructive" className="bg-red-50 border-red-300 backdrop-blur-sm">
+              <Alert variant="destructive" className="bg-destructive/10 border-destructive/30 backdrop-blur-sm">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>

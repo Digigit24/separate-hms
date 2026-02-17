@@ -383,9 +383,9 @@ export const OPDConsultation: React.FC = () => {
             <Badge
               variant={visit.status === 'completed' ? 'default' : 'secondary'}
               className={`px-3 py-1 text-xs uppercase tracking-wide ${
-                visit.status === 'completed' ? 'bg-green-100 text-green-700 hover:bg-green-100' :
-                visit.status === 'in_consultation' || visit.status === 'in_progress' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' :
-                'bg-orange-100 text-orange-700 hover:bg-orange-100'
+                visit.status === 'completed' ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200' :
+                visit.status === 'in_consultation' || visit.status === 'in_progress' ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' :
+                'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200'
               }`}
             >
               {visit.status?.replace('_', ' ')}
@@ -393,14 +393,14 @@ export const OPDConsultation: React.FC = () => {
 
             {/* Action Buttons based on Status */}
             {visit.status === 'waiting' && (
-              <Button onClick={handleStartConsultation} disabled={isSaving} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+              <Button onClick={handleStartConsultation} disabled={isSaving} className="gap-2 bg-foreground hover:bg-foreground/90 text-background">
                 {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                 Start Consultation
               </Button>
             )}
             
             {(visit.status === 'in_consultation' || visit.status === 'in_progress') && (
-              <Button onClick={() => setShowCompleteDialog(true)} disabled={isSaving} className="gap-2 bg-green-600 hover:bg-green-700 text-white">
+              <Button onClick={() => setShowCompleteDialog(true)} disabled={isSaving} className="gap-2 bg-foreground hover:bg-foreground/90 text-background">
                 {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                 Complete Visit
               </Button>
@@ -428,7 +428,7 @@ export const OPDConsultation: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-6 max-w-8xl mx-auto w-full space-y-6">
+      <div className="flex-1 overflow-auto p-6 w-full w-full space-y-6">
         
         {/* Main Content Area */}
         <div className="grid grid-cols-1 gap-6">
@@ -612,7 +612,7 @@ export const OPDConsultation: React.FC = () => {
             <Button
               onClick={handleSaveFollowup}
               disabled={isSavingFollowup || !followupDate}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-neutral-700 dark:bg-neutral-400 hover:bg-neutral-800 dark:bg-neutral-300"
             >
               {isSavingFollowup && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Save Follow-up
@@ -643,7 +643,7 @@ export const OPDConsultation: React.FC = () => {
             <Button variant="ghost" onClick={() => setShowCompleteDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCompleteConsultation} disabled={isSaving} className="bg-green-600 hover:bg-green-700 text-white">
+            <Button onClick={handleCompleteConsultation} disabled={isSaving} className="bg-foreground hover:bg-foreground/90 text-background">
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Complete Visit
             </Button>
           </DialogFooter>

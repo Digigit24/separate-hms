@@ -55,18 +55,18 @@ export const ProcedureMasters: React.FC = () => {
 
   const getCategoryColor = (category: ProcedureCategory) => {
     const colors: Record<ProcedureCategory, string> = {
-      laboratory: 'bg-blue-600',
-      radiology: 'bg-purple-600',
-      cardiology: 'bg-red-600',
-      pathology: 'bg-green-600',
-      ultrasound: 'bg-indigo-600',
-      ct_scan: 'bg-orange-600',
-      mri: 'bg-pink-600',
-      ecg: 'bg-yellow-600',
+      laboratory: 'bg-neutral-800 dark:bg-neutral-300',
+      radiology: 'bg-neutral-700 dark:bg-neutral-400',
+      cardiology: 'bg-neutral-500',
+      pathology: 'bg-neutral-900 dark:bg-neutral-200',
+      ultrasound: 'bg-neutral-600 dark:bg-neutral-500',
+      ct_scan: 'bg-neutral-600 dark:bg-neutral-500',
+      mri: 'bg-neutral-500 dark:bg-neutral-500',
+      ecg: 'bg-neutral-500 dark:bg-neutral-500',
       xray: 'bg-cyan-600',
-      other: 'bg-gray-600',
+      other: 'bg-neutral-400 dark:bg-neutral-600',
     };
-    return colors[category] || 'bg-gray-600';
+    return colors[category] || 'bg-neutral-400 dark:bg-neutral-600';
   };
 
   const columns: DataTableColumn<ProcedureMaster>[] = [
@@ -109,7 +109,7 @@ export const ProcedureMasters: React.FC = () => {
       header: 'Status',
       key: 'is_active',
       cell: (procedure) => (
-        <Badge variant={procedure.is_active ? 'default' : 'secondary'} className={procedure.is_active ? 'bg-green-600' : ''}>
+        <Badge variant={procedure.is_active ? 'default' : 'secondary'} className={procedure.is_active ? 'bg-neutral-900 dark:bg-neutral-200' : ''}>
           {procedure.is_active ? 'Active' : 'Inactive'}
         </Badge>
       ),
@@ -117,7 +117,7 @@ export const ProcedureMasters: React.FC = () => {
   ];
 
   return (
-    <div className="p-6 max-w-8xl mx-auto space-y-6">
+    <div className="p-6 w-full space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Procedure Masters</h1>
@@ -135,8 +135,8 @@ export const ProcedureMasters: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Briefcase className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Briefcase className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Total Procedures</p>
@@ -149,8 +149,8 @@ export const ProcedureMasters: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle className="h-5 w-5 text-green-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <CheckCircle className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
@@ -165,8 +165,8 @@ export const ProcedureMasters: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <XCircle className="h-5 w-5 text-red-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <XCircle className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Inactive</p>
@@ -181,8 +181,8 @@ export const ProcedureMasters: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Briefcase className="h-5 w-5 text-purple-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Briefcase className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Categories</p>

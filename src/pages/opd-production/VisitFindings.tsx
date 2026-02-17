@@ -122,7 +122,7 @@ export const VisitFindings: React.FC = () => {
   ];
 
   return (
-    <div className="p-6 max-w-8xl mx-auto space-y-6">
+    <div className="p-6 w-full space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Visit Findings</h1>
@@ -140,8 +140,8 @@ export const VisitFindings: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Activity className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Activity className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Total Findings</p>
@@ -154,8 +154,8 @@ export const VisitFindings: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Thermometer className="h-5 w-5 text-green-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Thermometer className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Examinations</p>
@@ -170,8 +170,8 @@ export const VisitFindings: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Heart className="h-5 w-5 text-orange-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Heart className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Systemic</p>
@@ -186,8 +186,8 @@ export const VisitFindings: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Activity className="h-5 w-5 text-purple-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Activity className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">This Week</p>

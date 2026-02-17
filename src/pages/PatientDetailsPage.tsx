@@ -202,14 +202,14 @@ export const PatientDetailsPage = () => {
   }
 
   const statusConfig = {
-    active: { label: 'Active', className: 'bg-green-600' },
-    inactive: { label: 'Inactive', className: 'bg-gray-600' },
-    deceased: { label: 'Deceased', className: 'bg-red-600' },
+    active: { label: 'Active', className: 'bg-neutral-900 dark:bg-neutral-200' },
+    inactive: { label: 'Inactive', className: 'bg-neutral-400 dark:bg-neutral-600' },
+    deceased: { label: 'Deceased', className: 'bg-neutral-500' },
   };
   const config = statusConfig[patient.status];
 
   return (
-    <div className="p-6 max-w-8xl mx-auto space-y-6">
+    <div className="p-6 w-full space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-start gap-4">

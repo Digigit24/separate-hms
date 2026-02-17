@@ -66,12 +66,12 @@ const statusConfig = {
   },
   completed: {
     label: 'Completed',
-    className: 'bg-green-100 text-green-800 border-green-300',
+    className: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-green-300',
     icon: CheckCircle,
   },
   reviewed: {
     label: 'Reviewed',
-    className: 'bg-blue-100 text-blue-800 border-blue-300',
+    className: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-blue-300',
     icon: CheckCircle,
   },
   archived: {

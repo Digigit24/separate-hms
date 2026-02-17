@@ -138,7 +138,7 @@ export const Roles: React.FC = () => {
       key: 'status',
       cell: (role) => {
         return (
-          <Badge variant="default" className={role.is_active ? 'bg-green-600' : 'bg-gray-600'}>
+          <Badge variant="default" className={role.is_active ? 'bg-neutral-900 dark:bg-neutral-200' : 'bg-neutral-400 dark:bg-neutral-600'}>
             {role.is_active ? 'Active' : 'Inactive'}
           </Badge>
         );
@@ -163,7 +163,7 @@ export const Roles: React.FC = () => {
           </div>
           <Badge
             variant="default"
-            className={role.is_active ? 'bg-green-600' : 'bg-gray-600'}
+            className={role.is_active ? 'bg-neutral-900 dark:bg-neutral-200' : 'bg-neutral-400 dark:bg-neutral-600'}
           >
             {role.is_active ? 'Active' : 'Inactive'}
           </Badge>
@@ -207,7 +207,7 @@ export const Roles: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-8xl mx-auto space-y-6">
+    <div className="p-6 w-full space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -227,8 +227,8 @@ export const Roles: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Shield className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Shield className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Total Roles</p>
@@ -241,8 +241,8 @@ export const Roles: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <ShieldCheck className="h-5 w-5 text-green-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <ShieldCheck className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
@@ -257,8 +257,8 @@ export const Roles: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gray-100 rounded-lg">
-                <ShieldX className="h-5 w-5 text-gray-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <ShieldX className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Inactive</p>

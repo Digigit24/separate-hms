@@ -94,7 +94,7 @@ export const ProcedurePackages: React.FC = () => {
           <span className="text-muted-foreground line-through">₹{pkg.total_charge}</span>
           <span className="font-medium text-green-600">₹{pkg.discounted_charge}</span>
           {pkg.discount_percent && (
-            <Badge variant="outline" className="text-xs w-fit bg-green-50 text-green-700 border-green-200">
+            <Badge variant="outline" className="text-xs w-fit bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700">
               {parseFloat(pkg.discount_percent).toFixed(1)}% off
             </Badge>
           )}
@@ -117,7 +117,7 @@ export const ProcedurePackages: React.FC = () => {
       header: 'Status',
       key: 'is_active',
       cell: (pkg) => (
-        <Badge variant={pkg.is_active ? 'default' : 'secondary'} className={pkg.is_active ? 'bg-green-600' : ''}>
+        <Badge variant={pkg.is_active ? 'default' : 'secondary'} className={pkg.is_active ? 'bg-neutral-900 dark:bg-neutral-200' : ''}>
           {pkg.is_active ? 'Active' : 'Inactive'}
         </Badge>
       ),
@@ -125,7 +125,7 @@ export const ProcedurePackages: React.FC = () => {
   ];
 
   return (
-    <div className="p-6 max-w-8xl mx-auto space-y-6">
+    <div className="p-6 w-full space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Procedure Packages</h1>
@@ -143,8 +143,8 @@ export const ProcedurePackages: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Package className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Package className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Total Packages</p>
@@ -157,8 +157,8 @@ export const ProcedurePackages: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle className="h-5 w-5 text-green-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <CheckCircle className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
@@ -173,8 +173,8 @@ export const ProcedurePackages: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <TrendingDown className="h-5 w-5 text-orange-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <TrendingDown className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Avg Discount</p>
@@ -191,8 +191,8 @@ export const ProcedurePackages: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Package className="h-5 w-5 text-purple-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Package className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Total Savings</p>

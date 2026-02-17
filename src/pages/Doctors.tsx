@@ -165,7 +165,7 @@ export const Doctors: React.FC = () => {
       key: 'rating',
       cell: (doctor) => (
         <div className="flex items-center gap-1 text-sm">
-          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+          <Star className="h-4 w-4 fill-neutral-400 text-neutral-400" />
           <span className="font-medium">{doctor.average_rating || 0}</span>
           <span className="text-muted-foreground">({doctor.total_reviews || 0})</span>
         </div>
@@ -176,9 +176,9 @@ export const Doctors: React.FC = () => {
       key: 'status',
       cell: (doctor) => {
         const statusConfig = {
-          active: { label: 'Active', className: 'bg-green-600' },
-          on_leave: { label: 'On Leave', className: 'bg-orange-600' },
-          inactive: { label: 'Inactive', className: 'bg-gray-600' },
+          active: { label: 'Active', className: 'bg-neutral-900 dark:bg-neutral-200' },
+          on_leave: { label: 'On Leave', className: 'bg-neutral-600 dark:bg-neutral-500' },
+          inactive: { label: 'Inactive', className: 'bg-neutral-400 dark:bg-neutral-600' },
         };
         const config = statusConfig[doctor.status];
         return (
@@ -204,10 +204,10 @@ export const Doctors: React.FC = () => {
             variant="default"
             className={
               doctor.status === 'active'
-                ? 'bg-green-600'
+                ? 'bg-neutral-900 dark:bg-neutral-200'
                 : doctor.status === 'on_leave'
-                ? 'bg-orange-600'
-                : 'bg-gray-600'
+                ? 'bg-neutral-600 dark:bg-neutral-500'
+                : 'bg-neutral-400 dark:bg-neutral-600'
             }
           >
             {doctor.status === 'active' && 'Active'}
@@ -238,7 +238,7 @@ export const Doctors: React.FC = () => {
           <div>
             <p className="text-muted-foreground text-xs">Rating</p>
             <p className="font-medium flex items-center gap-1">
-              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+              <Star className="h-3 w-3 fill-neutral-400 text-neutral-400" />
               {doctor.average_rating || 0}
             </p>
           </div>
@@ -267,7 +267,7 @@ export const Doctors: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-8xl mx-auto space-y-6">
+    <div className="p-6 w-full space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -287,8 +287,8 @@ export const Doctors: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <UserPlus className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <UserPlus className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Total Doctors</p>
@@ -301,8 +301,8 @@ export const Doctors: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Stethoscope className="h-5 w-5 text-green-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Stethoscope className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
@@ -317,8 +317,8 @@ export const Doctors: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Calendar className="h-5 w-5 text-orange-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Calendar className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">On Leave</p>
@@ -333,8 +333,8 @@ export const Doctors: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <IndianRupee className="h-5 w-5 text-purple-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <IndianRupee className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Avg Fee</p>

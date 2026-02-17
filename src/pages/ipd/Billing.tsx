@@ -28,10 +28,10 @@ import { toast } from 'sonner';
 type BillingRow = IPDBilling | IPDBillingListItem;
 
 const BILL_STATUS_COLORS: Record<BillingStatus, string> = {
-  pending: 'bg-amber-100 text-amber-800',
-  partial: 'bg-blue-100 text-blue-800',
-  paid: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
+  pending: 'bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300',
+  partial: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300',
+  paid: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300',
+  cancelled: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300',
 };
 
 type DrawerMode = 'create' | 'view';
@@ -428,7 +428,7 @@ export default function IPDBillingPage() {
               </div>
               <div>
                 <Label>Balance</Label>
-                <div className="font-semibold text-orange-700">
+                <div className="font-semibold text-foreground">
                   ₹{Number.parseFloat(billingDetail.balance_amount || '0').toFixed(2)}
                 </div>
               </div>

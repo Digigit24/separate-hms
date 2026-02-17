@@ -46,17 +46,17 @@ const TYPE_OPTIONS: { value: RequisitionType | 'all'; label: string; icon: React
 ];
 
 const STATUS_COLORS: Record<RequisitionStatus, string> = {
-  ordered: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-  sample_collected: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
-  completed: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-  cancelled: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+  ordered: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 ',
+  sample_collected: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 ',
+  completed: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300',
+  cancelled: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300',
 };
 
 const TYPE_COLORS: Record<RequisitionType, string> = {
-  investigation: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-  medicine: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-  procedure: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
-  package: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
+  investigation: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 ',
+  medicine: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300',
+  procedure: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 ',
+  package: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300',
 };
 
 export const Requisitions: React.FC = () => {

@@ -93,13 +93,13 @@ export const PaymentCategories: React.FC = () => {
   const getCategoryTypeBadge = (type: string) => {
     switch (type) {
       case 'income':
-        return <Badge className="bg-green-500">Income</Badge>;
+        return <Badge className="bg-neutral-900 dark:bg-neutral-200 text-white dark:text-neutral-900">Income</Badge>;
       case 'expense':
-        return <Badge className="bg-red-500">Expense</Badge>;
+        return <Badge className="bg-neutral-500 dark:bg-neutral-500 text-white">Expense</Badge>;
       case 'refund':
-        return <Badge className="bg-orange-500">Refund</Badge>;
+        return <Badge className="bg-neutral-700 dark:bg-neutral-400 text-white dark:text-neutral-900">Refund</Badge>;
       case 'adjustment':
-        return <Badge className="bg-blue-500">Adjustment</Badge>;
+        return <Badge className="bg-neutral-600 dark:bg-neutral-500 text-white">Adjustment</Badge>;
       default:
         return <Badge>{type}</Badge>;
     }
@@ -237,8 +237,8 @@ export const PaymentCategories: React.FC = () => {
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Package className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                  <Package className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
                 </div>
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">Total Categories</p>
@@ -251,8 +251,8 @@ export const PaymentCategories: React.FC = () => {
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Package className="h-5 w-5 text-green-600" />
+                <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                  <Package className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
                 </div>
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">Income Categories</p>
@@ -267,8 +267,8 @@ export const PaymentCategories: React.FC = () => {
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <Package className="h-5 w-5 text-red-600" />
+                <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                  <Package className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
                 </div>
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">Expense Categories</p>
@@ -283,8 +283,8 @@ export const PaymentCategories: React.FC = () => {
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Package className="h-5 w-5 text-purple-600" />
+                <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                  <Package className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
                 </div>
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">This Page</p>

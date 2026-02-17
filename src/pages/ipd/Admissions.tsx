@@ -126,12 +126,12 @@ export default function Admissions() {
             variant="default"
             className={
               row.status === 'admitted'
-                ? 'bg-blue-600'
+                ? 'bg-neutral-800 dark:bg-neutral-300'
                 : row.status === 'discharged'
-                ? 'bg-green-600'
+                ? 'bg-neutral-900 dark:bg-neutral-200'
                 : row.status === 'transferred'
-                ? 'bg-yellow-600'
-                : 'bg-gray-600'
+                ? 'bg-neutral-500 dark:bg-neutral-500'
+                : 'bg-neutral-400 dark:bg-neutral-600'
             }
           >
             {ADMISSION_STATUS_LABELS[row.status]}
@@ -292,12 +292,12 @@ export default function Admissions() {
         <span
           className={`px-2 py-1 rounded text-xs ${
             row.status === 'admitted'
-              ? 'bg-blue-100 text-blue-700'
+              ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
               : row.status === 'discharged'
-              ? 'bg-green-100 text-green-700'
+              ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
               : row.status === 'transferred'
-              ? 'bg-yellow-100 text-yellow-700'
-              : 'bg-gray-100 text-gray-700'
+              ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
           }`}
         >
           {ADMISSION_STATUS_LABELS[row.status]}
@@ -323,7 +323,7 @@ export default function Admissions() {
   }).length;
 
   return (
-    <div className="p-6 max-w-8xl mx-auto space-y-6">
+    <div className="p-6 w-full space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -343,8 +343,8 @@ export default function Admissions() {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Calendar className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Calendar className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Total Admissions</p>
@@ -357,8 +357,8 @@ export default function Admissions() {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <BedIcon className="h-5 w-5 text-green-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <BedIcon className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
@@ -371,8 +371,8 @@ export default function Admissions() {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-orange-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <CheckCircle2 className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Discharged Today</p>
@@ -385,8 +385,8 @@ export default function Admissions() {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Clock className="h-5 w-5 text-purple-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Clock className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Avg. Stay</p>

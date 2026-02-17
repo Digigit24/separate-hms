@@ -48,7 +48,7 @@ const PRIORITY_LABELS: Record<RequisitionPriority, string> = {
 const PRIORITY_STYLES: Record<RequisitionPriority, string> = {
   routine: 'bg-slate-100 text-slate-700',
   urgent: 'bg-amber-100 text-amber-800',
-  stat: 'bg-red-100 text-red-800',
+  stat: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300',
 };
 
 const STATUS_LABELS: Record<RequisitionStatus, string> = {

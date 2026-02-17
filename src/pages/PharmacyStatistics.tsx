@@ -31,10 +31,10 @@ interface StatCardProps {
 
 function StatCard({ title, value, icon, variant = 'default', subtitle }: StatCardProps) {
   const variantStyles = {
-    default: 'bg-blue-50 text-blue-600',
-    success: 'bg-green-50 text-green-600',
-    warning: 'bg-orange-50 text-orange-600',
-    danger: 'bg-red-50 text-red-600',
+    default: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
+    success: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
+    warning: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
+    danger: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
   };
 
   return (
@@ -77,14 +77,14 @@ export const PharmacyStatisticsPage: React.FC = () => {
   const isLoading = productStatsLoading || orderStatsLoading;
   const hasError = productStatsError || orderStatsError;
 
-  // Theme-aware colors
+  // Theme-aware colors (grayscale)
   const colors = useMemo(() => ({
     text: isDark ? '#9CA3AF' : '#6B7280',
     grid: isDark ? '#374151' : '#E5E7EB',
-    primary: '#3B82F6',
-    success: '#10B981',
-    warning: '#F59E0B',
-    danger: '#EF4444',
+    primary: isDark ? '#d4d4d4' : '#404040',
+    success: isDark ? '#a3a3a3' : '#525252',
+    warning: isDark ? '#737373' : '#737373',
+    danger: isDark ? '#525252' : '#a3a3a3',
   }), [isDark]);
 
   // Chart data preparations
@@ -470,7 +470,7 @@ export const PharmacyStatisticsPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-green-500"
+                    className="h-full bg-neutral-900 dark:bg-neutral-200"
                     style={{ width: `${stockPercentage}%` }}
                   />
                 </div>
@@ -479,7 +479,7 @@ export const PharmacyStatisticsPage: React.FC = () => {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Low Stock Warning</span>
-              <Badge variant="warning" className="bg-orange-100 text-orange-700">
+              <Badge variant="warning" className="bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
                 {productStats?.low_stock_products || 0} items
               </Badge>
             </div>
@@ -505,7 +505,7 @@ export const PharmacyStatisticsPage: React.FC = () => {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Expiring Soon (30 days)</span>
-              <Badge variant="warning" className="bg-yellow-100 text-yellow-700">
+              <Badge variant="warning" className="bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
                 {productStats?.near_expiry_products || 0} items
               </Badge>
             </div>

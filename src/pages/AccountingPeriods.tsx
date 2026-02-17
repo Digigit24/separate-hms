@@ -135,12 +135,12 @@ export const AccountingPeriods: React.FC = () => {
           <div className="flex flex-col gap-1">
             {getPeriodTypeBadge(period.period_type)}
             {period.is_closed ? (
-              <Badge className="bg-red-500 w-fit">
+              <Badge className="bg-neutral-500 w-fit">
                 <Lock className="mr-1 h-3 w-3" />
                 Closed
               </Badge>
             ) : (
-              <Badge className="bg-green-500 w-fit">
+              <Badge className="bg-neutral-900 dark:bg-neutral-200 text-white dark:text-neutral-900 w-fit">
                 <Unlock className="mr-1 h-3 w-3" />
                 Open
               </Badge>
@@ -225,12 +225,12 @@ export const AccountingPeriods: React.FC = () => {
         <div className="flex flex-col items-end gap-1">
           {getPeriodTypeBadge(period.period_type)}
           {period.is_closed ? (
-            <Badge className="bg-red-500">
+            <Badge className="bg-neutral-500 dark:bg-neutral-500 text-white">
               <Lock className="mr-1 h-3 w-3" />
               Closed
             </Badge>
           ) : (
-            <Badge className="bg-green-500">
+            <Badge className="bg-neutral-900 dark:bg-neutral-200 text-white dark:text-neutral-900">
               <Unlock className="mr-1 h-3 w-3" />
               Open
             </Badge>
@@ -326,8 +326,8 @@ export const AccountingPeriods: React.FC = () => {
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Calendar className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                  <Calendar className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
                 </div>
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">Total Periods</p>
@@ -340,8 +340,8 @@ export const AccountingPeriods: React.FC = () => {
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Unlock className="h-5 w-5 text-green-600" />
+                <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                  <Unlock className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
                 </div>
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">Open Periods</p>
@@ -354,8 +354,8 @@ export const AccountingPeriods: React.FC = () => {
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <Lock className="h-5 w-5 text-red-600" />
+                <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                  <Lock className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
                 </div>
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">Closed Periods</p>
@@ -368,16 +368,16 @@ export const AccountingPeriods: React.FC = () => {
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${stats.netProfit >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+                <div className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800">
                   {stats.netProfit >= 0 ? (
-                    <TrendingUp className="h-5 w-5 text-green-600" />
+                    <TrendingUp className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
                   ) : (
-                    <TrendingDown className="h-5 w-5 text-red-600" />
+                    <TrendingDown className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
                   )}
                 </div>
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">Total Net Profit</p>
-                  <p className={`text-xl sm:text-2xl font-bold ${stats.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className="text-xl sm:text-2xl font-bold">
                     ₹{stats.netProfit.toLocaleString()}
                   </p>
                 </div>

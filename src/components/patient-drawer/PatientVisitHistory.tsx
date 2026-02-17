@@ -47,10 +47,10 @@ export default function PatientVisitHistory({ patientId, onViewVisit }: PatientV
   };
 
   const visitTypeConfig = {
-    new: { label: 'New Visit', className: 'bg-purple-100 text-purple-800' },
-    follow_up: { label: 'Follow-up', className: 'bg-blue-100 text-blue-800' },
-    emergency: { label: 'Emergency', className: 'bg-red-100 text-red-800' },
-    referral: { label: 'Referral', className: 'bg-orange-100 text-orange-800' },
+    new: { label: 'New Visit', className: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300' },
+    follow_up: { label: 'Follow-up', className: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300' },
+    emergency: { label: 'Emergency', className: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300' },
+    referral: { label: 'Referral', className: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300' },
   };
 
   const columns: DataTableColumn<OpdVisit>[] = [

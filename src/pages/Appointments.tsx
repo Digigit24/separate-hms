@@ -195,12 +195,12 @@ export const Appointments: React.FC = () => {
       key: 'status',
       cell: (appointment) => {
         const statusConfig = {
-          scheduled: { label: 'Scheduled', className: 'bg-blue-600' },
-          confirmed: { label: 'Confirmed', className: 'bg-purple-600' },
-          in_progress: { label: 'In Progress', className: 'bg-orange-600' },
-          completed: { label: 'Completed', className: 'bg-green-600' },
-          cancelled: { label: 'Cancelled', className: 'bg-red-600' },
-          no_show: { label: 'No Show', className: 'bg-gray-600' },
+          scheduled: { label: 'Scheduled', className: 'bg-neutral-800 dark:bg-neutral-300' },
+          confirmed: { label: 'Confirmed', className: 'bg-neutral-700 dark:bg-neutral-400' },
+          in_progress: { label: 'In Progress', className: 'bg-neutral-600 dark:bg-neutral-500' },
+          completed: { label: 'Completed', className: 'bg-neutral-900 dark:bg-neutral-200' },
+          cancelled: { label: 'Cancelled', className: 'bg-neutral-500' },
+          no_show: { label: 'No Show', className: 'bg-neutral-400 dark:bg-neutral-600' },
         };
         const config = statusConfig[appointment.status];
         return (
@@ -218,7 +218,7 @@ export const Appointments: React.FC = () => {
           <span className="font-medium">{formatCurrency(appointment.fee_amount ?? 0)}</span>
           <Badge
             variant={appointment.payment_status === 'paid' ? 'default' : 'secondary'}
-            className={`text-xs ${appointment.payment_status === 'paid' ? 'bg-green-600' : ''}`}
+            className={`text-xs ${appointment.payment_status === 'paid' ? 'bg-neutral-900 dark:bg-neutral-200' : ''}`}
           >
             {appointment.payment_status?.replace('_', ' ').toUpperCase() || 'N/A'}
           </Badge>
@@ -243,14 +243,14 @@ export const Appointments: React.FC = () => {
             variant="default"
             className={
               appointment.status === 'completed'
-                ? 'bg-green-600'
+                ? 'bg-neutral-900 dark:bg-neutral-200'
                 : appointment.status === 'in_progress'
-                ? 'bg-orange-600'
+                ? 'bg-neutral-600 dark:bg-neutral-500'
                 : appointment.status === 'confirmed'
-                ? 'bg-purple-600'
+                ? 'bg-neutral-700 dark:bg-neutral-400'
                 : appointment.status === 'cancelled' || appointment.status === 'no_show'
-                ? 'bg-red-600'
-                : 'bg-blue-600'
+                ? 'bg-neutral-500'
+                : 'bg-neutral-800 dark:bg-neutral-300'
             }
           >
             {appointment.status?.replace('_', ' ').toUpperCase() || 'N/A'}
@@ -279,7 +279,7 @@ export const Appointments: React.FC = () => {
           </Badge>
           <Badge
             variant={appointment.payment_status === 'paid' ? 'default' : 'secondary'}
-            className={`text-xs ${appointment.payment_status === 'paid' ? 'bg-green-600' : ''}`}
+            className={`text-xs ${appointment.payment_status === 'paid' ? 'bg-neutral-900 dark:bg-neutral-200' : ''}`}
           >
             {formatCurrency(appointment.fee_amount ?? 0)} • {appointment.payment_status?.replace('_', ' ').toUpperCase() || 'N/A'}
           </Badge>
@@ -308,7 +308,7 @@ export const Appointments: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-8xl mx-auto space-y-6">
+    <div className="p-6 w-full space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -370,8 +370,8 @@ export const Appointments: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Calendar className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Calendar className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Total</p>
@@ -384,8 +384,8 @@ export const Appointments: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Clock className="h-5 w-5 text-purple-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Clock className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Upcoming</p>
@@ -400,8 +400,8 @@ export const Appointments: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <CheckCircle2 className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Completed</p>
@@ -416,8 +416,8 @@ export const Appointments: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <IndianRupee className="h-5 w-5 text-orange-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <IndianRupee className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Pending Payment</p>

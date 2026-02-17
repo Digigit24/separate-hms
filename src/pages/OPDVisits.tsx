@@ -193,7 +193,7 @@ export const OPDVisits: React.FC = () => {
           </Badge>
           <Badge
             variant={visit.priority === 'urgent' || visit.priority === 'high' ? 'destructive' : 'outline'}
-            className={`text-xs w-fit ${visit.priority === 'high' ? 'bg-orange-600 text-white' : ''}`}
+            className={`text-xs w-fit ${visit.priority === 'high' ? 'bg-neutral-600 dark:bg-neutral-500 text-white' : ''}`}
           >
             {visit.priority ? visit.priority.toUpperCase() : 'NORMAL'}
           </Badge>
@@ -206,14 +206,14 @@ export const OPDVisits: React.FC = () => {
       className: 'w-[11%]',
       cell: (visit) => {
         const statusConfig = {
-          waiting: { label: 'Waiting', className: 'bg-orange-600' },
-          in_consultation: { label: 'In Consultation', className: 'bg-blue-600' },
-          in_progress: { label: 'In Progress', className: 'bg-blue-600' },
-          completed: { label: 'Completed', className: 'bg-green-600' },
-          cancelled: { label: 'Cancelled', className: 'bg-red-600' },
-          no_show: { label: 'No Show', className: 'bg-gray-600' },
+          waiting: { label: 'Waiting', className: 'bg-neutral-600 dark:bg-neutral-500' },
+          in_consultation: { label: 'In Consultation', className: 'bg-neutral-800 dark:bg-neutral-300' },
+          in_progress: { label: 'In Progress', className: 'bg-neutral-800 dark:bg-neutral-300' },
+          completed: { label: 'Completed', className: 'bg-neutral-900 dark:bg-neutral-200' },
+          cancelled: { label: 'Cancelled', className: 'bg-neutral-500' },
+          no_show: { label: 'No Show', className: 'bg-neutral-400 dark:bg-neutral-600' },
         };
-        const config = visit.status ? statusConfig[visit.status] : { label: 'Unknown', className: 'bg-gray-600' };
+        const config = visit.status ? statusConfig[visit.status] : { label: 'Unknown', className: 'bg-neutral-400 dark:bg-neutral-600' };
         return (
           <Badge variant="default" className={config.className}>
             {config.label}
@@ -230,7 +230,7 @@ export const OPDVisits: React.FC = () => {
           <span className="font-medium">₹{visit.total_amount || '0'}</span>
           <Badge
             variant={visit.payment_status === 'paid' ? 'default' : 'secondary'}
-            className={`text-xs ${visit.payment_status === 'paid' ? 'bg-green-600' : ''}`}
+            className={`text-xs ${visit.payment_status === 'paid' ? 'bg-neutral-900 dark:bg-neutral-200' : ''}`}
           >
             {visit.payment_status ? visit.payment_status.replace('_', ' ').toUpperCase() : 'PENDING'}
           </Badge>
@@ -258,14 +258,14 @@ export const OPDVisits: React.FC = () => {
             variant="default"
             className={
               visit.status === 'completed'
-                ? 'bg-green-600'
+                ? 'bg-neutral-900 dark:bg-neutral-200'
                 : visit.status === 'in_consultation' || visit.status === 'in_progress'
-                ? 'bg-blue-600'
+                ? 'bg-neutral-800 dark:bg-neutral-300'
                 : visit.status === 'waiting'
-                ? 'bg-orange-600'
+                ? 'bg-neutral-600 dark:bg-neutral-500'
                 : visit.status === 'cancelled' || visit.status === 'no_show'
-                ? 'bg-red-600'
-                : 'bg-gray-600'
+                ? 'bg-neutral-500'
+                : 'bg-neutral-400 dark:bg-neutral-600'
             }
           >
             {visit.status ? visit.status.replace('_', ' ').toUpperCase() : 'UNKNOWN'}
@@ -291,13 +291,13 @@ export const OPDVisits: React.FC = () => {
           </Badge>
           <Badge
             variant={visit.priority === 'urgent' || visit.priority === 'high' ? 'destructive' : 'outline'}
-            className={`text-xs ${visit.priority === 'high' ? 'bg-orange-600 text-white' : ''}`}
+            className={`text-xs ${visit.priority === 'high' ? 'bg-neutral-600 dark:bg-neutral-500 text-white' : ''}`}
           >
             {visit.priority ? visit.priority.toUpperCase() : 'NORMAL'}
           </Badge>
           <Badge
             variant={visit.payment_status === 'paid' ? 'default' : 'secondary'}
-            className={`text-xs ${visit.payment_status === 'paid' ? 'bg-green-600' : ''}`}
+            className={`text-xs ${visit.payment_status === 'paid' ? 'bg-neutral-900 dark:bg-neutral-200' : ''}`}
           >
             ₹{visit.total_amount || '0'} • {visit.payment_status ? visit.payment_status.replace('_', ' ').toUpperCase() : 'PENDING'}
           </Badge>
@@ -354,7 +354,7 @@ export const OPDVisits: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-8xl mx-auto space-y-6">
+    <div className="p-6 w-full space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -374,8 +374,8 @@ export const OPDVisits: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Calendar className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Calendar className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Total Visits</p>
@@ -388,8 +388,8 @@ export const OPDVisits: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Clock className="h-5 w-5 text-orange-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Clock className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Waiting</p>
@@ -404,8 +404,8 @@ export const OPDVisits: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <CheckCircle2 className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Today</p>
@@ -420,8 +420,8 @@ export const OPDVisits: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <IndianRupee className="h-5 w-5 text-purple-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <IndianRupee className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Revenue Today</p>

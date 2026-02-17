@@ -43,10 +43,10 @@ export default function PatientAppointments({ patientId, onViewAppointment }: Pa
   };
 
   const appointmentTypeConfig = {
-    consultation: { label: 'Consultation', className: 'bg-blue-100 text-blue-800' },
-    follow_up: { label: 'Follow-up', className: 'bg-green-100 text-green-800' },
-    emergency: { label: 'Emergency', className: 'bg-red-100 text-red-800' },
-    routine_checkup: { label: 'Routine', className: 'bg-purple-100 text-purple-800' },
+    consultation: { label: 'Consultation', className: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300' },
+    follow_up: { label: 'Follow-up', className: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300' },
+    emergency: { label: 'Emergency', className: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300' },
+    routine_checkup: { label: 'Routine', className: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300' },
   };
 
   const columns: DataTableColumn<Appointment>[] = [

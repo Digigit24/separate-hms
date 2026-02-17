@@ -80,7 +80,7 @@ export const LabReports: React.FC = () => {
       cell: (row) => {
         if (row.verified_by) {
           return (
-            <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+            <Badge className="bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
               <CheckCircle2 className="h-3 w-3 mr-1" />
               Verified
             </Badge>
@@ -316,7 +316,7 @@ export const LabReports: React.FC = () => {
                   </div>
                 </div>
                 {row.verified_by ? (
-                  <Badge className="bg-green-100 text-green-700">
+                  <Badge className="bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
                     <CheckCircle2 className="h-3 w-3 mr-1" />
                     Verified
                   </Badge>

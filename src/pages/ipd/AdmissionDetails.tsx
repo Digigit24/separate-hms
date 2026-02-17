@@ -97,7 +97,7 @@ export default function AdmissionDetails() {
         setDischargeData={setDischargeData}
       />
 
-      <div className="flex-1 overflow-auto p-6 max-w-8xl mx-auto w-full space-y-6">
+      <div className="flex-1 overflow-auto p-6 w-full w-full space-y-6">
         <div className="grid grid-cols-1 gap-6">
           <IPDPatientQuickInfo admission={admission} />
           <IPDAdmissionTabs

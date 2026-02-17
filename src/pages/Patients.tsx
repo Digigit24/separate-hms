@@ -180,9 +180,9 @@ export const Patients: React.FC = () => {
       key: 'status',
       cell: (patient) => {
         const statusConfig = {
-          active: { label: 'Active', className: 'bg-green-600' },
-          inactive: { label: 'Inactive', className: 'bg-gray-600' },
-          deceased: { label: 'Deceased', className: 'bg-red-600' },
+          active: { label: 'Active', className: 'bg-neutral-900 dark:bg-neutral-200' },
+          inactive: { label: 'Inactive', className: 'bg-neutral-400 dark:bg-neutral-600' },
+          deceased: { label: 'Deceased', className: 'bg-neutral-500' },
         };
         const config = statusConfig[patient.status];
         return (
@@ -208,10 +208,10 @@ export const Patients: React.FC = () => {
             variant="default"
             className={
               patient.status === 'active'
-                ? 'bg-green-600'
+                ? 'bg-neutral-900 dark:bg-neutral-200'
                 : patient.status === 'inactive'
-                ? 'bg-gray-600'
-                : 'bg-red-600'
+                ? 'bg-neutral-400 dark:bg-neutral-600'
+                : 'bg-neutral-500'
             }
           >
             {patient.status === 'active' && 'Active'}
@@ -265,7 +265,7 @@ export const Patients: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-8xl mx-auto space-y-6">
+    <div className="p-6 w-full space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -285,8 +285,8 @@ export const Patients: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Users className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Users className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Total Patients</p>
@@ -299,8 +299,8 @@ export const Patients: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Activity className="h-5 w-5 text-green-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Activity className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
@@ -315,8 +315,8 @@ export const Patients: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Heart className="h-5 w-5 text-purple-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <Heart className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">With Insurance</p>
@@ -331,8 +331,8 @@ export const Patients: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-orange-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <TrendingUp className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Avg Age</p>

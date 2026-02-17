@@ -130,7 +130,7 @@ export const IPDBillingListPage: React.FC = () => {
       header: 'Received',
       key: 'received_amount',
       cell: (bill) => (
-        <div className="text-green-600 font-medium">
+        <div className="text-foreground font-medium">
           ₹{parseFloat(bill.received_amount || '0').toFixed(2)}
         </div>
       ),
@@ -141,7 +141,7 @@ export const IPDBillingListPage: React.FC = () => {
       header: 'Balance',
       key: 'balance_amount',
       cell: (bill) => (
-        <div className="text-orange-600 font-medium">
+        <div className="text-foreground font-medium">
           ₹{parseFloat(bill.balance_amount || '0').toFixed(2)}
         </div>
       ),

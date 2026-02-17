@@ -351,8 +351,8 @@ const RecentActivitiesTable = () => {
       accessor: (row) => row.status,
       cell: (row) => (
         <span className={`px-1.5 py-0.5 rounded text-[11px] capitalize ${
-          row.status === 'completed' ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-          row.status === 'in_progress' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+          row.status === 'completed' ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300' :
+          row.status === 'in_progress' ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300' :
           'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400'
         }`}>
           {row.status?.replace('_', ' ')}
@@ -397,8 +397,8 @@ const RecentActivitiesTable = () => {
       accessor: (row) => row.status,
       cell: (row) => (
         <span className={`px-1.5 py-0.5 rounded text-[11px] capitalize ${
-          row.status === 'admitted' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-          row.status === 'discharged' ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+          row.status === 'admitted' ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300' :
+          row.status === 'discharged' ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300' :
           'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400'
         }`}>
           {row.status}

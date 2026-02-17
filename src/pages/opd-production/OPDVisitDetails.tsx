@@ -196,7 +196,7 @@ export const OPDVisitDetails: React.FC = () => {
         setCompleteNote={setCompleteNote}
       />
 
-      <div className="flex-1 overflow-auto p-6 max-w-8xl mx-auto w-full space-y-6">
+      <div className="flex-1 overflow-auto p-6 w-full w-full space-y-6">
         {/* Quick Stats Card */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Card>
@@ -245,7 +245,7 @@ export const OPDVisitDetails: React.FC = () => {
                   <p className="text-xs text-muted-foreground">Priority</p>
                   <Badge
                     variant={visit.priority === 'urgent' || visit.priority === 'high' ? 'destructive' : 'outline'}
-                    className={`${visit.priority === 'high' ? 'bg-orange-600 text-white' : ''}`}
+                    className={`${visit.priority === 'high' ? 'bg-neutral-600 dark:bg-neutral-500 text-white' : ''}`}
                   >
                     {visit.priority?.toUpperCase() || 'NORMAL'}
                   </Badge>

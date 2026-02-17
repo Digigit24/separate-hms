@@ -88,7 +88,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ patientId }) => {
   const getTemplateResponseStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+        return 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 dark:bg-green-900 dark:text-green-200';
       case 'draft':
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       default:

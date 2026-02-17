@@ -125,7 +125,7 @@ export default function Wards() {
       sortable: true,
       accessor: (row) => row.available_beds_count || 0,
       cell: (row) => (
-        <span className="text-green-600 font-medium">
+        <span className="text-foreground font-medium">
           {row.available_beds_count || 0}
         </span>
       ),
@@ -136,7 +136,7 @@ export default function Wards() {
       sortable: true,
       accessor: (row) => row.occupied_beds_count || 0,
       cell: (row) => (
-        <span className="text-orange-600 font-medium">
+        <span className="text-foreground font-medium">
           {row.occupied_beds_count || 0}
         </span>
       ),
@@ -150,8 +150,8 @@ export default function Wards() {
         <span
           className={`px-2 py-1 rounded text-xs ${
             row.is_active
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-100 text-red-700'
+              ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
           }`}
         >
           {row.is_active ? 'Active' : 'Inactive'}
@@ -228,14 +228,14 @@ export default function Wards() {
 
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Available:</span>
-                  <span className="text-green-600 font-medium">
+                  <span className="text-foreground font-medium">
                     {row.available_beds_count || 0}
                   </span>
                 </div>
 
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Occupied:</span>
-                  <span className="text-orange-600 font-medium">
+                  <span className="text-foreground font-medium">
                     {row.occupied_beds_count || 0}
                   </span>
                 </div>
@@ -245,8 +245,8 @@ export default function Wards() {
                   <span
                     className={`px-2 py-0.5 rounded text-xs ${
                       row.is_active
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-red-100 text-red-700'
+                        ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
                     }`}
                   >
                     {row.is_active ? 'Active' : 'Inactive'}

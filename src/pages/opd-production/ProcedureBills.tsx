@@ -126,9 +126,9 @@ export const ProcedureBills: React.FC = () => {
       key: 'payment_status',
       cell: (bill) => {
         const statusConfig = {
-          paid: { label: 'Paid', className: 'bg-green-600' },
-          partial: { label: 'Partial', className: 'bg-orange-600' },
-          unpaid: { label: 'Unpaid', className: 'bg-red-600' },
+          paid: { label: 'Paid', className: 'bg-neutral-900 dark:bg-neutral-200' },
+          partial: { label: 'Partial', className: 'bg-neutral-600 dark:bg-neutral-500' },
+          unpaid: { label: 'Unpaid', className: 'bg-neutral-500' },
         };
         const config = statusConfig[bill.payment_status];
         return (
@@ -141,7 +141,7 @@ export const ProcedureBills: React.FC = () => {
   ];
 
   return (
-    <div className="p-6 max-w-8xl mx-auto space-y-6">
+    <div className="p-6 w-full space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Procedure Bills</h1>
@@ -159,8 +159,8 @@ export const ProcedureBills: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <FileText className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <FileText className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Total Bills</p>
@@ -173,8 +173,8 @@ export const ProcedureBills: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <IndianRupee className="h-5 w-5 text-green-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <IndianRupee className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Collected</p>
@@ -189,8 +189,8 @@ export const ProcedureBills: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <AlertCircle className="h-5 w-5 text-orange-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Pending</p>
@@ -205,8 +205,8 @@ export const ProcedureBills: React.FC = () => {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <CreditCard className="h-5 w-5 text-red-600" />
+              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                <CreditCard className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Unpaid</p>
