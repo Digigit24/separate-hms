@@ -84,22 +84,22 @@ const BillingDetailsPanel = memo(function BillingDetailsPanel({
   isEditMode = false,
 }: BillingDetailsPanelProps) {
   return (
-    <Card className="sticky top-6">
-      <CardHeader>
-        <CardTitle>Billing Summary</CardTitle>
-        <CardDescription>{billItems.length} item(s) in bill</CardDescription>
+    <Card className="sticky top-4">
+      <CardHeader className="px-4 py-3">
+        <CardTitle className="text-sm">Billing Summary</CardTitle>
+        <CardDescription className="text-xs">{billItems.length} item(s)</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="px-4 pb-4 space-y-3">
         {/* Bill Items List */}
         {billItems.length > 0 && (
-          <div className="space-y-2 pb-3 border-b max-h-[300px] overflow-y-auto">
-            <p className="text-xs font-semibold text-muted-foreground uppercase">Items</p>
+          <div className="space-y-1 pb-2 border-b max-h-[200px] overflow-y-auto">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Items</p>
             {billItems.map((item, index) => (
-              <div key={item.id || index} className="flex justify-between text-sm py-1">
+              <div key={item.id || index} className="flex justify-between text-xs py-1">
                 <div className="flex-1 min-w-0 pr-2">
                   <div className="font-medium truncate">{item.item_name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {item.source} • Qty: {item.quantity}
+                  <div className="text-[10px] text-muted-foreground">
+                    {item.source} · Qty: {item.quantity}
                   </div>
                 </div>
                 <div className="font-semibold whitespace-nowrap">
@@ -110,22 +110,20 @@ const BillingDetailsPanel = memo(function BillingDetailsPanel({
           </div>
         )}
 
-        <div className="space-y-3 pb-4">
-          <div className="flex justify-between text-base font-semibold pt-2 border-t">
-            <span>Subtotal:</span>
-            <span>₹{data.subtotal}</span>
-          </div>
+        <div className="flex justify-between text-sm font-semibold pt-1 border-t">
+          <span>Subtotal:</span>
+          <span>₹{data.subtotal}</span>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="discount">Discount</Label>
+        <div className="space-y-1">
+          <Label htmlFor="discount" className="text-xs">Discount</Label>
           <div className="flex gap-2">
             <Input
               id="discount"
               type="number"
               value={data.discount}
               onChange={(e) => onChange('discount', e.target.value)}
-              className="flex-1"
+              className="flex-1 h-8 text-sm"
               placeholder="0.00"
             />
             <div className="flex items-center gap-1">
@@ -133,25 +131,25 @@ const BillingDetailsPanel = memo(function BillingDetailsPanel({
                 type="number"
                 value={data.discountPercent}
                 onChange={(e) => onChange('discountPercent', e.target.value)}
-                className="w-16"
+                className="w-14 h-8 text-sm"
                 placeholder="0"
               />
-              <span className="text-sm text-muted-foreground">%</span>
+              <span className="text-xs text-muted-foreground">%</span>
             </div>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="totalAmount">Total Amount</Label>
+        <div className="space-y-1">
+          <Label htmlFor="totalAmount" className="text-xs">Total</Label>
           <div className="relative">
             <Input
               id="totalAmount"
               type="number"
               value={data.totalAmount}
-              className="pr-12 font-bold text-lg"
+              className="pr-10 h-8 font-bold text-sm"
               readOnly
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
               INR
             </span>
           </div>
@@ -159,41 +157,41 @@ const BillingDetailsPanel = memo(function BillingDetailsPanel({
 
         <Separator />
 
-        <div className="space-y-2">
-          <Label>Payment Mode</Label>
-          <div className="grid grid-cols-3 gap-2">
+        <div className="space-y-1">
+          <Label className="text-xs">Payment Mode</Label>
+          <div className="grid grid-cols-3 gap-1.5">
             <Button
               variant={data.paymentMode === 'cash' ? 'default' : 'outline'}
-              className="w-full"
+              className="w-full h-7 text-xs"
               size="sm"
               onClick={() => onChange('paymentMode', 'cash')}
             >
-              <IndianRupee className="h-4 w-4 mr-1" />
+              <IndianRupee className="h-3 w-3 mr-1" />
               Cash
             </Button>
             <Button
               variant={data.paymentMode === 'card' ? 'default' : 'outline'}
-              className="w-full"
+              className="w-full h-7 text-xs"
               size="sm"
               onClick={() => onChange('paymentMode', 'card')}
             >
-              <CreditCard className="h-4 w-4 mr-1" />
+              <CreditCard className="h-3 w-3 mr-1" />
               Card
             </Button>
             <Button
               variant={data.paymentMode === 'upi' ? 'default' : 'outline'}
-              className="w-full"
+              className="w-full h-7 text-xs"
               size="sm"
               onClick={() => onChange('paymentMode', 'upi')}
             >
-              <CreditCard className="h-4 w-4 mr-1" />
+              <CreditCard className="h-3 w-3 mr-1" />
               UPI
             </Button>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="receivedAmount">Received Amount</Label>
+        <div className="space-y-1">
+          <Label htmlFor="receivedAmount" className="text-xs">Received</Label>
           <div className="relative">
             <Input
               id="receivedAmount"
@@ -201,25 +199,25 @@ const BillingDetailsPanel = memo(function BillingDetailsPanel({
               value={data.receivedAmount}
               onChange={(e) => onChange('receivedAmount', e.target.value)}
               onBlur={onFormatReceived}
-              className="pr-12 text-green-600 font-semibold"
+              className="pr-10 h-8 text-sm text-green-600 font-semibold"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
               INR
             </span>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="balanceAmount">Balance Amount</Label>
+        <div className="space-y-1">
+          <Label htmlFor="balanceAmount" className="text-xs">Balance</Label>
           <div className="relative">
             <Input
               id="balanceAmount"
               type="number"
               value={data.balanceAmount}
-              className="pr-12 text-orange-600 font-semibold"
+              className="pr-10 h-8 text-sm text-orange-600 font-semibold"
               readOnly
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
               INR
             </span>
           </div>
@@ -227,12 +225,12 @@ const BillingDetailsPanel = memo(function BillingDetailsPanel({
 
         <Separator />
 
-        <div className="flex flex-col gap-2">
-          <Button variant="default" className="w-full" size="lg" onClick={onSave}>
-            <Receipt className="mr-2 h-4 w-4" />
+        <div className="flex flex-col gap-1.5">
+          <Button variant="default" className="w-full h-8 text-xs" size="sm" onClick={onSave}>
+            <Receipt className="mr-1.5 h-3.5 w-3.5" />
             {isEditMode ? 'Update Bill' : 'Save Bill'}
           </Button>
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className="w-full h-8 text-xs" size="sm">
             Cancel
           </Button>
         </div>
@@ -1360,17 +1358,17 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[200px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading billing information...</p>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-xs text-muted-foreground">Loading billing...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <style>{`
         @page {
           size: A4;
@@ -1413,35 +1411,35 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
         }
       `}</style>
 
-      {/* Bills Selector - Show if multiple bills exist for this visit */}
+      {/* Bills Selector */}
       {visitBills.length > 0 && (
         <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between">
+          <CardHeader className="px-4 py-3">
+            <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Bills for This Visit</CardTitle>
-                <CardDescription>
-                  {visitBills.length} bill(s) • Select a bill to view/edit
+                <CardTitle className="text-sm">Bills for This Visit</CardTitle>
+                <CardDescription className="text-xs">
+                  {visitBills.length} bill(s)
                 </CardDescription>
               </div>
-              <Button onClick={handleCreateInitialBill} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Create New Bill
+              <Button onClick={handleCreateInitialBill} size="sm" className="h-7 text-xs">
+                <Plus className="h-3 w-3 mr-1.5" />
+                New Bill
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="grid gap-3">
+          <CardContent className="px-4 pb-3">
+            <div className="grid gap-2">
               {visitBills.map((bill) => (
                 <div
                   key={bill.id}
-                  className={`p-4 border rounded-lg transition-all hover:border-primary ${
+                  className={`p-3 border rounded-md transition-all hover:border-primary cursor-pointer ${
                     existingBill?.id === bill.id ? 'border-primary bg-primary/5' : ''
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center justify-between gap-3">
                     <div
-                      className="flex-1 space-y-1 cursor-pointer"
+                      className="flex-1 min-w-0"
                       onClick={() => {
                         setSelectedBillId(bill.id);
                         setShowBillingForm(true);
@@ -1449,7 +1447,7 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
                       }}
                     >
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-semibold">{bill.bill_number}</span>
+                        <span className="font-mono text-xs font-semibold">{bill.bill_number}</span>
                         <Badge
                           variant={
                             bill.payment_status === 'paid'
@@ -1458,34 +1456,30 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
                                 ? 'secondary'
                                 : 'destructive'
                           }
-                          className="capitalize"
+                          className="capitalize text-[10px] h-4 px-1.5"
                         >
                           {bill.payment_status}
                         </Badge>
+                        <span className="text-[11px] text-muted-foreground">
+                          {bill.bill_date && new Date(bill.bill_date).toString() !== 'Invalid Date'
+                            ? format(new Date(bill.bill_date), 'dd MMM yyyy')
+                            : 'N/A'}
+                        </span>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {bill.bill_date && new Date(bill.bill_date).toString() !== 'Invalid Date'
-                          ? format(new Date(bill.bill_date), 'dd MMM yyyy, hh:mm a')
-                          : 'N/A'}
-                      </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className="text-lg font-bold">₹{parseFloat(bill.total_amount || '0').toFixed(2)}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {bill.items?.length || 0} item(s)
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold">₹{parseFloat(bill.total_amount || '0').toFixed(2)}</span>
+                      <span className="text-[10px] text-muted-foreground">{bill.items?.length || 0} items</span>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteBillClick(bill.id);
                         }}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
@@ -1496,77 +1490,76 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
         </Card>
       )}
 
-      {/* Show "Create New Bill" button if no bill exists and form not shown yet */}
+      {/* No bill empty state */}
       {visitBills.length === 0 && !showBillingForm && !visitBillsLoading && (
         <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="rounded-full bg-primary/10 p-6 mb-4">
-              <Receipt className="h-12 w-12 text-primary" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">No Bill Created Yet</h3>
-            <p className="text-muted-foreground mb-6 text-center max-w-md">
-              This visit doesn't have a bill yet. Click the button below to create a new bill for this patient.
+          <CardContent className="flex flex-col items-center justify-center py-8">
+            <Receipt className="h-8 w-8 text-muted-foreground/40 mb-3" />
+            <h3 className="text-sm font-semibold mb-1">No Bill Created</h3>
+            <p className="text-xs text-muted-foreground mb-4 text-center max-w-sm">
+              Create a bill for this visit to start billing.
             </p>
             <Button
-              size="lg"
+              size="sm"
               onClick={handleCreateInitialBill}
-              className="px-8"
+              className="h-7 text-xs px-4"
             >
-              <Plus className="h-5 w-5 mr-2" />
-              Create New Bill
+              <Plus className="h-3 w-3 mr-1.5" />
+              Create Bill
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Billing Form Tabs - Only show when form is visible */}
+      {/* Billing Form Tabs */}
       {showBillingForm && (
         <Tabs
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as 'billing' | 'preview')}
           className="w-full"
         >
-          <TabsList className="grid w-full max-w-lg grid-cols-2">
-            <TabsTrigger value="billing" className="flex items-center gap-2">
-              <Receipt className="h-4 w-4" />
+          <TabsList className="grid w-full max-w-xs grid-cols-2 h-8">
+            <TabsTrigger value="billing" className="flex items-center gap-1.5 text-xs h-7">
+              <Receipt className="h-3 w-3" />
               Billing
             </TabsTrigger>
-            <TabsTrigger value="preview" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Preview & Print
+            <TabsTrigger value="preview" className="flex items-center gap-1.5 text-xs h-7">
+              <FileText className="h-3 w-3" />
+              Preview
             </TabsTrigger>
           </TabsList>
 
           {/* Billing Tab */}
-          <TabsContent value="billing" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2 space-y-4">
+          <TabsContent value="billing" className="space-y-3 mt-3">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              <div className="lg:col-span-2 space-y-3">
                 <OPDBillingTab
                   formData={opdFormData}
                   visit={visit}
                   onInputChange={handleOpdInputChange}
                 />
 
-                {/* Bill Items Cart */}
+                {/* Bill Items */}
                 <Card>
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-4">
+                  <CardHeader className="px-4 py-3">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle>Bill Items</CardTitle>
-                        <CardDescription>
-                          {billItems.length} item(s) • Total: ₹{billingData.subtotal}
+                        <CardTitle className="text-sm">Bill Items</CardTitle>
+                        <CardDescription className="text-xs">
+                          {billItems.length} item(s) · ₹{billingData.subtotal}
                         </CardDescription>
                       </div>
-                      <div className="flex flex-wrap gap-2 justify-end">
+                      <div className="flex gap-1.5">
                         <Button
                           variant="outline"
                           size="sm"
+                          className="h-7 text-xs"
                           onClick={() => setIsInvestigationsModalOpen(true)}
                         >
-                          <FlaskConical className="h-4 w-4 mr-1" />
+                          <FlaskConical className="h-3 w-3 mr-1" />
                           Investigations
                           {unbilledRequisitions && unbilledRequisitions.length > 0 && (
-                            <Badge variant="destructive" className="ml-1 px-1.5 py-0 h-5 text-xs">
+                            <Badge variant="destructive" className="ml-1 px-1 py-0 h-4 text-[10px]">
                               {unbilledRequisitions.length}
                             </Badge>
                           )}
@@ -1574,24 +1567,26 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
                         <Button
                           variant="outline"
                           size="sm"
+                          className="h-7 text-xs"
                           onClick={() => setIsProceduresModalOpen(true)}
                         >
-                          <Package className="h-4 w-4 mr-1" />
+                          <Package className="h-3 w-3 mr-1" />
                           Procedures
                         </Button>
                         <Button
                           variant="default"
                           size="sm"
+                          className="h-7 text-xs"
                           onClick={handleSyncClinicalCharges}
                           disabled={isSyncingClinicalCharges}
                         >
-                          <Download className="h-4 w-4 mr-1" />
-                          {isSyncingClinicalCharges ? 'Syncing...' : 'Sync Requisitions'}
+                          <Download className="h-3 w-3 mr-1" />
+                          {isSyncingClinicalCharges ? 'Syncing...' : 'Sync'}
                         </Button>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="px-4 pb-3">
                     <BillItemsTable
                       items={billItems}
                       onUpdateItem={handleUpdateBillItem}
@@ -1658,8 +1653,8 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
           </TabsContent>
 
           {/* Bill Preview Tab */}
-          <TabsContent value="preview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <TabsContent value="preview" className="space-y-3 mt-3">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
               <div className="lg:col-span-2">
                 <BillPreviewTab
                   ref={printAreaRef}
