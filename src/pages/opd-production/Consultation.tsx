@@ -320,13 +320,14 @@ export const OPDConsultation: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Single-line Sticky Header */}
+      {/* Sticky Header */}
       <div className="sticky top-0 z-20 w-full bg-background border-b">
-        <div className="flex items-center justify-between px-3 h-10">
+        {/* Patient bar */}
+        <div className="flex items-center justify-between px-4 py-2.5">
           {/* Left: Back + Patient + Quick Info + Nav */}
-          <div className="flex items-center gap-2 min-w-0">
-            <Button variant="ghost" size="icon" onClick={handleBack} className="h-6 w-6 shrink-0">
-              <ArrowLeft className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Button variant="ghost" size="icon" onClick={handleBack} className="h-7 w-7 shrink-0">
+              <ArrowLeft className="h-4 w-4" />
             </Button>
 
             <span
@@ -336,72 +337,72 @@ export const OPDConsultation: React.FC = () => {
               {patient?.full_name || 'Unknown'}
             </span>
 
-            <span className="text-[10px] text-muted-foreground font-mono shrink-0">{patient?.patient_id}</span>
+            <span className="text-[11px] text-muted-foreground font-mono shrink-0">{patient?.patient_id}</span>
 
-            <span className="text-[10px] text-muted-foreground shrink-0">
-              {patient?.age || '-'}y/{patient?.gender || '-'}
+            <span className="text-[11px] text-muted-foreground shrink-0">
+              {patient?.age || '-'}y / {patient?.gender || '-'}
             </span>
 
             {patient?.blood_group && (
-              <Badge variant="outline" className="h-4 text-[9px] px-1 font-normal shrink-0">{patient.blood_group}</Badge>
+              <Badge variant="outline" className="h-5 text-[10px] px-1.5 font-normal shrink-0">{patient.blood_group}</Badge>
             )}
 
-            <span className="text-[10px] text-muted-foreground shrink-0 uppercase">{visit.visit_type}</span>
+            <span className="text-[11px] text-muted-foreground shrink-0 uppercase">{visit.visit_type}</span>
 
             {(visit.priority === 'high' || visit.priority === 'urgent') && (
-              <Badge variant="outline" className="h-4 text-[9px] px-1 font-normal text-red-600 border-red-300 shrink-0">
+              <Badge variant="outline" className="h-5 text-[10px] px-1.5 font-normal text-red-600 border-red-300 shrink-0">
                 {visit.priority}
               </Badge>
             )}
 
             {doctor && (
-              <span className="text-[10px] text-muted-foreground shrink-0 hidden lg:inline">
+              <span className="text-[11px] text-muted-foreground shrink-0 hidden lg:inline">
                 Dr. {doctor.full_name}
               </span>
             )}
 
             {/* Nav */}
             <div className="flex items-center border rounded shrink-0 ml-1">
-              <button onClick={handlePrevVisit} disabled={!prevVisitId} className="h-5 w-5 flex items-center justify-center disabled:opacity-30 hover:bg-muted">
-                <ChevronLeft className="h-2.5 w-2.5" />
+              <button onClick={handlePrevVisit} disabled={!prevVisitId} className="h-6 w-6 flex items-center justify-center disabled:opacity-30 hover:bg-muted">
+                <ChevronLeft className="h-3 w-3" />
               </button>
-              <span className="text-[9px] font-mono px-1 border-x text-muted-foreground">{currentIndex + 1}/{visitIds.length}</span>
-              <button onClick={handleNextVisit} disabled={!nextVisitId} className="h-5 w-5 flex items-center justify-center disabled:opacity-30 hover:bg-muted">
-                <ChevronRight className="h-2.5 w-2.5" />
+              <span className="text-[10px] font-mono px-1.5 border-x text-muted-foreground">{currentIndex + 1}/{visitIds.length}</span>
+              <button onClick={handleNextVisit} disabled={!nextVisitId} className="h-6 w-6 flex items-center justify-center disabled:opacity-30 hover:bg-muted">
+                <ChevronRight className="h-3 w-3" />
               </button>
             </div>
           </div>
 
           {/* Right: Status + Action */}
-          <div className="flex items-center gap-1.5 shrink-0 ml-2">
-            <Badge variant="outline" className="text-[9px] uppercase tracking-wide font-normal px-1.5 h-4">
+          <div className="flex items-center gap-2 shrink-0 ml-3">
+            <Badge variant="outline" className="text-[10px] uppercase tracking-wide font-normal px-2 h-5">
               {statusLabel}
             </Badge>
 
             {visit.status === 'waiting' && (
-              <Button size="sm" onClick={handleStartConsultation} disabled={isSaving} className="h-6 text-[11px] px-2 gap-1 bg-foreground hover:bg-foreground/90 text-background">
-                {isSaving ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Play className="h-2.5 w-2.5" />}
+              <Button size="sm" onClick={handleStartConsultation} disabled={isSaving} className="h-7 text-xs px-3 gap-1.5 bg-foreground hover:bg-foreground/90 text-background">
+                {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
                 Start
               </Button>
             )}
 
             {(visit.status === 'in_consultation' || visit.status === 'in_progress') && (
-              <Button size="sm" onClick={() => setShowCompleteDialog(true)} disabled={isSaving} className="h-6 text-[11px] px-2 gap-1 bg-foreground hover:bg-foreground/90 text-background">
-                {isSaving ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <CheckCircle className="h-2.5 w-2.5" />}
+              <Button size="sm" onClick={() => setShowCompleteDialog(true)} disabled={isSaving} className="h-7 text-xs px-3 gap-1.5 bg-foreground hover:bg-foreground/90 text-background">
+                {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
                 Complete
               </Button>
             )}
           </div>
         </div>
 
-        {/* Tab bar + template selector inline */}
-        <div className="flex items-center px-3 border-t h-8">
+        {/* Tab bar + template selector */}
+        <div className="flex items-center px-4 border-t h-9">
           <div className="flex shrink-0">
             {['consultation', 'billing', 'history', 'profile'].map(tab => (
               <button
                 key={tab}
                 onClick={() => handleTabChange(tab)}
-                className={`px-2.5 h-8 text-[11px] font-medium capitalize transition-colors border-b -mb-px ${
+                className={`px-3 h-9 text-xs font-medium capitalize transition-colors border-b-2 -mb-px ${
                   activeTab === tab
                     ? 'border-foreground text-foreground'
                     : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -415,14 +416,14 @@ export const OPDConsultation: React.FC = () => {
           {/* Template selector inline with tabs (consultation only) */}
           {activeTab === 'consultation' && (
             <>
-              <div className="h-4 w-px bg-border mx-2" />
+              <div className="h-4 w-px bg-border mx-3" />
               <Select
                 onValueChange={setSelectedTemplate}
                 value={selectedTemplate || undefined}
                 disabled={isLoadingTemplates}
               >
-                <SelectTrigger className="h-6 text-[11px] w-[180px] border-dashed">
-                  <SelectValue placeholder={isLoadingTemplates ? "Loading..." : "Template..."} />
+                <SelectTrigger className="h-7 text-xs w-[200px] border-dashed">
+                  <SelectValue placeholder={isLoadingTemplates ? "Loading..." : "Select template..."} />
                 </SelectTrigger>
                 <SelectContent>
                   {isLoadingTemplates ? (
@@ -436,20 +437,20 @@ export const OPDConsultation: React.FC = () => {
               </Select>
 
               {selectedTemplate && (
-                <button onClick={() => setShowNewResponseDialog(true)} className="ml-1.5 h-5 px-1.5 text-[10px] text-muted-foreground hover:text-foreground border border-dashed rounded flex items-center gap-0.5">
-                  <PlusCircle className="h-2.5 w-2.5" /> Note
+                <button onClick={() => setShowNewResponseDialog(true)} className="ml-2 h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground border border-dashed rounded flex items-center gap-1">
+                  <PlusCircle className="h-3 w-3" /> Note
                 </button>
               )}
 
               {templateResponses.length > 0 && (
                 <>
-                  <div className="h-3 w-px bg-border mx-1.5" />
-                  <div className="flex gap-1">
+                  <div className="h-4 w-px bg-border mx-2" />
+                  <div className="flex gap-1.5">
                     {templateResponses.map(res => (
                       <button
                         key={res.id}
                         onClick={() => handleViewResponse(res)}
-                        className={`h-5 px-1.5 rounded text-[10px] font-medium border transition-colors ${
+                        className={`h-6 px-2 rounded text-[11px] font-medium border transition-colors ${
                           activeResponse?.id === res.id
                             ? 'bg-foreground text-background border-foreground'
                             : 'text-muted-foreground border-border hover:bg-muted'
@@ -466,9 +467,9 @@ export const OPDConsultation: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content — no extra wrapper borders */}
+      {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-[1400px] mx-auto px-3 py-2">
+        <div className="max-w-[1400px] mx-auto px-4 py-3">
           {activeTab === 'consultation' && (
             <ConsultationTab visit={visit} onVisitUpdate={() => mutateVisit()} />
           )}
