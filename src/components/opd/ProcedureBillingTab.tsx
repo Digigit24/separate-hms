@@ -1,25 +1,8 @@
 // src/components/opd/ProcedureBillingTab.tsx
 import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Plus, Package, Search, Trash2 } from 'lucide-react';
+import { Plus, Package, Search, Trash2, Check } from 'lucide-react';
 import type { ProcedureMaster } from '@/types/procedureMaster.types';
 import type { OPDBillItem } from '@/types/opdBill.types';
 
@@ -57,258 +40,259 @@ export const ProcedureBillingTab: React.FC<ProcedureBillingTabProps> = ({
   onUpdateBillItem,
   onRemoveBillItem,
 }) => {
-  const [isProcedureDialogOpen, setIsProcedureDialogOpen] = useState(false);
-  const [isPackageDialogOpen, setIsPackageDialogOpen] = useState(false);
-  const [procedureSearch, setProcedureSearch] = useState('');
+  const [activeView, setActiveView] = useState<'procedures' | 'packages'>('procedures');
+  const [search, setSearch] = useState('');
   const [loadingPackageId, setLoadingPackageId] = useState<number | null>(null);
 
-  // Filter bill items to show only procedures and packages
+  // Already added procedure/package names for "added" indicator
+  const addedItemNames = useMemo(() => {
+    const names = new Set<string>();
+    billItems.forEach(item => {
+      if (item.source === 'Procedure' || item.source === 'Package') {
+        names.add(item.item_name.toLowerCase());
+      }
+    });
+    return names;
+  }, [billItems]);
+
   const procedureAndPackageItems = useMemo(() =>
     billItems.filter(item => item.source === 'Procedure' || item.source === 'Package'),
     [billItems]
   );
 
-  const handleAddProcedure = (procedure: ProcedureMaster) => {
-    onAddProcedure(procedure);
-    setIsProcedureDialogOpen(false);
-    setProcedureSearch('');
-  };
+  const filteredProcedures = useMemo(() => {
+    const all = proceduresData?.results || [];
+    if (!search) return all;
+    const q = search.toLowerCase();
+    return all.filter((p: ProcedureMaster) =>
+      p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q)
+    );
+  }, [proceduresData, search]);
+
+  const filteredPackages = useMemo(() => {
+    const all = packagesData?.results || [];
+    if (!search) return all;
+    const q = search.toLowerCase();
+    return all.filter((p: any) =>
+      p.name.toLowerCase().includes(q) || p.code?.toLowerCase().includes(q)
+    );
+  }, [packagesData, search]);
 
   const handleAddPackage = async (packageId: number, packageName: string) => {
     setLoadingPackageId(packageId);
     try {
       await onAddPackage(packageId, packageName);
-      // Close dialog and clear loading only on success
-      setIsPackageDialogOpen(false);
-      setLoadingPackageId(null);
     } catch (error) {
-      // On error, clear loading but keep dialog open so user can try again
-      setLoadingPackageId(null);
       console.error('Error adding package:', error);
-      // Error toast is already shown by onAddPackage
+    } finally {
+      setLoadingPackageId(null);
     }
   };
 
-  const procedureTotal = procedureAndPackageItems.reduce((sum, item) => sum + parseFloat(item.total_price || '0'), 0);
+  const procedureTotal = procedureAndPackageItems.reduce(
+    (sum, item) => sum + parseFloat(item.total_price || '0'), 0
+  );
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Procedure Billing</CardTitle>
-          <CardDescription className="mt-1">Add procedures & tests</CardDescription>
+    <div className="space-y-3">
+      {/* Search + View toggle */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search procedures or packages..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-8 text-xs"
+            autoFocus
+          />
         </div>
-        <div className="flex gap-2">
-          <Dialog open={isProcedureDialogOpen} onOpenChange={setIsProcedureDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="default" size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Add Procedure
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Select Procedure</DialogTitle>
-                <DialogDescription>Choose a procedure to add to the bill</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search procedures..."
-                    value={procedureSearch}
-                    onChange={(e) => setProcedureSearch(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                <div className="space-y-2">
-                  {proceduresLoading ? (
-                    <div className="text-center py-8 text-muted-foreground">Loading procedures...</div>
-                  ) : proceduresData?.results && proceduresData.results.length > 0 ? (
-                    proceduresData.results
-                      .filter((proc: ProcedureMaster) =>
-                        procedureSearch
-                          ? proc.name.toLowerCase().includes(procedureSearch.toLowerCase()) ||
-                            proc.code.toLowerCase().includes(procedureSearch.toLowerCase())
-                          : true
-                      )
-                      .map((procedure: ProcedureMaster) => (
-                        <div
-                          key={procedure.id}
-                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                          onClick={() => handleAddProcedure(procedure)}
-                        >
-                          <div>
-                            <div className="font-medium">{procedure.name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {procedure.code} • {procedure.category}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-semibold">
-                              ₹{parseFloat(procedure.default_charge).toFixed(2)}
-                            </div>
-                            <Button size="sm" variant="ghost" className="h-6 mt-1">
-                              Add
-                            </Button>
-                          </div>
-                        </div>
-                      ))
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">No procedures found</div>
-                  )}
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isPackageDialogOpen} onOpenChange={setIsPackageDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Package className="h-4 w-4 mr-1" />
-                Add Package
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Select Package</DialogTitle>
-                <DialogDescription>Choose a package to add to the bill</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  {packagesLoading ? (
-                    <div className="text-center py-8 text-muted-foreground">Loading packages...</div>
-                  ) : packagesData?.results && packagesData.results.length > 0 ? (
-                    packagesData.results.map((pkg: any) => {
-                      const procedureCount = pkg.procedures?.length ?? pkg.procedure_count ?? 0;
-                      const isLoading = loadingPackageId === pkg.id;
-
-                      return (
-                        <div
-                          key={pkg.id}
-                          className={`flex flex-col p-4 border rounded-lg ${
-                            isLoading ? 'opacity-50' : 'hover:bg-muted/50 cursor-pointer'
-                          }`}
-                          onClick={() => !isLoading && handleAddPackage(pkg.id, pkg.name)}
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <div className="font-medium text-lg">{pkg.name}</div>
-                              <div className="text-xs text-muted-foreground">{pkg.code}</div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-sm text-muted-foreground line-through">
-                                ₹{parseFloat(pkg.total_charge).toFixed(2)}
-                              </div>
-                              <div className="font-semibold text-lg text-green-600">
-                                ₹{parseFloat(pkg.discounted_charge).toFixed(2)}
-                              </div>
-                              {pkg.discount_percent && (
-                                <div className="text-xs text-green-600">{pkg.discount_percent}% off</div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            Includes {procedureCount} procedure{procedureCount !== 1 ? 's' : ''}
-                          </div>
-                          <Button size="sm" className="mt-3 w-full" disabled={isLoading}>
-                            {isLoading ? 'Loading...' : 'Add Package'}
-                          </Button>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">No packages found</div>
-                  )}
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+        <div className="flex items-center border rounded overflow-hidden shrink-0">
+          <button
+            onClick={() => setActiveView('procedures')}
+            className={`h-8 px-3 text-xs font-medium transition-colors ${
+              activeView === 'procedures'
+                ? 'bg-foreground text-background'
+                : 'text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            Procedures
+          </button>
+          <button
+            onClick={() => setActiveView('packages')}
+            className={`h-8 px-3 text-xs font-medium border-l transition-colors ${
+              activeView === 'packages'
+                ? 'bg-foreground text-background'
+                : 'text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            <Package className="h-3 w-3 inline mr-1" />
+            Packages
+          </button>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-[250px]">Procedure</TableHead>
-                <TableHead className="w-[100px] text-center">Qty</TableHead>
-                <TableHead className="w-[120px] text-right">Rate</TableHead>
-                <TableHead className="w-[120px] text-right">Amount</TableHead>
-                <TableHead className="w-[80px] text-center">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {procedureAndPackageItems.length > 0 ? (
-                procedureAndPackageItems.map((item) => {
-                  // Find the index in the original billItems array
-                  const billItemIndex = billItems.findIndex(bi => bi.id === item.id || (bi.item_name === item.item_name && bi.source === item.source));
+      </div>
 
-                  return (
-                    <TableRow key={item.id || `${item.item_name}-${item.source}`}>
-                      <TableCell className="font-medium">
-                        <div>
-                          <div>{item.item_name}</div>
-                          {item.notes && (
-                            <div className="text-xs text-muted-foreground">{item.notes}</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) => billItemIndex >= 0 && onUpdateBillItem(billItemIndex, 'quantity', e.target.value)}
-                          className="w-16 mx-auto text-center"
-                          min="1"
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Input
-                          type="number"
-                          value={item.unit_price}
-                          onChange={(e) => billItemIndex >= 0 && onUpdateBillItem(billItemIndex, 'unit_price', e.target.value)}
-                          className="w-24 ml-auto text-right"
-                          min="0"
-                          step="0.01"
-                        />
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        ₹{parseFloat(item.total_price || '0').toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          onClick={() => billItemIndex >= 0 && onRemoveBillItem(billItemIndex)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    No procedures added yet.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {procedureAndPackageItems.length > 0 && (
-          <div className="bg-amber-50 dark:bg-amber-950/20 p-4 rounded-lg border border-amber-200 dark:border-amber-900">
-            <div className="flex justify-between items-center">
-              <span className="text-lg font-semibold">Procedure Total</span>
-              <span className="text-2xl font-bold">₹{procedureTotal.toFixed(2)}</span>
+      {/* Items list - directly clickable */}
+      <div className="border rounded-md max-h-[45vh] overflow-y-auto">
+        {activeView === 'procedures' ? (
+          proceduresLoading ? (
+            <div className="text-center py-6 text-xs text-muted-foreground">Loading procedures...</div>
+          ) : filteredProcedures.length > 0 ? (
+            <div className="divide-y">
+              {filteredProcedures.map((procedure: ProcedureMaster) => {
+                const isAdded = addedItemNames.has(procedure.name.toLowerCase());
+                return (
+                  <div
+                    key={procedure.id}
+                    onClick={() => !isAdded && onAddProcedure(procedure)}
+                    className={`flex items-center justify-between px-3 py-2 transition-colors ${
+                      isAdded
+                        ? 'bg-muted/30 cursor-default'
+                        : 'hover:bg-muted/50 cursor-pointer'
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-medium truncate">{procedure.name}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {procedure.code}{procedure.category ? ` · ${procedure.category}` : ''}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-3">
+                      <span className="text-xs font-semibold">₹{parseFloat(procedure.default_charge).toFixed(0)}</span>
+                      {isAdded ? (
+                        <span className="h-6 w-6 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center">
+                          <Check className="h-3 w-3" />
+                        </span>
+                      ) : (
+                        <span className="h-6 w-6 rounded-full border border-dashed text-muted-foreground hover:text-foreground hover:border-foreground flex items-center justify-center transition-colors">
+                          <Plus className="h-3 w-3" />
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
+          ) : (
+            <div className="text-center py-6 text-xs text-muted-foreground">
+              {search ? 'No procedures match your search' : 'No procedures available'}
+            </div>
+          )
+        ) : (
+          // Packages view
+          packagesLoading ? (
+            <div className="text-center py-6 text-xs text-muted-foreground">Loading packages...</div>
+          ) : filteredPackages.length > 0 ? (
+            <div className="divide-y">
+              {filteredPackages.map((pkg: any) => {
+                const isAdded = addedItemNames.has(pkg.name.toLowerCase());
+                const isLoading = loadingPackageId === pkg.id;
+                const procedureCount = pkg.procedures?.length ?? pkg.procedure_count ?? 0;
+
+                return (
+                  <div
+                    key={pkg.id}
+                    onClick={() => !isAdded && !isLoading && handleAddPackage(pkg.id, pkg.name)}
+                    className={`flex items-center justify-between px-3 py-2.5 transition-colors ${
+                      isAdded || isLoading
+                        ? 'bg-muted/30 cursor-default'
+                        : 'hover:bg-muted/50 cursor-pointer'
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-medium truncate">{pkg.name}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {pkg.code} · {procedureCount} procedure{procedureCount !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5 shrink-0 ml-3">
+                      <div className="text-right">
+                        {pkg.discount_percent && (
+                          <span className="text-[10px] text-muted-foreground line-through mr-1.5">
+                            ₹{parseFloat(pkg.total_charge).toFixed(0)}
+                          </span>
+                        )}
+                        <span className="text-xs font-semibold text-emerald-600">
+                          ₹{parseFloat(pkg.discounted_charge).toFixed(0)}
+                        </span>
+                        {pkg.discount_percent && (
+                          <span className="text-[10px] text-emerald-600 ml-1">-{pkg.discount_percent}%</span>
+                        )}
+                      </div>
+                      {isAdded ? (
+                        <span className="h-6 w-6 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center">
+                          <Check className="h-3 w-3" />
+                        </span>
+                      ) : isLoading ? (
+                        <span className="h-6 w-6 rounded-full border text-muted-foreground flex items-center justify-center animate-pulse">
+                          ...
+                        </span>
+                      ) : (
+                        <span className="h-6 w-6 rounded-full border border-dashed text-muted-foreground hover:text-foreground hover:border-foreground flex items-center justify-center transition-colors">
+                          <Plus className="h-3 w-3" />
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-xs text-muted-foreground">
+              {search ? 'No packages match your search' : 'No packages available'}
+            </div>
+          )
         )}
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Added items summary */}
+      {procedureAndPackageItems.length > 0 && (
+        <div className="border rounded-md">
+          <div className="flex items-center justify-between px-3 py-1.5 border-b bg-muted/20">
+            <span className="text-[11px] font-medium text-muted-foreground">Added ({procedureAndPackageItems.length})</span>
+            <span className="text-xs font-semibold">₹{procedureTotal.toFixed(2)}</span>
+          </div>
+          <div className="divide-y">
+            {procedureAndPackageItems.map((item) => {
+              const billItemIndex = billItems.findIndex(
+                bi => bi.id === item.id || (bi.item_name === item.item_name && bi.source === item.source)
+              );
+              return (
+                <div key={item.id || `${item.item_name}-${item.source}`} className="flex items-center gap-2 px-3 py-1.5">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-medium truncate block">{item.item_name}</span>
+                    <span className="text-[10px] text-muted-foreground">{item.source}</span>
+                  </div>
+                  <Input
+                    type="number"
+                    value={item.quantity}
+                    onChange={(e) => billItemIndex >= 0 && onUpdateBillItem(billItemIndex, 'quantity', e.target.value)}
+                    className="w-14 h-6 text-[11px] text-center"
+                    min="1"
+                  />
+                  <Input
+                    type="number"
+                    value={item.unit_price}
+                    onChange={(e) => billItemIndex >= 0 && onUpdateBillItem(billItemIndex, 'unit_price', e.target.value)}
+                    className="w-20 h-6 text-[11px] text-right"
+                    min="0"
+                    step="0.01"
+                  />
+                  <span className="text-xs font-semibold w-16 text-right shrink-0">
+                    ₹{parseFloat(item.total_price || '0').toFixed(2)}
+                  </span>
+                  <button
+                    onClick={() => billItemIndex >= 0 && onRemoveBillItem(billItemIndex)}
+                    className="h-6 w-6 shrink-0 text-destructive hover:bg-destructive/10 rounded flex items-center justify-center transition-colors"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
