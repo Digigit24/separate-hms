@@ -814,47 +814,37 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
 
   return (
     <div className="flex flex-col relative">
-      {/* Sticky Header - Encounter Type Toggle */}
-      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="flex items-center justify-between gap-4 px-4 py-3">
-          <div className="flex items-center gap-3 bg-muted/30 px-3 py-2 rounded-lg border">
-            <div className={`flex items-center gap-2 text-sm font-medium ${encounterType === 'visit' ? 'text-primary' : 'text-muted-foreground'}`}>
-              <Stethoscope className="h-4 w-4" />
-              <span className="hidden sm:inline">OPD</span>
-            </div>
+      {/* Compact toolbar */}
+      <div className="flex items-center justify-between gap-2 px-2 h-8 border-b bg-muted/20">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className={`text-[11px] font-medium ${encounterType === 'visit' ? 'text-foreground' : 'text-muted-foreground'}`}>OPD</span>
             <Switch
               checked={encounterType === 'admission'}
               onCheckedChange={(checked) => setEncounterType(checked ? 'admission' : 'visit')}
               disabled={!activeAdmission}
+              className="h-4 w-7 data-[state=checked]:bg-foreground"
             />
-            <div className={`flex items-center gap-2 text-sm font-medium ${encounterType === 'admission' ? 'text-primary' : 'text-muted-foreground'}`}>
-              <Building2 className="h-4 w-4" />
-              <span className="hidden sm:inline">IPD</span>
-            </div>
+            <span className={`text-[11px] font-medium ${encounterType === 'admission' ? 'text-foreground' : 'text-muted-foreground'}`}>IPD</span>
           </div>
-
-          <div className="flex items-center gap-3">
-            {encounterType === 'admission' && activeAdmission && (
-              <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 bg-muted/50 rounded-full">
-                <Building2 className="h-3 w-3" />
-                <span>Admission: {activeAdmission.admission_id}</span>
-              </div>
-            )}
-
-            {/* Follow-up Button */}
-            <Button
-              variant={(savedFollowupDate || clinicalNote?.next_followup_date) ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setIsFollowupOpen(true)}
-              className={`gap-2 ${(savedFollowupDate || clinicalNote?.next_followup_date) ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}`}
-            >
-              <CalendarPlus className="h-4 w-4" />
-              {(savedFollowupDate || clinicalNote?.next_followup_date)
-                ? `Follow-up: ${format(savedFollowupDate || new Date(clinicalNote!.next_followup_date!), 'dd MMM')}`
-                : 'Set Follow-up'}
-            </Button>
-          </div>
+          {encounterType === 'admission' && activeAdmission && (
+            <span className="text-[10px] text-muted-foreground">{activeAdmission.admission_id}</span>
+          )}
         </div>
+
+        <button
+          onClick={() => setIsFollowupOpen(true)}
+          className={`h-6 px-2 text-[11px] rounded border flex items-center gap-1 transition-colors ${
+            (savedFollowupDate || clinicalNote?.next_followup_date)
+              ? 'bg-foreground text-background border-foreground'
+              : 'text-muted-foreground border-border hover:text-foreground'
+          }`}
+        >
+          <CalendarPlus className="h-3 w-3" />
+          {(savedFollowupDate || clinicalNote?.next_followup_date)
+            ? format(savedFollowupDate || new Date(clinicalNote!.next_followup_date!), 'dd MMM')
+            : 'Follow-up'}
+        </button>
       </div>
 
       <div className="overflow-hidden">
@@ -893,26 +883,26 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
         size="xl"
         storageKey="consultation-response-drawer"
       >
-        <div className="flex flex-col gap-4">
-          {/* Compact Tab Navigation */}
-          <div className="border-b -mx-4 sm:-mx-6 px-4 sm:px-6 pb-1">
-            <div className="flex gap-1">
+        <div className="flex flex-col gap-2">
+          {/* Sub-tab navigation */}
+          <div className="border-b -mx-4 sm:-mx-6 px-4 sm:px-6">
+            <div className="flex gap-0.5">
               <button
                 onClick={() => setActiveSubTab('fields')}
-                className={`px-3 sm:px-4 py-2 text-sm font-medium transition-colors ${
+                className={`px-2.5 py-1.5 text-[11px] font-medium transition-colors border-b -mb-px ${
                   activeSubTab === 'fields'
-                    ? 'border-b-2 border-primary text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'border-foreground text-foreground'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Form Fields
+                Fields
               </button>
               <button
                 onClick={() => setActiveSubTab('preview')}
-                className={`px-3 sm:px-4 py-2 text-sm font-medium transition-colors ${
+                className={`px-2.5 py-1.5 text-[11px] font-medium transition-colors border-b -mb-px ${
                   activeSubTab === 'preview'
-                    ? 'border-b-2 border-primary text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'border-foreground text-foreground'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
                 Preview
@@ -922,16 +912,15 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
 
           {/* Tab Content */}
           <div className="flex-1 overflow-auto">
-            {/* Fields Tab */}
             {activeSubTab === 'fields' && (
-              <div className="space-y-4 pt-4">
-                <div className="flex justify-end sticky top-0 bg-background z-10 pb-2">
-                  <Button onClick={handleSave} disabled={isSaving} size="sm">
-                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              <div className="space-y-3 pt-1">
+                <div className="flex justify-end sticky top-0 bg-background z-10 pb-1">
+                  <Button onClick={handleSave} disabled={isSaving} size="sm" className="h-7 text-xs bg-foreground hover:bg-foreground/90 text-background">
+                    {isSaving ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <Save className="mr-1.5 h-3 w-3" />}
                     Save
                   </Button>
                 </div>
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 gap-3">
                   {fieldsData.map(renderField)}
                 </div>
               </div>
@@ -1176,15 +1165,15 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
       <Dialog open={isFollowupOpen} onOpenChange={setIsFollowupOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CalendarPlus className="h-5 w-5" />
+            <DialogTitle className="flex items-center gap-2 text-sm font-semibold">
+              <CalendarPlus className="h-4 w-4" />
               Schedule Follow-up
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs">
               Set the next follow-up date for this patient
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-3 py-2">
             <div className="flex justify-center">
               <Calendar
                 mode="single"
@@ -1195,35 +1184,24 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
               />
             </div>
             <div>
-              <Label className="text-sm">Notes (optional)</Label>
+              <Label className="text-xs">Notes (optional)</Label>
               <Textarea
                 placeholder="Follow-up instructions..."
                 value={followupNotes}
                 onChange={(e) => setFollowupNotes(e.target.value)}
-                className="mt-2 h-20 resize-none"
+                className="mt-1 h-16 resize-none text-sm"
               />
             </div>
           </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
+          <DialogFooter className="gap-2">
             {(followupDate || clinicalNote?.next_followup_date) && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  handleClearFollowup();
-                  handleSaveFollowup();
-                }}
-                className="text-destructive hover:text-destructive"
-              >
-                Clear Follow-up
+              <Button variant="outline" size="sm" onClick={() => { handleClearFollowup(); handleSaveFollowup(); }} className="text-destructive hover:text-destructive">
+                Clear
               </Button>
             )}
-            <Button
-              onClick={handleSaveFollowup}
-              disabled={isSavingFollowup || !followupDate}
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              {isSavingFollowup && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Save Follow-up
+            <Button size="sm" onClick={handleSaveFollowup} disabled={isSavingFollowup || !followupDate} className="bg-foreground hover:bg-foreground/90 text-background">
+              {isSavingFollowup && <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />}
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>
