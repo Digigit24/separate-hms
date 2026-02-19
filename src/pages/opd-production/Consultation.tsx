@@ -98,14 +98,20 @@ export const OPDConsultation: React.FC = () => {
   // Fetch current visit
   const { data: visit, isLoading, error, mutate: mutateVisit } = useOpdVisitById(visitId ? parseInt(visitId) : null);
 
-  // Fetch context for navigation (Today's visits)
+  // Get visit IDs from navigation state (passed from visits list) or fallback to today's visits
+  const visitIdsFromState = (location.state as any)?.visitIds as number[] | undefined;
+
+  // Fetch context for navigation (Today's visits) - only as fallback
   const { data: todayVisitsData } = useTodayVisits({ page_size: 100 });
   const todayVisits = todayVisitsData?.results || [];
 
+  // Use visitIds from state if available, otherwise use today's visits
+  const visitIds = visitIdsFromState || todayVisits.map(v => v.id);
+
   // Determine Prev/Next IDs
-  const currentIndex = todayVisits.findIndex(v => v.id === parseInt(visitId || '0'));
-  const prevVisitId = currentIndex > 0 ? todayVisits[currentIndex - 1].id : null;
-  const nextVisitId = currentIndex !== -1 && currentIndex < todayVisits.length - 1 ? todayVisits[currentIndex + 1].id : null;
+  const currentIndex = visitIds.findIndex(id => id === parseInt(visitId || '0'));
+  const prevVisitId = currentIndex > 0 ? visitIds[currentIndex - 1] : null;
+  const nextVisitId = currentIndex !== -1 && currentIndex < visitIds.length - 1 ? visitIds[currentIndex + 1] : null;
 
   // Handle back navigation
   const handleBack = () => {
@@ -118,11 +124,15 @@ export const OPDConsultation: React.FC = () => {
   };
 
   const handlePrevVisit = () => {
-    if (prevVisitId) navigate(`/opd/consultation/${prevVisitId}`);
+    if (prevVisitId) navigate(`/opd/consultation/${prevVisitId}`, {
+      state: { visitIds, from: (location.state as any)?.from || '/opd/visits' }
+    });
   };
 
   const handleNextVisit = () => {
-    if (nextVisitId) navigate(`/opd/consultation/${nextVisitId}`);
+    if (nextVisitId) navigate(`/opd/consultation/${nextVisitId}`, {
+      state: { visitIds, from: (location.state as any)?.from || '/opd/visits' }
+    });
   };
 
   const handleStartConsultation = async () => {
@@ -355,7 +365,7 @@ export const OPDConsultation: React.FC = () => {
               <button onClick={handlePrevVisit} disabled={!prevVisitId} className="h-5 w-5 flex items-center justify-center disabled:opacity-30 hover:bg-muted">
                 <ChevronLeft className="h-2.5 w-2.5" />
               </button>
-              <span className="text-[9px] font-mono px-1 border-x text-muted-foreground">{currentIndex + 1}/{todayVisits.length}</span>
+              <span className="text-[9px] font-mono px-1 border-x text-muted-foreground">{currentIndex + 1}/{visitIds.length}</span>
               <button onClick={handleNextVisit} disabled={!nextVisitId} className="h-5 w-5 flex items-center justify-center disabled:opacity-30 hover:bg-muted">
                 <ChevronRight className="h-2.5 w-2.5" />
               </button>
