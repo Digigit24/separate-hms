@@ -30,40 +30,40 @@ export const OPDBillingTab: React.FC<OPDBillingTabProps> = ({
 }) => {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Consultation Fees</CardTitle>
-        <CardDescription>Doctor consultation charges for this visit</CardDescription>
+      <CardHeader className="px-4 py-3">
+        <CardTitle className="text-sm">Consultation Fees</CardTitle>
+        <CardDescription className="text-xs">Doctor charges for this visit</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="px-4 pb-3 space-y-3">
         <div className="space-y-2">
-          <Label htmlFor="opdAmount">Consultation Fee Amount</Label>
+          <Label htmlFor="opdAmount" className="text-xs">Fee Amount</Label>
           <div className="relative">
             <Input
               id="opdAmount"
               type="number"
               value={formData.opdAmount}
               onChange={(e) => onInputChange('opdAmount', e.target.value)}
-              className="pr-12 text-lg font-semibold"
+              className="pr-10 h-8 text-sm font-semibold"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
               INR
             </span>
           </div>
           {visit.doctor_details && (
-            <div className="bg-muted/50 p-3 rounded-md space-y-1">
-              <p className="text-xs text-muted-foreground">Doctor Information:</p>
-              <p className="text-sm font-medium">{visit.doctor_details.full_name}</p>
-              {visit.doctor_details.specialties && visit.doctor_details.specialties.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {visit.doctor_details.specialties.map(s => s.name).join(', ')}
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground pt-2">
-                Standard {visit.visit_type === 'follow_up' ? 'Follow-up' : 'Consultation'} fee: ₹
-                {visit.visit_type === 'follow_up'
+            <div className="bg-muted/50 p-2.5 rounded-md flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-medium truncate">{visit.doctor_details.full_name}</p>
+                {visit.doctor_details.specialties && visit.doctor_details.specialties.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    {visit.doctor_details.specialties.map(s => s.name).join(', ')}
+                  </p>
+                )}
+              </div>
+              <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                Std fee: ₹{visit.visit_type === 'follow_up'
                   ? visit.doctor_details.follow_up_fee
                   : visit.doctor_details.consultation_fee}
-              </p>
+              </span>
             </div>
           )}
         </div>
