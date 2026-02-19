@@ -271,11 +271,6 @@ export function UniversalSidebar({
                 )} />
               </div>
             )}
-            {!collapsed && (
-              <span className="text-sm font-semibold text-sidebar-foreground truncate">
-                {tenantName}
-              </span>
-            )}
           </div>
           {mobileOpen && setMobileOpen && (
             <button
