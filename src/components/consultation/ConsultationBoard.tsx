@@ -249,37 +249,28 @@ export const ConsultationBoard: React.FC<ConsultationBoardProps> = ({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Compact Header */}
-      <div className="flex items-center justify-between px-4 py-3 mb-4">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg">
-            <LayoutGrid className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-base sm:text-lg font-bold">Clinical Notes</h2>
-            <p className="text-xs text-muted-foreground hidden sm:block">
-              {responses.length} {responses.length === 1 ? 'note' : 'notes'} •{' '}
-              {Object.keys(responsesByTemplate).length}{' '}
-              {Object.keys(responsesByTemplate).length === 1 ? 'template' : 'templates'}
-              {fileAttachments.length > 0 && ` • ${fileAttachments.length} ${fileAttachments.length === 1 ? 'file' : 'files'}`}
-            </p>
-          </div>
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2.5">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold">Clinical Notes</h2>
+          <span className="text-[11px] text-muted-foreground">
+            {responses.length} {responses.length === 1 ? 'note' : 'notes'}
+            {fileAttachments.length > 0 && ` · ${fileAttachments.length} ${fileAttachments.length === 1 ? 'file' : 'files'}`}
+          </span>
         </div>
-        
-        {/* Upload Button - Always visible and enabled */}
         <Button
           size="sm"
           variant="outline"
           onClick={handleUploadClick}
-          className="gap-2"
+          className="h-7 text-xs gap-1.5"
         >
-          <Paperclip className="h-4 w-4" />
-          <span className="hidden sm:inline">Upload File</span>
+          <Paperclip className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Upload</span>
         </Button>
       </div>
 
       {/* Board Content */}
-      <div className="flex-1 overflow-auto px-4">
+      <div className="flex-1 overflow-auto px-3">
         {isLoadingResponses ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -292,47 +283,41 @@ export const ConsultationBoard: React.FC<ConsultationBoardProps> = ({
             ))}
           </div>
         ) : responses.length === 0 && fileAttachments.length === 0 ? (
-          <div className="flex items-center justify-center h-full min-h-[300px] sm:min-h-[400px]">
-            <div className="text-center space-y-4 sm:space-y-6 max-w-md px-4">
-              <div className="flex justify-center">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl"></div>
-                  <div className="relative p-4 sm:p-6 bg-gradient-to-br from-primary/10 to-primary/5 rounded-full">
-                    <FileText className="h-12 w-12 sm:h-16 sm:w-16 text-primary" />
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-xl sm:text-2xl font-bold">No Clinical Notes Yet</h3>
-                <p className="text-sm sm:text-base text-muted-foreground">
+          <div className="flex items-center justify-center h-full min-h-[200px]">
+            <div className="text-center space-y-3 max-w-sm px-4">
+              <FileText className="h-10 w-10 text-muted-foreground/40 mx-auto" />
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold">No Clinical Notes</h3>
+                <p className="text-xs text-muted-foreground">
                   {objectId
-                    ? 'Start documenting by adding your first note or upload files'
+                    ? 'Add your first note or upload files'
                     : 'No active encounter found'}
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <div className="flex gap-2 justify-center">
                 <Button
                   onClick={() => onTemplateDrawerChange(true)}
-                  size="default"
-                  className="bg-primary hover:bg-primary/90"
+                  size="sm"
+                  className="h-7 text-xs bg-foreground hover:bg-foreground/90 text-background"
                   disabled={!objectId}
                 >
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="mr-1.5 h-3 w-3" />
                   Add Note
                 </Button>
                 <Button
                   onClick={handleUploadClick}
                   variant="outline"
-                  size="default"
+                  size="sm"
+                  className="h-7 text-xs"
                 >
-                  <Paperclip className="mr-2 h-4 w-4" />
-                  Upload File
+                  <Paperclip className="mr-1.5 h-3 w-3" />
+                  Upload
                 </Button>
               </div>
             </div>
           </div>
         ) : (
-          <div className="space-y-6 sm:space-y-8 pb-4">
+          <div className="space-y-4 pb-3">
             {/* File Attachments Section */}
             {fileAttachments.length > 0 && (
               <div className="space-y-3 sm:space-y-4">

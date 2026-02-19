@@ -814,33 +814,32 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
 
   return (
     <div className="flex flex-col relative">
-      {/* Compact toolbar */}
-      <div className="flex items-center justify-between gap-2 px-2 h-8 border-b bg-muted/20">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <span className={`text-[11px] font-medium ${encounterType === 'visit' ? 'text-foreground' : 'text-muted-foreground'}`}>OPD</span>
+      {/* Toolbar */}
+      <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/20">
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
+            <span className={`text-xs font-medium ${encounterType === 'visit' ? 'text-foreground' : 'text-muted-foreground'}`}>OPD</span>
             <Switch
               checked={encounterType === 'admission'}
               onCheckedChange={(checked) => setEncounterType(checked ? 'admission' : 'visit')}
               disabled={!activeAdmission}
-              className="h-4 w-7 data-[state=checked]:bg-foreground"
             />
-            <span className={`text-[11px] font-medium ${encounterType === 'admission' ? 'text-foreground' : 'text-muted-foreground'}`}>IPD</span>
+            <span className={`text-xs font-medium ${encounterType === 'admission' ? 'text-foreground' : 'text-muted-foreground'}`}>IPD</span>
           </div>
           {encounterType === 'admission' && activeAdmission && (
-            <span className="text-[10px] text-muted-foreground">{activeAdmission.admission_id}</span>
+            <span className="text-[11px] text-muted-foreground">{activeAdmission.admission_id}</span>
           )}
         </div>
 
         <button
           onClick={() => setIsFollowupOpen(true)}
-          className={`h-6 px-2 text-[11px] rounded border flex items-center gap-1 transition-colors ${
+          className={`h-7 px-2.5 text-xs rounded border flex items-center gap-1.5 transition-colors ${
             (savedFollowupDate || clinicalNote?.next_followup_date)
               ? 'bg-foreground text-background border-foreground'
               : 'text-muted-foreground border-border hover:text-foreground'
           }`}
         >
-          <CalendarPlus className="h-3 w-3" />
+          <CalendarPlus className="h-3.5 w-3.5" />
           {(savedFollowupDate || clinicalNote?.next_followup_date)
             ? format(savedFollowupDate || new Date(clinicalNote!.next_followup_date!), 'dd MMM')
             : 'Follow-up'}
