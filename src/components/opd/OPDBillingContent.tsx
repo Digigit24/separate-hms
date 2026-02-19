@@ -1352,7 +1352,7 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
                       : 'text-muted-foreground border-border hover:bg-muted'
                   }`}
                 >
-                  <span className="font-mono">{bill.bill_number?.split('/').pop() || bill.id}</span>
+                  <span className="font-mono">{bill.bill_number || `#${bill.id}`}</span>
                   <span className={`text-[9px] uppercase ${
                     bill.payment_status === 'paid' ? 'text-emerald-600' :
                     bill.payment_status === 'partial' ? 'text-amber-600' : 'text-red-500'
@@ -1420,7 +1420,7 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
 
       {/* Billing Form */}
       {showBillingForm && activeTab === 'billing' && (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
           {/* Left: Consultation fee inline + Items table */}
           <div className="space-y-3">
             {/* Consultation fee - compact inline */}
@@ -1506,7 +1506,7 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
 
       {/* Preview */}
       {showBillingForm && activeTab === 'preview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
           <BillPreviewTab
             ref={printAreaRef}
             visit={visit}
