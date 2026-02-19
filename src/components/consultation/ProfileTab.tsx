@@ -1,316 +1,166 @@
 // src/components/consultation/ProfileTab.tsx
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Pencil, Save, X, User, Phone, Mail, MapPin, Calendar, Droplet, Activity } from 'lucide-react';
-import { toast } from 'sonner';
+import React from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, User, Phone, Mail, MapPin, Heart, Shield, Calendar, Briefcase } from 'lucide-react';
+import { usePatient } from '@/hooks/usePatient';
+import { format } from 'date-fns';
 
 interface ProfileTabProps {
   patientId: number;
 }
 
 export const ProfileTab: React.FC<ProfileTabProps> = ({ patientId }) => {
-  const [isEditing, setIsEditing] = useState(false);
+  const { usePatientById } = usePatient();
+  const { data: patient, isLoading, error } = usePatientById(patientId);
 
-  // TODO: Fetch patient data from API using patientId
-  // Placeholder patient data
-  const [patientData, setPatientData] = useState({
-    fullName: 'John Doe',
-    patientId: 'PAT-001',
-    dateOfBirth: '1980-05-15',
-    age: 44,
-    gender: 'Male',
-    bloodGroup: 'O+',
-    mobilePrimary: '+91-9876543210',
-    mobileSecondary: '',
-    email: 'john.doe@example.com',
-    address: '123 Main Street, City, State',
-    emergencyContact: '+91-9876543211',
-    emergencyContactName: 'Jane Doe',
-    emergencyContactRelation: 'Spouse',
-    occupation: 'Software Engineer',
-    maritalStatus: 'Married',
-    nationality: 'Indian',
-  });
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
-  const handleSave = () => {
-    // TODO: Save patient data via API
-    toast.success('Profile updated successfully');
-    setIsEditing(false);
+  if (error || !patient) {
+    return (
+      <div className="text-center py-16 text-sm text-muted-foreground">
+        Failed to load patient profile
+      </div>
+    );
+  }
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    try {
+      return format(new Date(dateStr), 'dd MMM yyyy');
+    } catch {
+      return dateStr;
+    }
   };
 
-  const handleCancel = () => {
-    // TODO: Reset to original data
-    setIsEditing(false);
-  };
+  const Field = ({ label, value }: { label: string; value?: string | number | null }) => (
+    <div className="space-y-0.5">
+      <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{label}</p>
+      <p className="text-sm">{value || '-'}</p>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      {/* Profile Header */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-20 w-20">
-                <AvatarFallback className="text-2xl font-semibold bg-primary/10">
-                  {patientData.fullName.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h2 className="text-2xl font-bold">{patientData.fullName}</h2>
-                <p className="text-sm text-muted-foreground">ID: {patientData.patientId}</p>
-                <p className="text-sm text-muted-foreground">{patientData.age} years • {patientData.gender}</p>
-              </div>
-            </div>
-            <div>
-              {!isEditing ? (
-                <Button variant="outline" onClick={() => setIsEditing(true)}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Edit Profile
-                </Button>
-              ) : (
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleCancel}>
-                    <X className="h-4 w-4 mr-2" />
-                    Cancel
-                  </Button>
-                  <Button onClick={handleSave}>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save
-                  </Button>
-                </div>
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b pb-4">
+        <div className="flex items-center gap-3">
+          <div className="h-12 w-12 rounded-full bg-foreground/5 border flex items-center justify-center text-lg font-semibold">
+            {patient.full_name?.charAt(0) || 'P'}
+          </div>
+          <div>
+            <h2 className="text-base font-semibold">{patient.full_name}</h2>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+              <span className="font-mono">{patient.patient_id}</span>
+              <span>·</span>
+              <span>{patient.age} yrs / {patient.gender}</span>
+              {patient.blood_group && (
+                <>
+                  <span>·</span>
+                  <Badge variant="outline" className="h-4 text-[10px] px-1.5 font-normal">{patient.blood_group}</Badge>
+                </>
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <Badge
+          variant="outline"
+          className={`text-[10px] uppercase ${
+            patient.status === 'active'
+              ? 'border-foreground/20 text-foreground'
+              : patient.status === 'deceased'
+              ? 'border-red-300 text-red-600'
+              : 'border-muted-foreground/30 text-muted-foreground'
+          }`}
+        >
+          {patient.status}
+        </Badge>
+      </div>
 
-      {/* Personal Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Personal Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              {isEditing ? (
-                <Input
-                  id="fullName"
-                  value={patientData.fullName}
-                  onChange={(e) => setPatientData({ ...patientData, fullName: e.target.value })}
-                />
-              ) : (
-                <p className="text-sm font-medium py-2">{patientData.fullName}</p>
-              )}
-            </div>
+      {/* Personal Info */}
+      <div>
+        <div className="flex items-center gap-1.5 mb-3">
+          <User className="h-3.5 w-3.5 text-muted-foreground" />
+          <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Personal Information</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
+          <Field label="Full Name" value={patient.full_name} />
+          <Field label="Date of Birth" value={formatDate(patient.date_of_birth)} />
+          <Field label="Gender" value={patient.gender ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1) : undefined} />
+          <Field label="Blood Group" value={patient.blood_group} />
+          <Field label="Marital Status" value={patient.marital_status ? patient.marital_status.charAt(0).toUpperCase() + patient.marital_status.slice(1) : undefined} />
+          <Field label="Occupation" value={patient.occupation} />
+          <Field label="Height" value={patient.height ? `${patient.height} cm` : undefined} />
+          <Field label="Weight" value={patient.weight ? `${patient.weight} kg` : undefined} />
+        </div>
+      </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="dateOfBirth">Date of Birth</Label>
-              {isEditing ? (
-                <Input
-                  id="dateOfBirth"
-                  type="date"
-                  value={patientData.dateOfBirth}
-                  onChange={(e) => setPatientData({ ...patientData, dateOfBirth: e.target.value })}
-                />
-              ) : (
-                <p className="text-sm font-medium py-2">{patientData.dateOfBirth}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="gender">Gender</Label>
-              {isEditing ? (
-                <Input
-                  id="gender"
-                  value={patientData.gender}
-                  onChange={(e) => setPatientData({ ...patientData, gender: e.target.value })}
-                />
-              ) : (
-                <p className="text-sm font-medium py-2">{patientData.gender}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="bloodGroup">Blood Group</Label>
-              {isEditing ? (
-                <Input
-                  id="bloodGroup"
-                  value={patientData.bloodGroup}
-                  onChange={(e) => setPatientData({ ...patientData, bloodGroup: e.target.value })}
-                />
-              ) : (
-                <p className="text-sm font-medium py-2">{patientData.bloodGroup}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="maritalStatus">Marital Status</Label>
-              {isEditing ? (
-                <Input
-                  id="maritalStatus"
-                  value={patientData.maritalStatus}
-                  onChange={(e) => setPatientData({ ...patientData, maritalStatus: e.target.value })}
-                />
-              ) : (
-                <p className="text-sm font-medium py-2">{patientData.maritalStatus}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="nationality">Nationality</Label>
-              {isEditing ? (
-                <Input
-                  id="nationality"
-                  value={patientData.nationality}
-                  onChange={(e) => setPatientData({ ...patientData, nationality: e.target.value })}
-                />
-              ) : (
-                <p className="text-sm font-medium py-2">{patientData.nationality}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="occupation">Occupation</Label>
-              {isEditing ? (
-                <Input
-                  id="occupation"
-                  value={patientData.occupation}
-                  onChange={(e) => setPatientData({ ...patientData, occupation: e.target.value })}
-                />
-              ) : (
-                <p className="text-sm font-medium py-2">{patientData.occupation}</p>
-              )}
-            </div>
+      {/* Contact Info */}
+      <div className="border-t pt-4">
+        <div className="flex items-center gap-1.5 mb-3">
+          <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+          <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Contact Information</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
+          <Field label="Primary Mobile" value={patient.mobile_primary} />
+          <Field label="Secondary Mobile" value={patient.mobile_secondary} />
+          <Field label="Email" value={patient.email} />
+          <div /> {/* spacer */}
+          <div className="col-span-2 md:col-span-4">
+            <Field label="Address" value={patient.full_address || [patient.address_line1, patient.address_line2, patient.city, patient.state, patient.pincode, patient.country].filter(Boolean).join(', ') || undefined} />
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Contact Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Phone className="h-5 w-5" />
-            Contact Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="mobilePrimary">Primary Mobile</Label>
-              {isEditing ? (
-                <Input
-                  id="mobilePrimary"
-                  value={patientData.mobilePrimary}
-                  onChange={(e) => setPatientData({ ...patientData, mobilePrimary: e.target.value })}
-                />
-              ) : (
-                <p className="text-sm font-medium py-2">{patientData.mobilePrimary}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="mobileSecondary">Secondary Mobile</Label>
-              {isEditing ? (
-                <Input
-                  id="mobileSecondary"
-                  value={patientData.mobileSecondary}
-                  onChange={(e) => setPatientData({ ...patientData, mobileSecondary: e.target.value })}
-                />
-              ) : (
-                <p className="text-sm font-medium py-2">{patientData.mobileSecondary || 'N/A'}</p>
-              )}
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="email">Email</Label>
-              {isEditing ? (
-                <Input
-                  id="email"
-                  type="email"
-                  value={patientData.email}
-                  onChange={(e) => setPatientData({ ...patientData, email: e.target.value })}
-                />
-              ) : (
-                <p className="text-sm font-medium py-2">{patientData.email}</p>
-              )}
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="address">Address</Label>
-              {isEditing ? (
-                <Input
-                  id="address"
-                  value={patientData.address}
-                  onChange={(e) => setPatientData({ ...patientData, address: e.target.value })}
-                />
-              ) : (
-                <p className="text-sm font-medium py-2">{patientData.address}</p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Emergency Contact */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Phone className="h-5 w-5" />
-            Emergency Contact
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="emergencyContactName">Contact Name</Label>
-              {isEditing ? (
-                <Input
-                  id="emergencyContactName"
-                  value={patientData.emergencyContactName}
-                  onChange={(e) => setPatientData({ ...patientData, emergencyContactName: e.target.value })}
-                />
-              ) : (
-                <p className="text-sm font-medium py-2">{patientData.emergencyContactName}</p>
-              )}
-            </div>
+      <div className="border-t pt-4">
+        <div className="flex items-center gap-1.5 mb-3">
+          <Heart className="h-3.5 w-3.5 text-muted-foreground" />
+          <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Emergency Contact</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
+          <Field label="Contact Name" value={patient.emergency_contact_name} />
+          <Field label="Relation" value={patient.emergency_contact_relation} />
+          <Field label="Phone" value={patient.emergency_contact_phone} />
+        </div>
+      </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="emergencyContactRelation">Relation</Label>
-              {isEditing ? (
-                <Input
-                  id="emergencyContactRelation"
-                  value={patientData.emergencyContactRelation}
-                  onChange={(e) => setPatientData({ ...patientData, emergencyContactRelation: e.target.value })}
-                />
-              ) : (
-                <p className="text-sm font-medium py-2">{patientData.emergencyContactRelation}</p>
-              )}
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="emergencyContact">Contact Number</Label>
-              {isEditing ? (
-                <Input
-                  id="emergencyContact"
-                  value={patientData.emergencyContact}
-                  onChange={(e) => setPatientData({ ...patientData, emergencyContact: e.target.value })}
-                />
-              ) : (
-                <p className="text-sm font-medium py-2">{patientData.emergencyContact}</p>
-              )}
-            </div>
+      {/* Insurance */}
+      {(patient.insurance_provider || patient.insurance_policy_number) && (
+        <div className="border-t pt-4">
+          <div className="flex items-center gap-1.5 mb-3">
+            <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+            <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Insurance</h3>
           </div>
-        </CardContent>
-      </Card>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
+            <Field label="Provider" value={patient.insurance_provider} />
+            <Field label="Policy Number" value={patient.insurance_policy_number} />
+            <Field label="Expiry Date" value={formatDate(patient.insurance_expiry_date)} />
+            <Field
+              label="Status"
+              value={patient.is_insurance_valid ? 'Valid' : patient.insurance_expiry_date ? 'Expired' : undefined}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Registration Info */}
+      <div className="border-t pt-4">
+        <div className="flex items-center gap-1.5 mb-3">
+          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+          <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Registration</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
+          <Field label="Registration Date" value={formatDate(patient.registration_date)} />
+          <Field label="Last Visit" value={formatDate(patient.last_visit_date)} />
+          <Field label="Total Visits" value={patient.total_visits} />
+        </div>
+      </div>
     </div>
   );
 };
