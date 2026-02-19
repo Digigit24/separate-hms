@@ -12,28 +12,18 @@ import { formatLocalDate } from '@/lib/utils';
 import { procedurePackageService } from '@/services/procedurePackage.service';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Receipt,
-  CreditCard,
-  IndianRupee,
   Package,
-  FileText,
   Plus,
   FlaskConical,
   Download,
   Trash2,
 } from 'lucide-react';
 import { format } from 'date-fns';
-
-// Import child components
-import { OPDBillingTab } from './OPDBillingTab';
 import { ProcedureBillingTab, type ProcedureItem } from './ProcedureBillingTab';
 import { InvestigationsBillingTab } from './InvestigationsBillingTab';
 import { BillPreviewTab } from './BillPreviewTab';
@@ -84,158 +74,89 @@ const BillingDetailsPanel = memo(function BillingDetailsPanel({
   isEditMode = false,
 }: BillingDetailsPanelProps) {
   return (
-    <Card className="sticky top-4">
-      <CardHeader className="px-4 py-3">
-        <CardTitle className="text-sm">Billing Summary</CardTitle>
-        <CardDescription className="text-xs">{billItems.length} item(s)</CardDescription>
-      </CardHeader>
-      <CardContent className="px-4 pb-4 space-y-3">
-        {/* Bill Items List */}
-        {billItems.length > 0 && (
-          <div className="space-y-1 pb-2 border-b max-h-[200px] overflow-y-auto">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Items</p>
-            {billItems.map((item, index) => (
-              <div key={item.id || index} className="flex justify-between text-xs py-1">
-                <div className="flex-1 min-w-0 pr-2">
-                  <div className="font-medium truncate">{item.item_name}</div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {item.source} · Qty: {item.quantity}
-                  </div>
-                </div>
-                <div className="font-semibold whitespace-nowrap">
-                  ₹{parseFloat(item.total_price || '0').toFixed(2)}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="flex justify-between text-sm font-semibold pt-1 border-t">
-          <span>Subtotal:</span>
-          <span>₹{data.subtotal}</span>
+    <div className="sticky top-4 space-y-3">
+      {/* Totals */}
+      <div className="border rounded-md p-3 space-y-2.5">
+        <div className="flex justify-between text-xs">
+          <span className="text-muted-foreground">Subtotal</span>
+          <span className="font-semibold">₹{data.subtotal}</span>
         </div>
 
-        <div className="space-y-1">
-          <Label htmlFor="discount" className="text-xs">Discount</Label>
-          <div className="flex gap-2">
-            <Input
-              id="discount"
-              type="number"
-              value={data.discount}
-              onChange={(e) => onChange('discount', e.target.value)}
-              className="flex-1 h-8 text-sm"
-              placeholder="0.00"
-            />
-            <div className="flex items-center gap-1">
-              <Input
-                type="number"
-                value={data.discountPercent}
-                onChange={(e) => onChange('discountPercent', e.target.value)}
-                className="w-14 h-8 text-sm"
-                placeholder="0"
-              />
-              <span className="text-xs text-muted-foreground">%</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <Label htmlFor="totalAmount" className="text-xs">Total</Label>
-          <div className="relative">
-            <Input
-              id="totalAmount"
-              type="number"
-              value={data.totalAmount}
-              className="pr-10 h-8 font-bold text-sm"
-              readOnly
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
-              INR
-            </span>
-          </div>
+        {/* Discount row */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground shrink-0">Discount</span>
+          <Input
+            type="number"
+            value={data.discount}
+            onChange={(e) => onChange('discount', e.target.value)}
+            className="flex-1 h-7 text-xs"
+            placeholder="0.00"
+          />
+          <Input
+            type="number"
+            value={data.discountPercent}
+            onChange={(e) => onChange('discountPercent', e.target.value)}
+            className="w-12 h-7 text-xs"
+            placeholder="0"
+          />
+          <span className="text-[10px] text-muted-foreground">%</span>
         </div>
 
         <Separator />
 
-        <div className="space-y-1">
-          <Label className="text-xs">Payment Mode</Label>
-          <div className="grid grid-cols-3 gap-1.5">
-            <Button
-              variant={data.paymentMode === 'cash' ? 'default' : 'outline'}
-              className="w-full h-7 text-xs"
-              size="sm"
-              onClick={() => onChange('paymentMode', 'cash')}
+        <div className="flex justify-between text-sm font-bold">
+          <span>Total</span>
+          <span>₹{data.totalAmount}</span>
+        </div>
+      </div>
+
+      {/* Payment */}
+      <div className="border rounded-md p-3 space-y-2.5">
+        <div className="flex items-center gap-1.5">
+          {(['cash', 'card', 'upi'] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => onChange('paymentMode', mode)}
+              className={`flex-1 h-7 text-[11px] font-medium rounded border capitalize transition-colors ${
+                data.paymentMode === mode
+                  ? 'bg-foreground text-background border-foreground'
+                  : 'text-muted-foreground border-border hover:bg-muted'
+              }`}
             >
-              <IndianRupee className="h-3 w-3 mr-1" />
-              Cash
-            </Button>
-            <Button
-              variant={data.paymentMode === 'card' ? 'default' : 'outline'}
-              className="w-full h-7 text-xs"
-              size="sm"
-              onClick={() => onChange('paymentMode', 'card')}
-            >
-              <CreditCard className="h-3 w-3 mr-1" />
-              Card
-            </Button>
-            <Button
-              variant={data.paymentMode === 'upi' ? 'default' : 'outline'}
-              className="w-full h-7 text-xs"
-              size="sm"
-              onClick={() => onChange('paymentMode', 'upi')}
-            >
-              <CreditCard className="h-3 w-3 mr-1" />
-              UPI
-            </Button>
-          </div>
+              {mode}
+            </button>
+          ))}
         </div>
 
-        <div className="space-y-1">
-          <Label htmlFor="receivedAmount" className="text-xs">Received</Label>
-          <div className="relative">
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <span className="text-[10px] text-muted-foreground">Received</span>
             <Input
-              id="receivedAmount"
               type="number"
               value={data.receivedAmount}
               onChange={(e) => onChange('receivedAmount', e.target.value)}
               onBlur={onFormatReceived}
-              className="pr-10 h-8 text-sm text-green-600 font-semibold"
+              className="h-7 text-xs text-green-600 font-semibold mt-0.5"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
-              INR
-            </span>
           </div>
-        </div>
-
-        <div className="space-y-1">
-          <Label htmlFor="balanceAmount" className="text-xs">Balance</Label>
-          <div className="relative">
+          <div>
+            <span className="text-[10px] text-muted-foreground">Balance</span>
             <Input
-              id="balanceAmount"
               type="number"
               value={data.balanceAmount}
-              className="pr-10 h-8 text-sm text-orange-600 font-semibold"
+              className="h-7 text-xs text-orange-600 font-semibold mt-0.5"
               readOnly
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
-              INR
-            </span>
           </div>
         </div>
+      </div>
 
-        <Separator />
-
-        <div className="flex flex-col gap-1.5">
-          <Button variant="default" className="w-full h-8 text-xs" size="sm" onClick={onSave}>
-            <Receipt className="mr-1.5 h-3.5 w-3.5" />
-            {isEditMode ? 'Update Bill' : 'Save Bill'}
-          </Button>
-          <Button variant="outline" className="w-full h-8 text-xs" size="sm">
-            Cancel
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      {/* Save */}
+      <Button variant="default" className="w-full h-8 text-xs" size="sm" onClick={onSave}>
+        <Receipt className="mr-1.5 h-3.5 w-3.5" />
+        {isEditMode ? 'Update Bill' : 'Save Bill'}
+      </Button>
+    </div>
   );
 });
 
@@ -1411,307 +1332,266 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
         }
       `}</style>
 
-      {/* Bills Selector */}
-      {visitBills.length > 0 && (
-        <Card>
-          <CardHeader className="px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-sm">Bills for This Visit</CardTitle>
-                <CardDescription className="text-xs">
-                  {visitBills.length} bill(s)
-                </CardDescription>
-              </div>
-              <Button onClick={handleCreateInitialBill} size="sm" className="h-7 text-xs">
-                <Plus className="h-3 w-3 mr-1.5" />
-                New Bill
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="px-4 pb-3">
-            <div className="grid gap-2">
+      {/* Toolbar: Bill selector chips + view toggle + actions */}
+      <div className="flex items-center justify-between gap-3 pb-2 border-b">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {/* Bill chips */}
+          {visitBills.length > 0 ? (
+            <div className="flex items-center gap-1.5 overflow-x-auto">
               {visitBills.map((bill) => (
-                <div
+                <button
                   key={bill.id}
-                  className={`p-3 border rounded-md transition-all hover:border-primary cursor-pointer ${
-                    existingBill?.id === bill.id ? 'border-primary bg-primary/5' : ''
+                  onClick={() => {
+                    setSelectedBillId(bill.id);
+                    setShowBillingForm(true);
+                    setActiveTab('billing');
+                  }}
+                  className={`shrink-0 h-7 px-2.5 rounded border text-[11px] font-medium flex items-center gap-1.5 transition-colors ${
+                    existingBill?.id === bill.id
+                      ? 'bg-foreground text-background border-foreground'
+                      : 'text-muted-foreground border-border hover:bg-muted'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div
-                      className="flex-1 min-w-0"
-                      onClick={() => {
-                        setSelectedBillId(bill.id);
-                        setShowBillingForm(true);
-                        setActiveTab('billing');
-                      }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-semibold">{bill.bill_number}</span>
-                        <Badge
-                          variant={
-                            bill.payment_status === 'paid'
-                              ? 'default'
-                              : bill.payment_status === 'partial'
-                                ? 'secondary'
-                                : 'destructive'
-                          }
-                          className="capitalize text-[10px] h-4 px-1.5"
-                        >
-                          {bill.payment_status}
-                        </Badge>
-                        <span className="text-[11px] text-muted-foreground">
-                          {bill.bill_date && new Date(bill.bill_date).toString() !== 'Invalid Date'
-                            ? format(new Date(bill.bill_date), 'dd MMM yyyy')
-                            : 'N/A'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold">₹{parseFloat(bill.total_amount || '0').toFixed(2)}</span>
-                      <span className="text-[10px] text-muted-foreground">{bill.items?.length || 0} items</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteBillClick(bill.id);
-                        }}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                  <span className="font-mono">{bill.bill_number?.split('/').pop() || bill.id}</span>
+                  <span className={`text-[9px] uppercase ${
+                    bill.payment_status === 'paid' ? 'text-emerald-600' :
+                    bill.payment_status === 'partial' ? 'text-amber-600' : 'text-red-500'
+                  }`}>
+                    {bill.payment_status}
+                  </span>
+                  <span className="font-semibold">₹{parseFloat(bill.total_amount || '0').toFixed(0)}</span>
+                </button>
               ))}
+              <button
+                onClick={handleCreateInitialBill}
+                className="shrink-0 h-7 px-2 rounded border border-dashed text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1"
+              >
+                <Plus className="h-3 w-3" /> New
+              </button>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* No bill empty state */}
-      {visitBills.length === 0 && !showBillingForm && !visitBillsLoading && (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-8">
-            <Receipt className="h-8 w-8 text-muted-foreground/40 mb-3" />
-            <h3 className="text-sm font-semibold mb-1">No Bill Created</h3>
-            <p className="text-xs text-muted-foreground mb-4 text-center max-w-sm">
-              Create a bill for this visit to start billing.
-            </p>
-            <Button
-              size="sm"
+          ) : !visitBillsLoading && !showBillingForm ? (
+            <button
               onClick={handleCreateInitialBill}
-              className="h-7 text-xs px-4"
+              className="h-7 px-3 rounded border border-dashed text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5"
             >
-              <Plus className="h-3 w-3 mr-1.5" />
-              Create Bill
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+              <Plus className="h-3 w-3" /> Create Bill
+            </button>
+          ) : null}
+        </div>
 
-      {/* Billing Form Tabs */}
-      {showBillingForm && (
-        <Tabs
-          value={activeTab}
-          onValueChange={(value) => setActiveTab(value as 'billing' | 'preview')}
-          className="w-full"
-        >
-          <TabsList className="grid w-full max-w-xs grid-cols-2 h-8">
-            <TabsTrigger value="billing" className="flex items-center gap-1.5 text-xs h-7">
-              <Receipt className="h-3 w-3" />
-              Billing
-            </TabsTrigger>
-            <TabsTrigger value="preview" className="flex items-center gap-1.5 text-xs h-7">
-              <FileText className="h-3 w-3" />
-              Preview
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Billing Tab */}
-          <TabsContent value="billing" className="space-y-3 mt-3">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-              <div className="lg:col-span-2 space-y-3">
-                <OPDBillingTab
-                  formData={opdFormData}
-                  visit={visit}
-                  onInputChange={handleOpdInputChange}
-                />
-
-                {/* Bill Items */}
-                <Card>
-                  <CardHeader className="px-4 py-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-sm">Bill Items</CardTitle>
-                        <CardDescription className="text-xs">
-                          {billItems.length} item(s) · ₹{billingData.subtotal}
-                        </CardDescription>
-                      </div>
-                      <div className="flex gap-1.5">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => setIsInvestigationsModalOpen(true)}
-                        >
-                          <FlaskConical className="h-3 w-3 mr-1" />
-                          Investigations
-                          {unbilledRequisitions && unbilledRequisitions.length > 0 && (
-                            <Badge variant="destructive" className="ml-1 px-1 py-0 h-4 text-[10px]">
-                              {unbilledRequisitions.length}
-                            </Badge>
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => setIsProceduresModalOpen(true)}
-                        >
-                          <Package className="h-3 w-3 mr-1" />
-                          Procedures
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={handleSyncClinicalCharges}
-                          disabled={isSyncingClinicalCharges}
-                        >
-                          <Download className="h-3 w-3 mr-1" />
-                          {isSyncingClinicalCharges ? 'Syncing...' : 'Sync'}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-3">
-                    <BillItemsTable
-                      items={billItems}
-                      onUpdateItem={handleUpdateBillItem}
-                      onRemoveItem={handleRemoveBillItem}
-                      readOnly={false}
-                    />
-                  </CardContent>
-                </Card>
-
-                <Dialog open={isInvestigationsModalOpen} onOpenChange={setIsInvestigationsModalOpen}>
-                  <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Investigations & Clinical Charges</DialogTitle>
-                    </DialogHeader>
-                    <InvestigationsBillingTab
-                      visit={visit}
-                      unbilledRequisitions={unbilledRequisitions}
-                      totalUnbilledItems={totalUnbilledItems}
-                      estimatedUnbilledAmount={estimatedUnbilledAmount}
-                      requisitionsLoading={requisitionsLoading}
-                      isSyncingClinicalCharges={isSyncingClinicalCharges}
-                      existingBill={existingBill}
-                      investigationsData={investigationsData}
-                      investigationsLoading={investigationsLoading}
-                      onSyncClinicalCharges={handleSyncClinicalCharges}
-                      onRefreshRequisitions={mutateRequisitions}
-                      onAddInvestigation={handleAddInvestigation}
-                    />
-                  </DialogContent>
-                </Dialog>
-
-                <Dialog open={isProceduresModalOpen} onOpenChange={setIsProceduresModalOpen}>
-                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Procedures & Packages</DialogTitle>
-                    </DialogHeader>
-                    <ProcedureBillingTab
-                      billItems={billItems}
-                      proceduresData={proceduresData}
-                      packagesData={packagesData}
-                      proceduresLoading={proceduresLoading}
-                      packagesLoading={packagesLoading}
-                      onAddProcedure={handleAddProcedure}
-                      onAddPackage={handleAddPackage}
-                      onUpdateBillItem={handleUpdateBillItem}
-                      onRemoveBillItem={handleRemoveBillItem}
-                    />
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-              <BillingDetailsPanel
-                data={billingData}
-                billItems={billItems}
-                onChange={handleBillingChange}
-                onFormatReceived={() => {
-                  const num = parseFloat(billingData.receivedAmount);
-                  if (!isNaN(num)) setBillingData((prev) => ({ ...prev, receivedAmount: num.toFixed(2) }));
-                }}
-                onSave={handleSaveBill}
-                isEditMode={isEditMode}
-              />
+        {/* Right: View toggle + Delete */}
+        {showBillingForm && (
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center border rounded overflow-hidden">
+              <button
+                onClick={() => setActiveTab('billing')}
+                className={`h-7 px-2.5 text-[11px] font-medium transition-colors ${
+                  activeTab === 'billing'
+                    ? 'bg-foreground text-background'
+                    : 'text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => setActiveTab('preview')}
+                className={`h-7 px-2.5 text-[11px] font-medium border-l transition-colors ${
+                  activeTab === 'preview'
+                    ? 'bg-foreground text-background'
+                    : 'text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                Preview
+              </button>
             </div>
-          </TabsContent>
+            {existingBill && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => handleDeleteBillClick(existingBill.id)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
 
-          {/* Bill Preview Tab */}
-          <TabsContent value="preview" className="space-y-3 mt-3">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-              <div className="lg:col-span-2">
-                <BillPreviewTab
-                  ref={printAreaRef}
-                  visit={visit}
-                  opdFormData={opdFormData}
-                  billItems={billItems}
-                  billingData={billingData}
-                  tenantData={tenantData}
-                  tenantSettings={tenantSettings}
-                  patientBills={patientBills}
-                  billsLoading={billsLoading}
-                  onPrint={handlePrint}
-                  onDownloadPDF={handleDownloadPDF}
+      {/* Billing Form */}
+      {showBillingForm && activeTab === 'billing' && (
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-3">
+          {/* Left: Consultation fee inline + Items table */}
+          <div className="space-y-3">
+            {/* Consultation fee - compact inline */}
+            <div className="flex items-center gap-3 px-3 py-2 bg-muted/30 rounded-md border">
+              <span className="text-xs text-muted-foreground shrink-0">Consultation Fee</span>
+              <div className="relative flex-1 max-w-[140px]">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">₹</span>
+                <Input
+                  type="number"
+                  value={opdFormData.opdAmount}
+                  onChange={(e) => handleOpdInputChange('opdAmount', e.target.value)}
+                  className="h-7 text-xs font-semibold pl-5"
                 />
               </div>
-
-              <BillingDetailsPanel
-                data={billingData}
-                billItems={billItems}
-                onChange={handleBillingChange}
-                onFormatReceived={() => {
-                  const num = parseFloat(billingData.receivedAmount);
-                  if (!isNaN(num)) setBillingData((prev) => ({ ...prev, receivedAmount: num.toFixed(2) }));
-                }}
-                onSave={handleSaveBill}
-                isEditMode={isEditMode}
-              />
+              {visit.doctor_details && (
+                <span className="text-[10px] text-muted-foreground truncate">
+                  {visit.doctor_details.full_name} · Std ₹{visit.visit_type === 'follow_up'
+                    ? visit.doctor_details.follow_up_fee
+                    : visit.doctor_details.consultation_fee}
+                </span>
+              )}
             </div>
-          </TabsContent>
-        </Tabs>
+
+            {/* Items table with action buttons */}
+            <div className="border rounded-md">
+              <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/20">
+                <span className="text-xs font-medium">{billItems.length} items · ₹{billingData.subtotal}</span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setIsInvestigationsModalOpen(true)}
+                    className="h-6 px-2 rounded border text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"
+                  >
+                    <FlaskConical className="h-3 w-3" />
+                    Investigations
+                    {unbilledRequisitions && unbilledRequisitions.length > 0 && (
+                      <span className="bg-destructive text-destructive-foreground rounded-full px-1 text-[9px] font-bold">
+                        {unbilledRequisitions.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setIsProceduresModalOpen(true)}
+                    className="h-6 px-2 rounded border text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"
+                  >
+                    <Package className="h-3 w-3" />
+                    Procedures
+                  </button>
+                  <button
+                    onClick={handleSyncClinicalCharges}
+                    disabled={isSyncingClinicalCharges}
+                    className="h-6 px-2 rounded border text-[10px] bg-foreground text-background flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <Download className="h-3 w-3" />
+                    {isSyncingClinicalCharges ? 'Syncing...' : 'Sync'}
+                  </button>
+                </div>
+              </div>
+              <div className="p-2">
+                <BillItemsTable
+                  items={billItems}
+                  onUpdateItem={handleUpdateBillItem}
+                  onRemoveItem={handleRemoveBillItem}
+                  readOnly={false}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Summary panel */}
+          <BillingDetailsPanel
+            data={billingData}
+            billItems={billItems}
+            onChange={handleBillingChange}
+            onFormatReceived={() => {
+              const num = parseFloat(billingData.receivedAmount);
+              if (!isNaN(num)) setBillingData((prev) => ({ ...prev, receivedAmount: num.toFixed(2) }));
+            }}
+            onSave={handleSaveBill}
+            isEditMode={isEditMode}
+          />
+        </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
+      {/* Preview */}
+      {showBillingForm && activeTab === 'preview' && (
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-3">
+          <BillPreviewTab
+            ref={printAreaRef}
+            visit={visit}
+            opdFormData={opdFormData}
+            billItems={billItems}
+            billingData={billingData}
+            tenantData={tenantData}
+            tenantSettings={tenantSettings}
+            patientBills={patientBills}
+            billsLoading={billsLoading}
+            onPrint={handlePrint}
+            onDownloadPDF={handleDownloadPDF}
+          />
+          <BillingDetailsPanel
+            data={billingData}
+            billItems={billItems}
+            onChange={handleBillingChange}
+            onFormatReceived={() => {
+              const num = parseFloat(billingData.receivedAmount);
+              if (!isNaN(num)) setBillingData((prev) => ({ ...prev, receivedAmount: num.toFixed(2) }));
+            }}
+            onSave={handleSaveBill}
+            isEditMode={isEditMode}
+          />
+        </div>
+      )}
+
+      {/* Dialogs */}
+      <Dialog open={isInvestigationsModalOpen} onOpenChange={setIsInvestigationsModalOpen}>
+        <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Delete Bill</DialogTitle>
+            <DialogTitle className="text-sm">Investigations & Clinical Charges</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Are you sure you want to delete this bill? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsDeleteDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleConfirmDelete}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Bill
-              </Button>
-            </div>
+          <InvestigationsBillingTab
+            visit={visit}
+            unbilledRequisitions={unbilledRequisitions}
+            totalUnbilledItems={totalUnbilledItems}
+            estimatedUnbilledAmount={estimatedUnbilledAmount}
+            requisitionsLoading={requisitionsLoading}
+            isSyncingClinicalCharges={isSyncingClinicalCharges}
+            existingBill={existingBill}
+            investigationsData={investigationsData}
+            investigationsLoading={investigationsLoading}
+            onSyncClinicalCharges={handleSyncClinicalCharges}
+            onRefreshRequisitions={mutateRequisitions}
+            onAddInvestigation={handleAddInvestigation}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isProceduresModalOpen} onOpenChange={setIsProceduresModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Procedures & Packages</DialogTitle>
+          </DialogHeader>
+          <ProcedureBillingTab
+            billItems={billItems}
+            proceduresData={proceduresData}
+            packagesData={packagesData}
+            proceduresLoading={proceduresLoading}
+            packagesLoading={packagesLoading}
+            onAddProcedure={handleAddProcedure}
+            onAddPackage={handleAddPackage}
+            onUpdateBillItem={handleUpdateBillItem}
+            onRemoveBillItem={handleRemoveBillItem}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Delete Bill</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            This action cannot be undone. Are you sure?
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" size="sm" className="h-7 text-xs" onClick={handleConfirmDelete}>
+              <Trash2 className="h-3 w-3 mr-1" />
+              Delete
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
