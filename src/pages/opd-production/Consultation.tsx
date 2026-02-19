@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useOpdVisit } from '@/hooks/useOpdVisit';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -20,15 +17,13 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  ArrowLeft, Loader2, User, Phone, Calendar, Activity, Droplet,
+  ArrowLeft, Loader2, Phone,
   PlusCircle, Eye, ChevronLeft, ChevronRight, Play, CheckCircle, CalendarPlus, X
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -48,14 +43,14 @@ export const OPDConsultation: React.FC = () => {
   const { visitId } = useParams<{ visitId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const { 
-    useOpdVisitById, 
-    useTodayVisits, 
-    patchOpdVisit, 
-    completeOpdVisit 
+
+  const {
+    useOpdVisitById,
+    useTodayVisits,
+    patchOpdVisit,
+    completeOpdVisit
   } = useOpdVisit();
-  
+
   const { user } = useAuth();
   const {
     useTemplates,
@@ -88,7 +83,6 @@ export const OPDConsultation: React.FC = () => {
 
   // Update URL hash when tab changes
   const handleTabChange = (tab: string) => {
-    console.log('Tab change requested:', tab, 'Current:', activeTab);
     setActiveTab(tab);
     navigate(`#${tab}`, { replace: true });
   };
@@ -135,9 +129,9 @@ export const OPDConsultation: React.FC = () => {
     if (!visit) return;
     setIsSaving(true);
     try {
-      await patchOpdVisit(visit.id, { 
-        status: 'in_consultation', 
-        started_at: new Date().toISOString() 
+      await patchOpdVisit(visit.id, {
+        status: 'in_consultation',
+        started_at: new Date().toISOString()
       });
       toast.success('Consultation started');
       mutateVisit();
@@ -293,22 +287,18 @@ export const OPDConsultation: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (error || !visit) {
     return (
-      <div className="p-6 max-w-8xl mx-auto">
-        <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-destructive">Failed to load visit details</p>
-            <Button onClick={handleBack} className="mt-4">
-              Back
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center space-y-3">
+          <p className="text-sm text-muted-foreground">Failed to load visit details</p>
+          <Button variant="outline" size="sm" onClick={handleBack}>Back</Button>
+        </div>
       </div>
     );
   }
@@ -316,249 +306,257 @@ export const OPDConsultation: React.FC = () => {
   const patient = visit.patient_details;
   const doctor = visit.doctor_details;
 
-  const calculateBMI = () => 'N/A';
+  const statusLabel = visit.status?.replace('_', ' ');
 
   return (
-    <div className="flex flex-col h-full bg-background/95">
-      {/* Modern Sticky Header */}
-      <div className="sticky top-0 z-20 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-6">
-            <Button variant="ghost" size="icon" onClick={handleBack} className="-ml-2">
-              <ArrowLeft className="h-5 w-5" />
+    <div className="flex flex-col h-full bg-background">
+      {/* Compact Sticky Header */}
+      <div className="sticky top-0 z-20 w-full bg-background border-b">
+        {/* Top bar: patient info + actions */}
+        <div className="flex items-center justify-between px-4 py-2">
+          {/* Left: Back + Patient Info + Nav */}
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={handleBack} className="h-7 w-7 -ml-1">
+              <ArrowLeft className="h-4 w-4" />
             </Button>
-            
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10 border">
-                <AvatarFallback className="bg-primary/10 text-primary">
-                  {patient?.full_name?.charAt(0) || 'P'}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h1 
-                  className="text-lg font-bold leading-none cursor-pointer hover:underline decoration-primary/50 underline-offset-4"
-                  onClick={() => navigate(`/patients/${visit.patient}`)}
-                >
-                  {patient?.full_name || 'Unknown Patient'}
-                </h1>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                  <span className="font-mono bg-muted px-1 rounded">PID: {patient?.patient_id || 'N/A'}</span>
-                  <span>•</span>
-                  <span>{patient?.age || '-'} yrs / {patient?.gender || '-'}</span>
-                  <span>•</span>
-                  <Phone className="h-3 w-3" /> {patient?.mobile_primary || 'N/A'}
-                </div>
+
+            <div className="h-8 w-8 rounded-full bg-foreground/5 border flex items-center justify-center text-sm font-semibold shrink-0">
+              {patient?.full_name?.charAt(0) || 'P'}
+            </div>
+
+            <div className="min-w-0">
+              <h1
+                className="text-sm font-semibold leading-tight cursor-pointer hover:underline underline-offset-2 truncate"
+                onClick={() => navigate(`/patients/${visit.patient}`)}
+              >
+                {patient?.full_name || 'Unknown Patient'}
+              </h1>
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <span className="font-mono">{patient?.patient_id || 'N/A'}</span>
+                <span>·</span>
+                <span>{patient?.age || '-'}y / {patient?.gender || '-'}</span>
+                <span>·</span>
+                <Phone className="h-2.5 w-2.5" />
+                <span>{patient?.mobile_primary || 'N/A'}</span>
               </div>
             </div>
 
-            {/* Navigation Controls */}
-            <div className="flex items-center bg-muted/50 rounded-lg border p-0.5 ml-4">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-7 w-7" 
-                onClick={handlePrevVisit} 
+            {/* Compact Nav */}
+            <div className="flex items-center border rounded-md ml-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 rounded-none rounded-l-md"
+                onClick={handlePrevVisit}
                 disabled={!prevVisitId}
-                title="Previous Patient"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3 w-3" />
               </Button>
-              <div className="px-3 text-xs font-medium border-x border-muted-foreground/20">
-                {currentIndex + 1} / {todayVisits.length}
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-7 w-7" 
-                onClick={handleNextVisit} 
+              <span className="text-[10px] font-mono px-1.5 border-x text-muted-foreground">
+                {currentIndex + 1}/{todayVisits.length}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 rounded-none rounded-r-md"
+                onClick={handleNextVisit}
                 disabled={!nextVisitId}
-                title="Next Patient"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3 w-3" />
               </Button>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Right: Status + Actions */}
+          <div className="flex items-center gap-2">
             <Badge
-              variant={visit.status === 'completed' ? 'default' : 'secondary'}
-              className={`px-3 py-1 text-xs uppercase tracking-wide ${
-                visit.status === 'completed' ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200' :
-                visit.status === 'in_consultation' || visit.status === 'in_progress' ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' :
-                'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200'
-              }`}
+              variant="outline"
+              className="text-[10px] uppercase tracking-wide font-normal px-2 py-0.5"
             >
-              {visit.status?.replace('_', ' ')}
+              {statusLabel}
             </Badge>
 
-            {/* Action Buttons based on Status */}
             {visit.status === 'waiting' && (
-              <Button onClick={handleStartConsultation} disabled={isSaving} className="gap-2 bg-foreground hover:bg-foreground/90 text-background">
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                Start Consultation
+              <Button
+                size="sm"
+                onClick={handleStartConsultation}
+                disabled={isSaving}
+                className="h-7 text-xs gap-1.5 bg-foreground hover:bg-foreground/90 text-background"
+              >
+                {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+                Start
               </Button>
             )}
-            
+
             {(visit.status === 'in_consultation' || visit.status === 'in_progress') && (
-              <Button onClick={() => setShowCompleteDialog(true)} disabled={isSaving} className="gap-2 bg-foreground hover:bg-foreground/90 text-background">
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                Complete Visit
+              <Button
+                size="sm"
+                onClick={() => setShowCompleteDialog(true)}
+                disabled={isSaving}
+                className="h-7 text-xs gap-1.5 bg-foreground hover:bg-foreground/90 text-background"
+              >
+                {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
+                Complete
               </Button>
             )}
           </div>
         </div>
 
-        {/* Tabs Navigation - Part of Sticky Header */}
-        <div className="border-t px-4 bg-muted/30 relative z-10">
-          <div className="flex gap-6">
-            {['consultation', 'billing', 'history', 'profile'].map(tab => (
-              <button
-                key={tab}
-                onClick={() => handleTabChange(tab)}
-                className={`px-2 py-3 text-sm font-medium capitalize transition-colors border-b-2 relative z-10 ${
-                  activeTab === tab
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+        {/* Tab bar */}
+        <div className="flex px-4 border-t">
+          {['consultation', 'billing', 'history', 'profile'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => handleTabChange(tab)}
+              className={`px-3 py-2 text-xs font-medium capitalize transition-colors border-b-2 -mb-px ${
+                activeTab === tab
+                  ? 'border-foreground text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-6 w-full w-full space-y-6">
-        
-        {/* Main Content Area */}
-        <div className="grid grid-cols-1 gap-6">
-          {/* Patient Quick Info Card */}
-          <Card className="bg-card/50">
-            <CardContent className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground">Blood Group</span>
-                <span className="font-medium flex items-center gap-2">
-                  <Droplet className="h-3 w-3 text-red-500" /> {patient?.blood_group || 'N/A'}
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground">Vitals (BMI)</span>
-                <span className="font-medium flex items-center gap-2">
-                  <Activity className="h-3 w-3 text-blue-500" /> {calculateBMI()}
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground">Visit Type</span>
-                <Badge variant="outline" className="w-fit text-[10px] font-normal">
-                  {visit.visit_type?.toUpperCase()}
-                </Badge>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground">Priority</span>
-                <span className={`font-medium ${visit.priority === 'high' || visit.priority === 'urgent' ? 'text-red-600' : ''}`}>
-                  {visit.priority?.toUpperCase()}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-[1400px] mx-auto p-4 space-y-3">
 
-          {/* Template Selection & Consultation Responses */}
-          <Card>
-            <CardHeader className="py-4">
-              <CardTitle className="text-base">Consultation Workspace</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0 pb-4">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="flex-1 max-w-sm">
-                  <Select
-                    onValueChange={setSelectedTemplate}
-                    value={selectedTemplate || undefined}
-                    disabled={isLoadingTemplates}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={isLoadingTemplates ? "Loading templates..." : "Select clinical template..."} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {isLoadingTemplates ? (
-                        <SelectItem value="loading" disabled>Loading...</SelectItem>
-                      ) : (
-                        (templatesData?.results || []).map(t => (
-                          <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+          {/* Quick Info Strip */}
+          <div className="flex items-center gap-4 text-xs border rounded-md px-3 py-2">
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">Blood:</span>
+              <span className="font-medium">{patient?.blood_group || 'N/A'}</span>
+            </div>
+            <div className="h-3 w-px bg-border" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">Type:</span>
+              <span className="font-medium uppercase">{visit.visit_type}</span>
+            </div>
+            <div className="h-3 w-px bg-border" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">Priority:</span>
+              <span className={`font-medium uppercase ${visit.priority === 'high' || visit.priority === 'urgent' ? 'text-red-600' : ''}`}>
+                {visit.priority}
+              </span>
+            </div>
+            {doctor && (
+              <>
+                <div className="h-3 w-px bg-border" />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">Doctor:</span>
+                  <span className="font-medium">{doctor.full_name}</span>
                 </div>
-                
+              </>
+            )}
+            {visit.visit_date && (
+              <>
+                <div className="h-3 w-px bg-border" />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">Date:</span>
+                  <span className="font-medium">{visit.visit_date}</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Template Workspace (only on consultation tab) */}
+          {activeTab === 'consultation' && (
+            <div className="border rounded-md px-3 py-2.5">
+              <div className="flex items-center gap-3">
+                <Select
+                  onValueChange={setSelectedTemplate}
+                  value={selectedTemplate || undefined}
+                  disabled={isLoadingTemplates}
+                >
+                  <SelectTrigger className="h-8 text-xs max-w-[240px]">
+                    <SelectValue placeholder={isLoadingTemplates ? "Loading..." : "Select template..."} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {isLoadingTemplates ? (
+                      <SelectItem value="loading" disabled>Loading...</SelectItem>
+                    ) : (
+                      (templatesData?.results || []).map(t => (
+                        <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+
                 {selectedTemplate && (
-                  <Button variant="outline" size="sm" onClick={() => setShowNewResponseDialog(true)}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Note
+                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setShowNewResponseDialog(true)}>
+                    <PlusCircle className="h-3 w-3" /> Add Note
                   </Button>
                 )}
-              </div>
 
-              {/* Active Responses Chips */}
-              <div className="flex flex-wrap gap-2">
-                {templateResponses.map(res => (
-                  <Button
-                    key={res.id}
-                    variant={activeResponse?.id === res.id ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleViewResponse(res)}
-                    className="h-8 text-xs"
-                  >
-                    <Eye className="mr-2 h-3 w-3" />
-                    Note #{res.response_sequence} ({res.status})
-                  </Button>
-                ))}
+                <div className="h-4 w-px bg-border mx-1" />
+
+                {/* Response chips */}
+                <div className="flex flex-wrap gap-1.5">
+                  {templateResponses.map(res => (
+                    <button
+                      key={res.id}
+                      onClick={() => handleViewResponse(res)}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium border transition-colors ${
+                        activeResponse?.id === res.id
+                          ? 'bg-foreground text-background border-foreground'
+                          : 'bg-background text-foreground border-border hover:bg-muted'
+                      }`}
+                    >
+                      <Eye className="h-2.5 w-2.5" />
+                      #{res.response_sequence}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          )}
 
           {/* Tab Content */}
-          <Card>
-            <CardContent className="p-6">
-              {activeTab === 'consultation' && (
-                <ConsultationTab visit={visit} onVisitUpdate={() => mutateVisit()} />
-              )}
-              {activeTab === 'billing' && (
-                <OPDBillingContent visit={visit} />
-              )}
-              {activeTab === 'history' && (
-                <HistoryTab patientId={visit.patient} />
-              )}
-              {activeTab === 'profile' && (
-                <ProfileTab patientId={visit.patient} />
-              )}
-            </CardContent>
-          </Card>
+          <div className="border rounded-md p-4">
+            {activeTab === 'consultation' && (
+              <ConsultationTab visit={visit} onVisitUpdate={() => mutateVisit()} />
+            )}
+            {activeTab === 'billing' && (
+              <OPDBillingContent visit={visit} />
+            )}
+            {activeTab === 'history' && (
+              <HistoryTab patientId={visit.patient} />
+            )}
+            {activeTab === 'profile' && (
+              <ProfileTab patientId={visit.patient} />
+            )}
+          </div>
         </div>
       </div>
 
       {/* New Response Dialog */}
       <Dialog open={showNewResponseDialog} onOpenChange={setShowNewResponseDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Clinical Note</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-sm font-semibold">Add Clinical Note</DialogTitle>
+            <DialogDescription className="text-xs">
               Create a new note for this consultation.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 py-4">
-            <Label htmlFor="reason">Reason / Context (optional)</Label>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="reason" className="text-xs">Reason / Context (optional)</Label>
             <Input
               id="reason"
               placeholder="e.g., Handover, Second Opinion"
               value={newResponseReason}
               onChange={(e) => setNewResponseReason(e.target.value)}
+              className="h-8 text-sm"
             />
           </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowNewResponseDialog(false)}>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setShowNewResponseDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={() => handleAddNewResponse(false)} disabled={isSaving}>
-              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Create Note
+            <Button size="sm" onClick={() => handleAddNewResponse(false)} disabled={isSaving} className="bg-foreground hover:bg-foreground/90 text-background">
+              {isSaving && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />} Create
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -568,15 +566,15 @@ export const OPDConsultation: React.FC = () => {
       <Dialog open={isFollowupOpen} onOpenChange={setIsFollowupOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CalendarPlus className="h-5 w-5" />
+            <DialogTitle className="flex items-center gap-2 text-sm font-semibold">
+              <CalendarPlus className="h-4 w-4" />
               Schedule Follow-up
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs">
               Set the next follow-up date for this patient
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-3 py-2">
             <div className="flex justify-center">
               <CalendarComponent
                 mode="single"
@@ -587,35 +585,37 @@ export const OPDConsultation: React.FC = () => {
               />
             </div>
             <div>
-              <Label className="text-sm">Notes (optional)</Label>
+              <Label className="text-xs">Notes (optional)</Label>
               <Textarea
                 placeholder="Follow-up instructions..."
                 value={followupNotes}
                 onChange={(e) => setFollowupNotes(e.target.value)}
-                className="mt-2 h-20 resize-none"
+                className="mt-1 h-16 resize-none text-sm"
               />
             </div>
           </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
+          <DialogFooter className="gap-2">
             {visit.follow_up_date && (
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => {
                   handleClearFollowup();
                   handleSaveFollowup();
                 }}
                 className="text-destructive hover:text-destructive"
               >
-                Clear Follow-up
+                Clear
               </Button>
             )}
             <Button
+              size="sm"
               onClick={handleSaveFollowup}
               disabled={isSavingFollowup || !followupDate}
-              className="bg-neutral-700 dark:bg-neutral-400 hover:bg-neutral-800 dark:bg-neutral-300"
+              className="bg-foreground hover:bg-foreground/90 text-background"
             >
-              {isSavingFollowup && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Save Follow-up
+              {isSavingFollowup && <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />}
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -623,28 +623,29 @@ export const OPDConsultation: React.FC = () => {
 
       {/* Complete Consultation Dialog */}
       <Dialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Complete Consultation</DialogTitle>
-            <DialogDescription>
-              Finalize this visit. This will move the patient to the completed list.
+            <DialogTitle className="text-sm font-semibold">Complete Consultation</DialogTitle>
+            <DialogDescription className="text-xs">
+              Finalize this visit and move the patient to completed.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 py-4">
-            <Label htmlFor="complete-note">Final Diagnosis / Notes</Label>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="complete-note" className="text-xs">Final Diagnosis / Notes</Label>
             <Input
               id="complete-note"
               placeholder="Enter diagnosis or completion summary..."
               value={completeNote}
               onChange={(e) => setCompleteNote(e.target.value)}
+              className="h-8 text-sm"
             />
           </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowCompleteDialog(false)}>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setShowCompleteDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCompleteConsultation} disabled={isSaving} className="bg-foreground hover:bg-foreground/90 text-background">
-              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Complete Visit
+            <Button size="sm" onClick={handleCompleteConsultation} disabled={isSaving} className="bg-foreground hover:bg-foreground/90 text-background">
+              {isSaving && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />} Complete
             </Button>
           </DialogFooter>
         </DialogContent>
