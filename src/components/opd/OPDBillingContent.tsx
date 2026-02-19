@@ -1420,7 +1420,7 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
 
       {/* Billing Form */}
       {showBillingForm && activeTab === 'billing' && (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-[70%_1fr] gap-3">
           {/* Left: Consultation fee inline + Items table */}
           <div className="space-y-3">
             {/* Consultation fee - compact inline */}
@@ -1448,33 +1448,33 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
             <div className="border rounded-md">
               <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/20">
                 <span className="text-xs font-medium">{billItems.length} items · ₹{billingData.subtotal}</span>
-                <div className="flex gap-1">
+                <div className="flex gap-1.5">
                   <button
                     onClick={() => setIsInvestigationsModalOpen(true)}
-                    className="h-6 px-2 rounded border text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"
+                    className="h-7 px-2.5 rounded border text-xs text-muted-foreground hover:text-foreground hover:bg-muted flex items-center gap-1.5 transition-colors"
                   >
-                    <FlaskConical className="h-3 w-3" />
+                    <FlaskConical className="h-3.5 w-3.5" />
                     Investigations
                     {unbilledRequisitions && unbilledRequisitions.length > 0 && (
-                      <span className="bg-destructive text-destructive-foreground rounded-full px-1 text-[9px] font-bold">
+                      <span className="bg-destructive text-destructive-foreground rounded-full px-1.5 text-[10px] font-bold">
                         {unbilledRequisitions.length}
                       </span>
                     )}
                   </button>
                   <button
                     onClick={() => setIsProceduresModalOpen(true)}
-                    className="h-6 px-2 rounded border text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"
+                    className="h-7 px-2.5 rounded border text-xs text-muted-foreground hover:text-foreground hover:bg-muted flex items-center gap-1.5 transition-colors"
                   >
-                    <Package className="h-3 w-3" />
+                    <Package className="h-3.5 w-3.5" />
                     Procedures
                   </button>
                   <button
                     onClick={handleSyncClinicalCharges}
                     disabled={isSyncingClinicalCharges}
-                    className="h-6 px-2 rounded border text-[10px] bg-foreground text-background flex items-center gap-1 disabled:opacity-50"
+                    className="h-7 px-2.5 rounded border text-xs bg-foreground text-background flex items-center gap-1.5 disabled:opacity-50 transition-colors"
                   >
-                    <Download className="h-3 w-3" />
-                    {isSyncingClinicalCharges ? 'Syncing...' : 'Sync'}
+                    <Download className="h-3.5 w-3.5" />
+                    {isSyncingClinicalCharges ? 'Syncing...' : 'Sync Requisitions'}
                   </button>
                 </div>
               </div>
@@ -1506,7 +1506,7 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
 
       {/* Preview */}
       {showBillingForm && activeTab === 'preview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-[70%_1fr] gap-3">
           <BillPreviewTab
             ref={printAreaRef}
             visit={visit}
