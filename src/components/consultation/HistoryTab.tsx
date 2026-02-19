@@ -82,9 +82,9 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ patientId }) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {/* Stats strip */}
-      <div className="flex items-center gap-6 text-xs border-b pb-3">
+      <div className="flex items-center gap-4 text-[11px] border-b pb-2">
         <div>
           <span className="text-muted-foreground">Total Visits: </span>
           <span className="font-semibold">
@@ -121,7 +121,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ patientId }) => {
             const isExpanded = expandedVisits.has(visit.id);
 
             return (
-              <div key={visit.id} className="border-b last:border-b-0 py-3">
+              <div key={visit.id} className="border-b last:border-b-0 py-2">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">

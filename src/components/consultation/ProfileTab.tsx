@@ -46,16 +46,16 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ patientId }) => {
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
-        <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-full bg-foreground/5 border flex items-center justify-center text-lg font-semibold">
+      <div className="flex items-center justify-between border-b pb-2">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-full bg-foreground/5 border flex items-center justify-center text-sm font-semibold">
             {patient.full_name?.charAt(0) || 'P'}
           </div>
           <div>
-            <h2 className="text-base font-semibold">{patient.full_name}</h2>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+            <h2 className="text-sm font-semibold">{patient.full_name}</h2>
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
               <span className="font-mono">{patient.patient_id}</span>
               <span>·</span>
               <span>{patient.age} yrs / {patient.gender}</span>
@@ -84,11 +84,11 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ patientId }) => {
 
       {/* Personal Info */}
       <div>
-        <div className="flex items-center gap-1.5 mb-3">
+        <div className="flex items-center gap-1.5 mb-2">
           <User className="h-3.5 w-3.5 text-muted-foreground" />
           <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Personal Information</h3>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
           <Field label="Full Name" value={patient.full_name} />
           <Field label="Date of Birth" value={formatDate(patient.date_of_birth)} />
           <Field label="Gender" value={patient.gender ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1) : undefined} />
@@ -101,12 +101,12 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ patientId }) => {
       </div>
 
       {/* Contact Info */}
-      <div className="border-t pt-4">
-        <div className="flex items-center gap-1.5 mb-3">
+      <div className="border-t pt-3">
+        <div className="flex items-center gap-1.5 mb-2">
           <Phone className="h-3.5 w-3.5 text-muted-foreground" />
           <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Contact Information</h3>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
           <Field label="Primary Mobile" value={patient.mobile_primary} />
           <Field label="Secondary Mobile" value={patient.mobile_secondary} />
           <Field label="Email" value={patient.email} />
@@ -118,12 +118,12 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ patientId }) => {
       </div>
 
       {/* Emergency Contact */}
-      <div className="border-t pt-4">
-        <div className="flex items-center gap-1.5 mb-3">
+      <div className="border-t pt-3">
+        <div className="flex items-center gap-1.5 mb-2">
           <Heart className="h-3.5 w-3.5 text-muted-foreground" />
           <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Emergency Contact</h3>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
           <Field label="Contact Name" value={patient.emergency_contact_name} />
           <Field label="Relation" value={patient.emergency_contact_relation} />
           <Field label="Phone" value={patient.emergency_contact_phone} />
@@ -132,12 +132,12 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ patientId }) => {
 
       {/* Insurance */}
       {(patient.insurance_provider || patient.insurance_policy_number) && (
-        <div className="border-t pt-4">
-          <div className="flex items-center gap-1.5 mb-3">
+        <div className="border-t pt-3">
+          <div className="flex items-center gap-1.5 mb-2">
             <Shield className="h-3.5 w-3.5 text-muted-foreground" />
             <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Insurance</h3>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
             <Field label="Provider" value={patient.insurance_provider} />
             <Field label="Policy Number" value={patient.insurance_policy_number} />
             <Field label="Expiry Date" value={formatDate(patient.insurance_expiry_date)} />
@@ -150,12 +150,12 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ patientId }) => {
       )}
 
       {/* Registration Info */}
-      <div className="border-t pt-4">
-        <div className="flex items-center gap-1.5 mb-3">
+      <div className="border-t pt-3">
+        <div className="flex items-center gap-1.5 mb-2">
           <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
           <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Registration</h3>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
           <Field label="Registration Date" value={formatDate(patient.registration_date)} />
           <Field label="Last Visit" value={formatDate(patient.last_visit_date)} />
           <Field label="Total Visits" value={patient.total_visits} />
