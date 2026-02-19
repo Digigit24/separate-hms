@@ -25,7 +25,7 @@ import AppointmentsTest from "./pages/Appointments";
 
 import { ThemeSync } from "@/components/ThemeSync";
 import OPDVisits from "./pages/OPDVisits";
-import { OPDConsultation } from "./pages/opd/Consultation";
+import { OPDConsultation } from "./pages/opd-production/Consultation";
 import ConsultationCanvas from "./pages/opd-production/ConsultationCanvas";
 import OPDBills from "./pages/opd-production/OPDBills";
 import ClinicalNotes from "./pages/opd-production/ClinicalNotes";
