@@ -375,7 +375,18 @@ export const OPDConsultation: React.FC = () => {
 
           {/* Right: Status + Action */}
           <div className="flex items-center gap-2 shrink-0 ml-3">
-            <Badge variant="outline" className="text-[10px] uppercase tracking-wide font-normal px-2 h-5">
+            <Badge
+              variant="outline"
+              className={`text-[10px] uppercase tracking-wide font-medium px-2 h-5 ${
+                visit.status === 'in_consultation' || visit.status === 'in_progress'
+                  ? 'bg-emerald-500/15 text-emerald-700 border-emerald-300 dark:text-emerald-400 dark:border-emerald-600'
+                  : visit.status === 'waiting'
+                    ? 'bg-amber-500/15 text-amber-700 border-amber-300 dark:text-amber-400 dark:border-amber-600'
+                    : visit.status === 'completed'
+                      ? 'bg-blue-500/15 text-blue-700 border-blue-300 dark:text-blue-400 dark:border-blue-600'
+                      : ''
+              }`}
+            >
               {statusLabel}
             </Badge>
 
@@ -469,7 +480,7 @@ export const OPDConsultation: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-[1400px] mx-auto px-4 py-3">
+        <div className="w-full px-4 py-3">
           {activeTab === 'consultation' && (
             <ConsultationTab visit={visit} onVisitUpdate={() => mutateVisit()} />
           )}
