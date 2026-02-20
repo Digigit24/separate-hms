@@ -97,6 +97,7 @@ export interface OPDBillCreateData {
   charge_type: ChargeType;
   diagnosis?: string;
   remarks?: string;
+  total_amount: string;
   discount_percent?: string;
   discount_amount?: string;
   payment_mode?: PaymentMode;

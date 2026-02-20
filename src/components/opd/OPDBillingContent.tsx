@@ -1154,6 +1154,7 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
         // Create new bill with all fields
         const createData = {
           ...billMetadata,
+          total_amount: billingData.totalAmount || '0.00',
           discount_percent: billingData.discountPercent || '0',
           discount_amount: billingData.discount || '0',
           payment_mode: billingData.paymentMode || 'cash',

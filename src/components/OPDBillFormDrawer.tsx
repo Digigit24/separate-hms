@@ -209,16 +209,17 @@ export const OPDBillFormDrawer: React.FC<OPDBillFormDrawerProps> = ({
       const opdType: OPDType = visit?.is_follow_up ? 'follow_up' : 'consultation';
       const chargeType: ChargeType = visit?.is_follow_up ? 'revisit' : 'first_visit';
 
-      // Step 1: Create the bill (without received_amount to avoid payable validation)
+      // Step 1: Create the bill with total_amount and received_amount
       const newBill = await createBill({
         visit: parseInt(selectedVisitId),
         doctor: visit?.doctor || 0,
         opd_type: opdType,
         charge_type: chargeType,
+        total_amount: totalAmount.toFixed(2),
         discount_percent: discountPercent || '0',
         discount_amount: discountAmount.toFixed(2),
         payment_mode: paymentMode,
-        received_amount: '0',
+        received_amount: receivedAmount || '0',
         bill_date: formatLocalDate(new Date()),
       });
 
@@ -238,14 +239,6 @@ export const OPDBillFormDrawer: React.FC<OPDBillFormDrawerProps> = ({
           notes: item.code,
         };
         await opdBillService.createBillItem(itemData);
-      }
-
-      // Step 3: Update with received amount now that items exist
-      const recv = parseFloat(receivedAmount) || 0;
-      if (recv > 0) {
-        await opdBillService.updateOPDBill(newBill.id, {
-          received_amount: receivedAmount,
-        });
       }
 
       toast.success('Bill created successfully');
