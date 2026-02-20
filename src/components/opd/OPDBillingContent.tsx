@@ -370,6 +370,7 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
 
       let chargeType = '';
       if (visit.visit_type === 'new') chargeType = 'first_visit';
+      else if (visit.visit_type === 'follow_up') chargeType = 'follow_up';
       else if (visit.visit_type === 'emergency') chargeType = 'emergency';
       else chargeType = 'revisit';
 

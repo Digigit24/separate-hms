@@ -10,7 +10,7 @@ export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
 export type OPDType = 'consultation' | 'follow_up' | 'emergency';
 
 // Charge Type
-export type ChargeType = 'first_visit' | 'revisit' | 'emergency';
+export type ChargeType = 'first_visit' | 'follow_up' | 'revisit' | 'emergency';
 
 // Bill Item Source Type
 export type BillItemSource =
