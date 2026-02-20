@@ -242,11 +242,11 @@ export function UniversalSidebar({
       {/* Workspace Header */}
       <div className="px-4 pt-5 pb-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex-1 flex items-center justify-center min-w-0">
             {isTenantLoading ? (
               <div className={cn(
                 "rounded-lg bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center shrink-0",
-                collapsed ? "w-8 h-8" : "w-10 h-10"
+                collapsed ? "w-10 h-10" : "w-14 h-14"
               )}>
                 <Loader2 className="w-5 h-5 animate-spin text-neutral-500" />
               </div>
@@ -256,18 +256,18 @@ export function UniversalSidebar({
                 alt={tenantName}
                 className={cn(
                   "rounded-lg object-contain shrink-0",
-                  collapsed ? "w-8 h-8" : "w-10 h-10"
+                  collapsed ? "w-10 h-10" : "w-14 h-14"
                 )}
                 onError={() => setLogoError(true)}
               />
             ) : (
               <div className={cn(
                 "rounded-lg bg-neutral-900 dark:bg-white flex items-center justify-center shrink-0",
-                collapsed ? "w-8 h-8" : "w-10 h-10"
+                collapsed ? "w-10 h-10" : "w-14 h-14"
               )}>
                 <Stethoscope className={cn(
                   "text-white dark:text-neutral-900",
-                  collapsed ? "w-4 h-4" : "w-5 h-5"
+                  collapsed ? "w-5 h-5" : "w-7 h-7"
                 )} />
               </div>
             )}
