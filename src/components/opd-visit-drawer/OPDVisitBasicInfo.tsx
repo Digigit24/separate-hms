@@ -22,7 +22,7 @@ import {
 import { DatePicker } from '@/components/ui/date-picker';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { TimePicker } from '@/components/ui/time-picker';
-import { UserPlus, Edit2, X } from 'lucide-react';
+import { UserPlus, Edit2, X, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 import type { OpdVisit, OpdVisitCreateData, OpdVisitUpdateData } from '@/types/opdVisit.types';
@@ -677,6 +677,23 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
             )}
 
             {/* Date & Time */}
+            {!isReadOnly && (
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const now = new Date();
+                    setValue('visit_date', formatLocalDate(now));
+                    setValue('visit_time', `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
+                  }}
+                >
+                  <Clock className="mr-2 h-4 w-4" />
+                  Now
+                </Button>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="visit_date">Visit Date *</Label>
