@@ -206,8 +206,11 @@ export const OPDBillFormDrawer: React.FC<OPDBillFormDrawerProps> = ({
     try {
       // Determine OPD type and charge type from visit
       const visit = selectedVisit;
-      const opdType: OPDType = visit?.is_follow_up ? 'follow_up' : 'consultation';
-      const chargeType: ChargeType = visit?.is_follow_up ? 'revisit' : 'first_visit';
+      const visitType = visit?.visit_type;
+      const opdType: OPDType = visitType === 'emergency' ? 'emergency'
+        : visitType === 'follow_up' ? 'follow_up' : 'consultation';
+      const chargeType: ChargeType = visitType === 'emergency' ? 'emergency'
+        : visitType === 'follow_up' ? 'revisit' : 'first_visit';
 
       // Step 1: Create the bill with total_amount and received_amount
       const newBill = await createBill({

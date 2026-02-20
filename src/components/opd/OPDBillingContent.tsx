@@ -369,8 +369,8 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
           : '0.00');
 
       let chargeType = '';
-      if (isFollowUp) chargeType = 'follow_up';
-      else if (visit.visit_type === 'new') chargeType = 'first_visit';
+      if (visit.visit_type === 'new') chargeType = 'first_visit';
+      else if (visit.visit_type === 'emergency') chargeType = 'emergency';
       else chargeType = 'revisit';
 
       setOpdFormData((prev) => ({
@@ -378,7 +378,8 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
         receiptNo,
         billDate: visit.visit_date || formatLocalDate(new Date()),
         doctor: visit.doctor?.toString() || '',
-        opdType: 'consultation',
+        opdType: visit.visit_type === 'emergency' ? 'emergency'
+          : visit.visit_type === 'follow_up' ? 'follow_up' : 'consultation',
         chargeType,
         opdAmount,
       }));
