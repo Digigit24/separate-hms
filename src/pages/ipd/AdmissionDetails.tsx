@@ -97,15 +97,13 @@ export default function AdmissionDetails() {
         setDischargeData={setDischargeData}
       />
 
-      <div className="flex-1 overflow-auto p-6 w-full w-full space-y-6">
-        <div className="grid grid-cols-1 gap-6">
-          <IPDPatientQuickInfo admission={admission} />
-          <IPDAdmissionTabs
-            admission={admission}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-          />
-        </div>
+      <div className="flex-1 overflow-auto p-4 sm:p-6 w-full space-y-6">
+        <IPDPatientQuickInfo admission={admission} />
+        <IPDAdmissionTabs
+          admission={admission}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
       </div>
     </div>
   );

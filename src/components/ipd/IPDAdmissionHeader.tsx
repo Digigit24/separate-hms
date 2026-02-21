@@ -66,7 +66,10 @@ export const IPDAdmissionHeader: React.FC<IPDAdmissionHeaderProps> = ({
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <h1 className="text-sm sm:text-lg font-bold leading-none truncate">
+                <h1
+                  className="text-sm sm:text-lg font-bold leading-none cursor-pointer hover:underline decoration-primary/50 underline-offset-4 truncate"
+                  onClick={() => navigate(`/patients/${admission.patient}`)}
+                >
                   {patientName}
                 </h1>
                 <div className="flex items-center gap-1 sm:gap-2 text-xs text-muted-foreground mt-1 flex-wrap">
