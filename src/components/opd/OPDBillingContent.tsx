@@ -1119,32 +1119,42 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
       let savedBill: OPDBill;
 
       if (isEditMode && existingBill) {
-        // Step 1: Update bill metadata only (no payment fields yet)
-        savedBill = await updateBill(existingBill.id, billMetadata);
+        // Items are already managed in real-time (add/remove/update send API calls immediately).
+        // Only sync items that are new (no id) or need to be removed.
 
-        // Step 2: Delete all existing items
-        for (const item of existingBill.items || []) {
-          if (item.id) {
-            await opdBillService.deleteBillItem(item.id);
+        const currentItemIds = new Set(billItems.filter(i => i.id).map(i => i.id!));
+        const existingItemIds = new Set((existingBill.items || []).filter(i => i.id).map(i => i.id!));
+
+        // Delete items that were in the existing bill but are no longer in the current list
+        for (const id of existingItemIds) {
+          if (!currentItemIds.has(id)) {
+            try {
+              await opdBillService.deleteBillItem(id);
+            } catch {
+              // Item may already be deleted via handleRemoveBillItem — ignore 404
+            }
           }
         }
 
-        // Step 3: Create all new bill items
+        // Create items that don't have an id yet (newly added locally)
         for (const item of billItems) {
-          const itemData: OPDBillItemCreateData = {
-            bill: savedBill.id,
-            item_name: item.item_name,
-            source: item.source,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            system_calculated_price: item.system_calculated_price || item.unit_price,
-            notes: item.notes || '',
-          };
-          await opdBillService.createBillItem(itemData);
+          if (!item.id) {
+            const itemData: OPDBillItemCreateData = {
+              bill: existingBill.id,
+              item_name: item.item_name,
+              source: item.source,
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              system_calculated_price: item.system_calculated_price || item.unit_price,
+              notes: item.notes || '',
+            };
+            await opdBillService.createBillItem(itemData);
+          }
         }
 
-        // Step 4: Now update payment info (backend has items, so payable_amount is correct)
-        await updateBill(existingBill.id, {
+        // Update bill metadata and payment info
+        savedBill = await updateBill(existingBill.id, {
+          ...billMetadata,
           discount_percent: billingData.discountPercent || '0',
           discount_amount: billingData.discount || '0',
           payment_mode: billingData.paymentMode || 'cash',
