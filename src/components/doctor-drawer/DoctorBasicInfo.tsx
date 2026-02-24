@@ -4,13 +4,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { X, Eye, EyeOff } from 'lucide-react';
 import {
   Select,
@@ -24,18 +22,13 @@ import type { Doctor, DoctorCreateData, DoctorUpdateData, Specialty } from '@/ty
 
 // Validation schemas
 const createDoctorSchema = z.object({
-  // User fields (required for account creation)
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   password_confirm: z.string().min(8, 'Password confirmation required'),
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   phone: z.string().min(10, 'Phone number must be at least 10 digits'),
-
-  // Doctor profile required field (per Django model - no blank=True)
   consultation_duration: z.coerce.number().min(5, 'Consultation duration must be at least 5 minutes'),
-
-  // Optional doctor profile fields (all have blank=True and/or null=True in Django model)
   medical_license_number: z.string().optional(),
   license_issuing_authority: z.string().optional(),
   license_issue_date: z.string().optional(),
@@ -51,7 +44,6 @@ const createDoctorSchema = z.object({
 });
 
 const updateDoctorSchema = z.object({
-  // All fields optional for update
   qualifications: z.string().optional(),
   specialty_ids: z.array(z.number()).optional(),
   years_of_experience: z.coerce.number().min(0).optional(),
@@ -60,8 +52,6 @@ const updateDoctorSchema = z.object({
   consultation_duration: z.coerce.number().min(5).optional(),
   status: z.enum(['active', 'on_leave', 'inactive']).optional(),
 });
-
-type DoctorFormData = z.infer<typeof createDoctorSchema> | z.infer<typeof updateDoctorSchema>;
 
 export interface DoctorBasicInfoHandle {
   getFormValues: () => Promise<DoctorCreateData | DoctorUpdateData | null>;
@@ -78,6 +68,7 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
   ({ doctor, specialties, mode, onSuccess }, ref) => {
     const isReadOnly = mode === 'view';
     const isCreateMode = mode === 'create';
+    const isEditMode = mode === 'edit';
     const [showPassword, setShowPassword] = useState(false);
     const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
 
@@ -85,16 +76,13 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
 
     const defaultValues = isCreateMode
       ? {
-          // Required user fields
           email: '',
           password: '',
           password_confirm: '',
           first_name: '',
           last_name: '',
           phone: '',
-          // Required doctor field
           consultation_duration: 15,
-          // Optional doctor fields
           medical_license_number: '',
           license_issuing_authority: '',
           license_issue_date: '',
@@ -106,7 +94,6 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
           follow_up_fee: 0,
         }
       : {
-          // All fields optional for update
           qualifications: doctor?.qualifications || '',
           specialty_ids: doctor?.specialties?.map((s) => s.id) || [],
           years_of_experience: doctor?.years_of_experience || 0,
@@ -131,7 +118,6 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
     const watchedSpecialtyIds = watch('specialty_ids') || [];
     const watchedStatus = watch('status');
 
-    // Reset form when doctor data changes (for edit/view modes)
     useEffect(() => {
       if (!isCreateMode && doctor) {
         const formValues = {
@@ -147,31 +133,23 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
       }
     }, [doctor, isCreateMode, reset]);
 
-    // Expose form validation and data collection to parent
     useImperativeHandle(ref, () => ({
       getFormValues: async (): Promise<DoctorCreateData | DoctorUpdateData | null> => {
         return new Promise((resolve) => {
           handleSubmit(
             (data) => {
               if (isCreateMode) {
-                // Create doctor with user account (per Django model)
                 const payload: any = {
-                  // User creation flag (required)
                   create_user: true,
-
-                  // User account fields (required when create_user = true)
                   email: data.email,
                   password: data.password,
                   password_confirm: data.password_confirm,
                   first_name: data.first_name,
                   last_name: data.last_name,
                   phone: data.phone,
-
-                  // Doctor profile required field (consultation_duration has no blank=True)
                   consultation_duration: Number(data.consultation_duration),
                 };
 
-                // Add optional doctor profile fields only if they have values
                 if (data.medical_license_number) payload.medical_license_number = data.medical_license_number;
                 if (data.license_issuing_authority) payload.license_issuing_authority = data.license_issuing_authority;
                 if (data.license_issue_date) payload.license_issue_date = data.license_issue_date;
@@ -184,10 +162,8 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
 
                 resolve(payload);
               } else {
-                // Update doctor profile - all fields optional
                 const payload: any = {};
 
-                // Add only fields that have values
                 if (data.qualifications) payload.qualifications = data.qualifications;
                 if (data.specialty_ids) payload.specialty_ids = data.specialty_ids;
                 if (data.years_of_experience !== undefined) payload.years_of_experience = Number(data.years_of_experience);
@@ -217,474 +193,462 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
     };
 
     return (
-      <div className="space-y-6">
-        {/* User Account Information (Create Mode Only) */}
+      <div className="space-y-4">
+        {/* User Account (Create Mode Only) */}
         {isCreateMode && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">User Account</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
+          <>
+            <div>
+              <h3 className="text-sm font-medium text-foreground">User Account</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Login credentials for the doctor</p>
+            </div>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-xs">Email *</Label>
                 <Input
                   id="email"
                   type="email"
                   {...register('email')}
                   placeholder="doctor@example.com"
-                  className={errors.email ? 'border-destructive' : ''}
+                  className={`h-8 text-sm ${errors.email ? 'border-destructive' : ''}`}
                 />
                 {errors.email && (
-                  <p className="text-sm text-destructive">{errors.email.message as string}</p>
+                  <p className="text-xs text-destructive">{errors.email.message as string}</p>
                 )}
               </div>
 
-              {/* Password */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password *</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="password" className="text-xs">Password *</Label>
                   <div className="relative">
                     <Input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       {...register('password')}
                       placeholder="••••••••"
-                      className={`pr-10 ${errors.password ? 'border-destructive' : ''}`}
+                      className={`h-8 text-sm pr-8 ${errors.password ? 'border-destructive' : ''}`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
                       tabIndex={-1}
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </button>
                   </div>
                   {errors.password && (
-                    <p className="text-sm text-destructive">{errors.password.message as string}</p>
+                    <p className="text-xs text-destructive">{errors.password.message as string}</p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password_confirm">Confirm Password *</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="password_confirm" className="text-xs">Confirm Password *</Label>
                   <div className="relative">
                     <Input
                       id="password_confirm"
                       type={showPasswordConfirm ? 'text' : 'password'}
                       {...register('password_confirm')}
                       placeholder="••••••••"
-                      className={`pr-10 ${errors.password_confirm ? 'border-destructive' : ''}`}
+                      className={`h-8 text-sm pr-8 ${errors.password_confirm ? 'border-destructive' : ''}`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
                       tabIndex={-1}
                     >
-                      {showPasswordConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPasswordConfirm ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </button>
                   </div>
                   {errors.password_confirm && (
-                    <p className="text-sm text-destructive">{errors.password_confirm.message as string}</p>
+                    <p className="text-xs text-destructive">{errors.password_confirm.message as string}</p>
                   )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+            <Separator />
+          </>
         )}
 
-        {/* Personal Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Personal Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {isCreateMode ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="first_name">First Name *</Label>
-                    <Input
-                      id="first_name"
-                      {...register('first_name')}
-                      placeholder="John"
-                      className={errors.first_name ? 'border-destructive' : ''}
-                    />
-                    {errors.first_name && (
-                      <p className="text-sm text-destructive">{errors.first_name.message as string}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="last_name">Last Name *</Label>
-                    <Input
-                      id="last_name"
-                      {...register('last_name')}
-                      placeholder="Smith"
-                      className={errors.last_name ? 'border-destructive' : ''}
-                    />
-                    {errors.last_name && (
-                      <p className="text-sm text-destructive">{errors.last_name.message as string}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number *</Label>
-                  <Input
-                    id="phone"
-                    {...register('phone')}
-                    placeholder="+1234567890"
-                    className={errors.phone ? 'border-destructive' : ''}
-                  />
-                  {errors.phone && (
-                    <p className="text-sm text-destructive">{errors.phone.message as string}</p>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <Label className="text-muted-foreground">Full Name</Label>
-                  <p className="font-medium">{doctor?.full_name}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Email</Label>
-                  <p>{doctor?.user?.email || 'N/A'}</p>
-                </div>
+        {/* Personal Information - always read-only in edit mode */}
+        <div>
+          <h3 className="text-sm font-medium text-foreground">Personal Information</h3>
+        </div>
+        {isCreateMode ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="first_name" className="text-xs">First Name *</Label>
+                <Input
+                  id="first_name"
+                  {...register('first_name')}
+                  placeholder="John"
+                  className={`h-8 text-sm ${errors.first_name ? 'border-destructive' : ''}`}
+                />
+                {errors.first_name && (
+                  <p className="text-xs text-destructive">{errors.first_name.message as string}</p>
+                )}
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Medical License Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Medical License</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {isCreateMode ? (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="medical_license_number">License Number</Label>
-                  <Input
-                    id="medical_license_number"
-                    {...register('medical_license_number')}
-                    placeholder="MED-12345"
-                    className={errors.medical_license_number ? 'border-destructive' : ''}
-                  />
-                  {errors.medical_license_number && (
-                    <p className="text-sm text-destructive">
-                      {errors.medical_license_number.message as string}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="license_issuing_authority">Issuing Authority</Label>
-                  <Input
-                    id="license_issuing_authority"
-                    {...register('license_issuing_authority')}
-                    placeholder="Medical Board of..."
-                    className={errors.license_issuing_authority ? 'border-destructive' : ''}
-                  />
-                  {errors.license_issuing_authority && (
-                    <p className="text-sm text-destructive">
-                      {errors.license_issuing_authority.message as string}
-                    </p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="license_issue_date">Issue Date</Label>
-                    <Input
-                      id="license_issue_date"
-                      type="date"
-                      {...register('license_issue_date')}
-                      className={errors.license_issue_date ? 'border-destructive' : ''}
-                    />
-                    {errors.license_issue_date && (
-                      <p className="text-sm text-destructive">
-                        {errors.license_issue_date.message as string}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="license_expiry_date">Expiry Date</Label>
-                    <Input
-                      id="license_expiry_date"
-                      type="date"
-                      {...register('license_expiry_date')}
-                      className={errors.license_expiry_date ? 'border-destructive' : ''}
-                    />
-                    {errors.license_expiry_date && (
-                      <p className="text-sm text-destructive">
-                        {errors.license_expiry_date.message as string}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <Label className="text-muted-foreground">License Number</Label>
-                  <p className="font-mono">{doctor?.medical_license_number}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Issuing Authority</Label>
-                  <p>{doctor?.license_issuing_authority || 'N/A'}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Issue Date</Label>
-                  <p>{doctor?.license_issue_date || 'N/A'}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Expiry Date</Label>
-                  <p>{doctor?.license_expiry_date || 'N/A'}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">License Status</Label>
-                  <p>
-                    {doctor?.is_license_valid ? (
-                      <Badge variant="default" className="bg-green-600">Valid</Badge>
-                    ) : (
-                      <Badge variant="destructive">Expired</Badge>
-                    )}
-                  </p>
-                </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="last_name" className="text-xs">Last Name *</Label>
+                <Input
+                  id="last_name"
+                  {...register('last_name')}
+                  placeholder="Smith"
+                  className={`h-8 text-sm ${errors.last_name ? 'border-destructive' : ''}`}
+                />
+                {errors.last_name && (
+                  <p className="text-xs text-destructive">{errors.last_name.message as string}</p>
+                )}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="phone" className="text-xs">Phone Number *</Label>
+              <Input
+                id="phone"
+                {...register('phone')}
+                placeholder="+1234567890"
+                className={`h-8 text-sm ${errors.phone ? 'border-destructive' : ''}`}
+              />
+              {errors.phone && (
+                <p className="text-xs text-destructive">{errors.phone.message as string}</p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            <div>
+              <span className="text-xs text-muted-foreground">Full Name</span>
+              <p className="text-sm font-medium text-foreground">{doctor?.full_name || 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">Email</span>
+              <p className="text-sm text-foreground">{doctor?.user?.email || 'N/A'}</p>
+            </div>
+          </div>
+        )}
 
-        {/* Professional Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Professional Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Qualifications */}
-            <div className="space-y-2">
-              <Label htmlFor="qualifications">Qualifications</Label>
+        <Separator />
+
+        {/* Medical License - always read-only in edit mode */}
+        <div>
+          <h3 className="text-sm font-medium text-foreground">Medical License</h3>
+        </div>
+        {isCreateMode ? (
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="medical_license_number" className="text-xs">License Number</Label>
+              <Input
+                id="medical_license_number"
+                {...register('medical_license_number')}
+                placeholder="MED-12345"
+                className={`h-8 text-sm ${errors.medical_license_number ? 'border-destructive' : ''}`}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="license_issuing_authority" className="text-xs">Issuing Authority</Label>
+              <Input
+                id="license_issuing_authority"
+                {...register('license_issuing_authority')}
+                placeholder="Medical Board of..."
+                className={`h-8 text-sm ${errors.license_issuing_authority ? 'border-destructive' : ''}`}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="license_issue_date" className="text-xs">Issue Date</Label>
+                <Input
+                  id="license_issue_date"
+                  type="date"
+                  {...register('license_issue_date')}
+                  className={`h-8 text-sm ${errors.license_issue_date ? 'border-destructive' : ''}`}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="license_expiry_date" className="text-xs">Expiry Date</Label>
+                <Input
+                  id="license_expiry_date"
+                  type="date"
+                  {...register('license_expiry_date')}
+                  className={`h-8 text-sm ${errors.license_expiry_date ? 'border-destructive' : ''}`}
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            <div>
+              <span className="text-xs text-muted-foreground">License Number</span>
+              <p className="text-sm font-mono text-foreground">{doctor?.medical_license_number || 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">Issuing Authority</span>
+              <p className="text-sm text-foreground">{doctor?.license_issuing_authority || 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">Issue Date</span>
+              <p className="text-sm text-foreground">{doctor?.license_issue_date || 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">Expiry Date</span>
+              <p className="text-sm text-foreground">{doctor?.license_expiry_date || 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">License Status</span>
+              <div className="mt-0.5">
+                {doctor?.is_license_valid ? (
+                  <Badge variant="default" className="bg-green-600 text-xs h-5">Valid</Badge>
+                ) : (
+                  <Badge variant="destructive" className="text-xs h-5">Expired</Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <Separator />
+
+        {/* Professional Information - editable in edit mode */}
+        <div>
+          <h3 className="text-sm font-medium text-foreground">Professional Information</h3>
+          {isEditMode && (
+            <p className="text-xs text-muted-foreground mt-0.5">Update professional details below</p>
+          )}
+        </div>
+        <div className="space-y-3">
+          {/* Qualifications */}
+          {isReadOnly ? (
+            <div>
+              <span className="text-xs text-muted-foreground">Qualifications</span>
+              <p className="text-sm text-foreground">{doctor?.qualifications || 'N/A'}</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <Label htmlFor="qualifications" className="text-xs">Qualifications</Label>
               <Textarea
                 id="qualifications"
                 {...register('qualifications')}
                 placeholder="MBBS, MD, etc."
-                disabled={isReadOnly}
-                rows={3}
-                className={errors.qualifications ? 'border-destructive' : ''}
+                rows={2}
+                className={`text-sm resize-none ${errors.qualifications ? 'border-destructive' : ''}`}
               />
               {errors.qualifications && (
-                <p className="text-sm text-destructive">{errors.qualifications.message as string}</p>
+                <p className="text-xs text-destructive">{errors.qualifications.message as string}</p>
               )}
             </div>
+          )}
 
-            {/* Specialties */}
-            <div className="space-y-2">
-              <Label>Specialties</Label>
-              <div className="flex flex-wrap gap-2 p-3 border rounded-md min-h-[60px]">
-                {specialties.map((specialty) => (
-                  <Badge
-                    key={specialty.id}
-                    variant={watchedSpecialtyIds.includes(specialty.id) ? 'default' : 'outline'}
-                    className={`cursor-pointer ${isReadOnly ? 'cursor-default' : ''}`}
-                    onClick={() => toggleSpecialty(specialty.id)}
-                  >
-                    {specialty.name}
-                    {watchedSpecialtyIds.includes(specialty.id) && !isReadOnly && (
-                      <X className="h-3 w-3 ml-1" />
-                    )}
-                  </Badge>
-                ))}
-              </div>
-              {errors.specialty_ids && (
-                <p className="text-sm text-destructive">{errors.specialty_ids.message as string}</p>
-              )}
+          {/* Specialties */}
+          <div className="space-y-1.5">
+            <span className="text-xs text-muted-foreground">Specialties</span>
+            <div className="flex flex-wrap gap-1.5">
+              {specialties.map((specialty) => (
+                <Badge
+                  key={specialty.id}
+                  variant={watchedSpecialtyIds.includes(specialty.id) ? 'default' : 'outline'}
+                  className={`text-xs h-6 ${isReadOnly ? 'cursor-default' : 'cursor-pointer hover:opacity-80'}`}
+                  onClick={() => toggleSpecialty(specialty.id)}
+                >
+                  {specialty.name}
+                  {watchedSpecialtyIds.includes(specialty.id) && !isReadOnly && (
+                    <X className="h-3 w-3 ml-1" />
+                  )}
+                </Badge>
+              ))}
             </div>
+            {errors.specialty_ids && (
+              <p className="text-xs text-destructive">{errors.specialty_ids.message as string}</p>
+            )}
+          </div>
 
-            {/* Years of Experience */}
-            <div className="space-y-2">
-              <Label htmlFor="years_of_experience">Years of Experience</Label>
+          {/* Years of Experience */}
+          {isReadOnly ? (
+            <div>
+              <span className="text-xs text-muted-foreground">Years of Experience</span>
+              <p className="text-sm text-foreground">{doctor?.years_of_experience || 0} years</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <Label htmlFor="years_of_experience" className="text-xs">Years of Experience</Label>
               <Input
                 id="years_of_experience"
                 type="number"
                 min="0"
                 {...register('years_of_experience')}
-                disabled={isReadOnly}
-                className={errors.years_of_experience ? 'border-destructive' : ''}
+                className={`h-8 text-sm ${errors.years_of_experience ? 'border-destructive' : ''}`}
               />
               {errors.years_of_experience && (
-                <p className="text-sm text-destructive">
-                  {errors.years_of_experience.message as string}
-                </p>
+                <p className="text-xs text-destructive">{errors.years_of_experience.message as string}</p>
               )}
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
 
-        {/* Consultation & Fees */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Consultation & Fees</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="consultation_duration">Consultation Duration (minutes) {isCreateMode && '*'}</Label>
+        <Separator />
+
+        {/* Consultation & Fees - editable in edit mode */}
+        <div>
+          <h3 className="text-sm font-medium text-foreground">Consultation & Fees</h3>
+        </div>
+        {isReadOnly ? (
+          <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+            <div>
+              <span className="text-xs text-muted-foreground">Duration</span>
+              <p className="text-sm font-medium text-foreground">{doctor?.consultation_duration || 15} min</p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">Consultation Fee</span>
+              <p className="text-sm font-medium text-foreground">{doctor?.consultation_fee || '0'}</p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">Follow-up Fee</span>
+              <p className="text-sm font-medium text-foreground">{doctor?.follow_up_fee || '0'}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="consultation_duration" className="text-xs">
+                Duration (minutes) {isCreateMode && '*'}
+              </Label>
               <Input
                 id="consultation_duration"
                 type="number"
                 min="5"
                 step="5"
                 {...register('consultation_duration')}
-                disabled={isReadOnly}
-                className={errors.consultation_duration ? 'border-destructive' : ''}
+                className={`h-8 text-sm ${errors.consultation_duration ? 'border-destructive' : ''}`}
               />
               {errors.consultation_duration && (
-                <p className="text-sm text-destructive">
-                  {errors.consultation_duration.message as string}
-                </p>
+                <p className="text-xs text-destructive">{errors.consultation_duration.message as string}</p>
               )}
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="consultation_fee">Consultation Fee</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="consultation_fee" className="text-xs">Consultation Fee</Label>
                 <Input
                   id="consultation_fee"
                   type="number"
                   min="0"
                   step="0.01"
                   {...register('consultation_fee')}
-                  disabled={isReadOnly}
-                  className={errors.consultation_fee ? 'border-destructive' : ''}
+                  className={`h-8 text-sm ${errors.consultation_fee ? 'border-destructive' : ''}`}
                 />
                 {errors.consultation_fee && (
-                  <p className="text-sm text-destructive">
-                    {errors.consultation_fee.message as string}
-                  </p>
+                  <p className="text-xs text-destructive">{errors.consultation_fee.message as string}</p>
                 )}
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="follow_up_fee">Follow-up Fee</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="follow_up_fee" className="text-xs">Follow-up Fee</Label>
                 <Input
                   id="follow_up_fee"
                   type="number"
                   min="0"
                   step="0.01"
                   {...register('follow_up_fee')}
-                  disabled={isReadOnly}
-                  className={errors.follow_up_fee ? 'border-destructive' : ''}
+                  className={`h-8 text-sm ${errors.follow_up_fee ? 'border-destructive' : ''}`}
                 />
                 {errors.follow_up_fee && (
-                  <p className="text-sm text-destructive">
-                    {errors.follow_up_fee.message as string}
-                  </p>
+                  <p className="text-xs text-destructive">{errors.follow_up_fee.message as string}</p>
                 )}
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        )}
 
-        {/* Status (Edit Mode Only) */}
+        {/* Status (Edit/View Mode) */}
         {!isCreateMode && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Label htmlFor="status">Doctor Status</Label>
-                {isReadOnly ? (
-                  <div className="pt-2">
-                    <Badge
-                      variant={
-                        doctor?.status === 'active'
-                          ? 'default'
-                          : doctor?.status === 'on_leave'
-                          ? 'secondary'
-                          : 'destructive'
-                      }
-                      className={
-                        doctor?.status === 'active'
-                          ? 'bg-green-600'
-                          : doctor?.status === 'on_leave'
-                          ? 'bg-orange-600'
-                          : ''
-                      }
-                    >
-                      {doctor?.status === 'active' && 'Active'}
-                      {doctor?.status === 'on_leave' && 'On Leave'}
-                      {doctor?.status === 'inactive' && 'Inactive'}
-                    </Badge>
-                  </div>
-                ) : (
-                  <Select
-                    value={watchedStatus}
-                    onValueChange={(value) => setValue('status', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="on_leave">On Leave</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
+          <>
+            <Separator />
+            <div>
+              <h3 className="text-sm font-medium text-foreground">Status</h3>
+            </div>
+            {isReadOnly ? (
+              <div>
+                <Badge
+                  variant={
+                    doctor?.status === 'active'
+                      ? 'default'
+                      : doctor?.status === 'on_leave'
+                      ? 'secondary'
+                      : 'destructive'
+                  }
+                  className={`text-xs h-5 ${
+                    doctor?.status === 'active'
+                      ? 'bg-green-600'
+                      : doctor?.status === 'on_leave'
+                      ? 'bg-orange-600'
+                      : ''
+                  }`}
+                >
+                  {doctor?.status === 'active' && 'Active'}
+                  {doctor?.status === 'on_leave' && 'On Leave'}
+                  {doctor?.status === 'inactive' && 'Inactive'}
+                </Badge>
               </div>
-            </CardContent>
-          </Card>
+            ) : (
+              <div className="space-y-1.5">
+                <Label htmlFor="status" className="text-xs">Doctor Status</Label>
+                <Select
+                  value={watchedStatus}
+                  onValueChange={(value) => setValue('status', value)}
+                >
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="on_leave">On Leave</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </>
         )}
 
         {/* Statistics (View Mode Only) */}
         {mode === 'view' && doctor && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Statistics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <Label className="text-muted-foreground">Average Rating</Label>
-                  <p className="text-lg font-bold">{doctor.average_rating} ⭐</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Total Reviews</Label>
-                  <p className="text-lg font-bold">{doctor.total_reviews}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Total Consultations</Label>
-                  <p className="text-lg font-bold">{doctor.total_consultations}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Online Available</Label>
-                  <p>
-                    {doctor.is_available_online ? (
-                      <Badge variant="default" className="bg-green-600">Yes</Badge>
-                    ) : (
-                      <Badge variant="secondary">No</Badge>
-                    )}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Offline Available</Label>
-                  <p>
-                    {doctor.is_available_offline ? (
-                      <Badge variant="default" className="bg-green-600">Yes</Badge>
-                    ) : (
-                      <Badge variant="secondary">No</Badge>
-                    )}
-                  </p>
+          <>
+            <Separator />
+            <div>
+              <h3 className="text-sm font-medium text-foreground">Statistics</h3>
+            </div>
+            <div className="grid grid-cols-3 gap-x-4 gap-y-3">
+              <div className="rounded-md bg-muted/50 p-2 text-center">
+                <span className="text-xs text-muted-foreground block">Rating</span>
+                <p className="text-sm font-semibold text-foreground">{doctor.average_rating}</p>
+              </div>
+              <div className="rounded-md bg-muted/50 p-2 text-center">
+                <span className="text-xs text-muted-foreground block">Reviews</span>
+                <p className="text-sm font-semibold text-foreground">{doctor.total_reviews}</p>
+              </div>
+              <div className="rounded-md bg-muted/50 p-2 text-center">
+                <span className="text-xs text-muted-foreground block">Consultations</span>
+                <p className="text-sm font-semibold text-foreground">{doctor.total_consultations}</p>
+              </div>
+              <div>
+                <span className="text-xs text-muted-foreground">Online</span>
+                <div className="mt-0.5">
+                  {doctor.is_available_online ? (
+                    <Badge variant="default" className="bg-green-600 text-xs h-5">Yes</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-xs h-5">No</Badge>
+                  )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <span className="text-xs text-muted-foreground">Offline</span>
+                <div className="mt-0.5">
+                  {doctor.is_available_offline ? (
+                    <Badge variant="default" className="bg-green-600 text-xs h-5">Yes</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-xs h-5">No</Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
     );

@@ -1,6 +1,5 @@
 // src/components/DoctorsFormDrawer.tsx
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Pencil, Trash2, Phone, Mail, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -34,7 +33,6 @@ export default function DoctorsFormDrawer({
   onDelete,
   onModeChange,
 }: DoctorsFormDrawerProps) {
-  const [activeTab, setActiveTab] = useState('basic');
   const [currentMode, setCurrentMode] = useState(mode);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -58,13 +56,6 @@ export default function DoctorsFormDrawer({
     setCurrentMode(mode);
   }, [mode]);
 
-  // Reset tab when opening
-  useEffect(() => {
-    if (open) {
-      setActiveTab('basic');
-    }
-  }, [open]);
-
   const handleSuccess = useCallback(() => {
     if (currentMode !== 'create') {
       revalidateDoctor();
@@ -73,7 +64,6 @@ export default function DoctorsFormDrawer({
   }, [currentMode, onSuccess, revalidateDoctor]);
 
   const handleClose = useCallback(() => {
-    setActiveTab('basic');
     onOpenChange(false);
   }, [onOpenChange]);
 
@@ -253,23 +243,13 @@ export default function DoctorsFormDrawer({
   const specialties = specialtiesData?.results || [];
 
   const drawerContent = (
-    <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-1">
-          <TabsTrigger value="basic">Doctor Information</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="basic" className="mt-6 space-y-6">
-          <DoctorBasicInfo
-            ref={formRef}
-            doctor={doctor}
-            specialties={specialties}
-            mode={currentMode}
-            onSuccess={handleSuccess}
-          />
-        </TabsContent>
-      </Tabs>
-    </div>
+    <DoctorBasicInfo
+      ref={formRef}
+      doctor={doctor}
+      specialties={specialties}
+      mode={currentMode}
+      onSuccess={handleSuccess}
+    />
   );
 
   return (
