@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useIPD } from '@/hooks/useIPD';
 import { AdmissionFormData } from '@/types/ipd.types';
 import { PatientSelect } from '@/components/form/PatientSelect';
@@ -19,18 +19,26 @@ interface AdmissionFormDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  defaultPatientId?: number;
 }
 
-export function AdmissionFormDrawer({ open, onOpenChange, onSuccess }: AdmissionFormDrawerProps) {
+export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPatientId }: AdmissionFormDrawerProps) {
   // Form state
   const [formData, setFormData] = useState<AdmissionFormData>({
-    patient: 0,
+    patient: defaultPatientId || 0,
     doctor_id: '',
     ward: 0,
     bed: null,
     reason: '',
     provisional_diagnosis: '',
   });
+
+  // Sync defaultPatientId when drawer opens
+  useEffect(() => {
+    if (open && defaultPatientId) {
+      setFormData((prev) => ({ ...prev, patient: defaultPatientId }));
+    }
+  }, [open, defaultPatientId]);
 
   const { createAdmission, useWards, useAvailableBeds } = useIPD();
 
@@ -42,7 +50,7 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess }: Admission
 
   const resetForm = () => {
     setFormData({
-      patient: 0,
+      patient: defaultPatientId || 0,
       doctor_id: '',
       ward: 0,
       bed: null,

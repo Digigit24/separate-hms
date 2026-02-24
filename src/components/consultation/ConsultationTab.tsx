@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Save, Download, Printer, Building2, Stethoscope, CalendarPlus, X, MessageSquare, Send } from 'lucide-react';
+import { Loader2, Save, Download, Printer, Building2, Stethoscope, CalendarPlus, X, MessageSquare, Send, Plus } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -52,6 +52,7 @@ import { ConsultationBoard } from './ConsultationBoard';
 import { DiagnosticRequisitionSidebar } from './DiagnosticRequisitionSidebar';
 import { FloatingActionPanel } from './FloatingActionPanel';
 import { SideDrawer } from '@/components/SideDrawer';
+import { AdmissionFormDrawer } from '@/components/ipd/AdmissionFormDrawer';
 
 interface FileAttachment {
   id: number;
@@ -100,6 +101,7 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
   const [encounterType, setEncounterType] = useState<'visit' | 'admission'>('visit');
   const [requisitionSidebarOpen, setRequisitionSidebarOpen] = useState(false);
   const [templateDrawerOpen, setTemplateDrawerOpen] = useState(false);
+  const [admissionDrawerOpen, setAdmissionDrawerOpen] = useState(false);
   const [isFollowupOpen, setIsFollowupOpen] = useState(false);
   const [followupDate, setFollowupDate] = useState<Date | undefined>(undefined);
   const [followupNotes, setFollowupNotes] = useState('');
@@ -128,7 +130,7 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
   const { data: patientData } = usePatientById(visit.patient);
 
   // Fetch active admission for the patient
-  const { data: admissionsData } = useAdmissions({
+  const { data: admissionsData, mutate: mutateAdmissions } = useAdmissions({
     patient: visit.patient,
     status: 'admitted',
   });
@@ -846,6 +848,15 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
           {encounterType === 'admission' && activeAdmission && (
             <span className="text-[11px] text-muted-foreground">{activeAdmission.admission_id}</span>
           )}
+          {!activeAdmission && (
+            <button
+              onClick={() => setAdmissionDrawerOpen(true)}
+              className="h-6 px-2 text-[11px] rounded border border-border text-muted-foreground hover:text-foreground hover:border-foreground flex items-center gap-1 transition-colors"
+            >
+              <Plus className="h-3 w-3" />
+              Admit to IPD
+            </button>
+          )}
         </div>
 
         <button
@@ -1317,6 +1328,17 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Admission Form Drawer */}
+      <AdmissionFormDrawer
+        open={admissionDrawerOpen}
+        onOpenChange={setAdmissionDrawerOpen}
+        defaultPatientId={visit.patient}
+        onSuccess={() => {
+          mutateAdmissions();
+          setEncounterType('admission');
+        }}
+      />
     </div>
   );
 };
