@@ -86,6 +86,10 @@ export interface DoctorCreateData {
 }
 
 export interface DoctorUpdateData {
+  medical_license_number?: string;
+  license_issuing_authority?: string;
+  license_issue_date?: string;
+  license_expiry_date?: string;
   qualifications?: string;
   specialty_ids?: number[];
   years_of_experience?: number;

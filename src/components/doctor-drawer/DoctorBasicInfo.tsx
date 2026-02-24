@@ -44,6 +44,10 @@ const createDoctorSchema = z.object({
 });
 
 const updateDoctorSchema = z.object({
+  medical_license_number: z.string().optional(),
+  license_issuing_authority: z.string().optional(),
+  license_issue_date: z.string().optional(),
+  license_expiry_date: z.string().optional(),
   qualifications: z.string().optional(),
   specialty_ids: z.array(z.number()).optional(),
   years_of_experience: z.coerce.number().min(0).optional(),
@@ -94,6 +98,10 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
           follow_up_fee: 0,
         }
       : {
+          medical_license_number: doctor?.medical_license_number || '',
+          license_issuing_authority: doctor?.license_issuing_authority || '',
+          license_issue_date: doctor?.license_issue_date || '',
+          license_expiry_date: doctor?.license_expiry_date || '',
           qualifications: doctor?.qualifications || '',
           specialty_ids: doctor?.specialties?.map((s) => s.id) || [],
           years_of_experience: doctor?.years_of_experience || 0,
@@ -121,6 +129,10 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
     useEffect(() => {
       if (!isCreateMode && doctor) {
         const formValues = {
+          medical_license_number: doctor.medical_license_number || '',
+          license_issuing_authority: doctor.license_issuing_authority || '',
+          license_issue_date: doctor.license_issue_date || '',
+          license_expiry_date: doctor.license_expiry_date || '',
           qualifications: doctor.qualifications || '',
           specialty_ids: doctor.specialties?.map((s) => s.id) || [],
           years_of_experience: doctor.years_of_experience || 0,
@@ -164,6 +176,10 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
               } else {
                 const payload: any = {};
 
+                if (data.medical_license_number) payload.medical_license_number = data.medical_license_number;
+                if (data.license_issuing_authority) payload.license_issuing_authority = data.license_issuing_authority;
+                if (data.license_issue_date) payload.license_issue_date = data.license_issue_date;
+                if (data.license_expiry_date) payload.license_expiry_date = data.license_expiry_date;
                 if (data.qualifications) payload.qualifications = data.qualifications;
                 if (data.specialty_ids) payload.specialty_ids = data.specialty_ids;
                 if (data.years_of_experience !== undefined) payload.years_of_experience = Number(data.years_of_experience);
@@ -270,7 +286,7 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
           </>
         )}
 
-        {/* Personal Information - always read-only in edit mode */}
+        {/* Personal Information */}
         <div>
           <h3 className="text-sm font-medium text-foreground">Personal Information</h3>
         </div>
@@ -330,11 +346,40 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
 
         <Separator />
 
-        {/* Medical License - always read-only in edit mode */}
+        {/* Medical License */}
         <div>
           <h3 className="text-sm font-medium text-foreground">Medical License</h3>
         </div>
-        {isCreateMode ? (
+        {isReadOnly ? (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            <div>
+              <span className="text-xs text-muted-foreground">License Number</span>
+              <p className="text-sm font-mono text-foreground">{doctor?.medical_license_number || 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">Issuing Authority</span>
+              <p className="text-sm text-foreground">{doctor?.license_issuing_authority || 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">Issue Date</span>
+              <p className="text-sm text-foreground">{doctor?.license_issue_date || 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">Expiry Date</span>
+              <p className="text-sm text-foreground">{doctor?.license_expiry_date || 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">License Status</span>
+              <div className="mt-0.5">
+                {doctor?.is_license_valid ? (
+                  <Badge variant="default" className="bg-green-600 text-xs h-5">Valid</Badge>
+                ) : (
+                  <Badge variant="destructive" className="text-xs h-5">Expired</Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label htmlFor="medical_license_number" className="text-xs">License Number</Label>
@@ -372,35 +417,6 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
                   {...register('license_expiry_date')}
                   className={`h-8 text-sm ${errors.license_expiry_date ? 'border-destructive' : ''}`}
                 />
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-            <div>
-              <span className="text-xs text-muted-foreground">License Number</span>
-              <p className="text-sm font-mono text-foreground">{doctor?.medical_license_number || 'N/A'}</p>
-            </div>
-            <div>
-              <span className="text-xs text-muted-foreground">Issuing Authority</span>
-              <p className="text-sm text-foreground">{doctor?.license_issuing_authority || 'N/A'}</p>
-            </div>
-            <div>
-              <span className="text-xs text-muted-foreground">Issue Date</span>
-              <p className="text-sm text-foreground">{doctor?.license_issue_date || 'N/A'}</p>
-            </div>
-            <div>
-              <span className="text-xs text-muted-foreground">Expiry Date</span>
-              <p className="text-sm text-foreground">{doctor?.license_expiry_date || 'N/A'}</p>
-            </div>
-            <div>
-              <span className="text-xs text-muted-foreground">License Status</span>
-              <div className="mt-0.5">
-                {doctor?.is_license_valid ? (
-                  <Badge variant="default" className="bg-green-600 text-xs h-5">Valid</Badge>
-                ) : (
-                  <Badge variant="destructive" className="text-xs h-5">Expired</Badge>
-                )}
               </div>
             </div>
           </div>
