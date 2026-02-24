@@ -8,6 +8,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -817,15 +823,26 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
       {/* Toolbar */}
       <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/20">
         <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-2">
-            <span className={`text-xs font-medium ${encounterType === 'visit' ? 'text-foreground' : 'text-muted-foreground'}`}>OPD</span>
-            <Switch
-              checked={encounterType === 'admission'}
-              onCheckedChange={(checked) => setEncounterType(checked ? 'admission' : 'visit')}
-              disabled={!activeAdmission}
-            />
-            <span className={`text-xs font-medium ${encounterType === 'admission' ? 'text-foreground' : 'text-muted-foreground'}`}>IPD</span>
-          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-medium ${encounterType === 'visit' ? 'text-foreground' : 'text-muted-foreground'}`}>OPD</span>
+                  <Switch
+                    checked={encounterType === 'admission'}
+                    onCheckedChange={(checked) => setEncounterType(checked ? 'admission' : 'visit')}
+                    disabled={!activeAdmission}
+                  />
+                  <span className={`text-xs font-medium ${encounterType === 'admission' ? 'text-foreground' : 'text-muted-foreground'}`}>IPD</span>
+                </div>
+              </TooltipTrigger>
+              {!activeAdmission && (
+                <TooltipContent>
+                  <p className="text-xs">Patient has no active IPD admission</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
           {encounterType === 'admission' && activeAdmission && (
             <span className="text-[11px] text-muted-foreground">{activeAdmission.admission_id}</span>
           )}
