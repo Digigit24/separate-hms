@@ -258,18 +258,33 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
           case 'text': case 'textarea': response.value_text = fieldValue || null; break;
           case 'number': response.value_number = fieldValue ? Number(fieldValue) : null; break;
           case 'date': response.value_date = fieldValue || null; break;
-          case 'datetime': response.value_datetime = fieldValue || null; break;
+          case 'datetime': {
+            // Validate datetime format before sending - convert datetime-local to ISO format
+            if (fieldValue) {
+              const dt = new Date(fieldValue);
+              response.value_datetime = isNaN(dt.getTime()) ? null : dt.toISOString();
+            } else {
+              response.value_datetime = null;
+            }
+            break;
+          }
           case 'boolean': response.value_boolean = Boolean(fieldValue); break;
           case 'checkbox':
-            if (field.options?.length) response.selected_options = Array.isArray(fieldValue) ? fieldValue.map(Number) : [];
-            else response.value_boolean = Boolean(fieldValue);
+            if (field.options?.length) {
+              const opts = Array.isArray(fieldValue) ? fieldValue.map(Number) : [];
+              response.selected_options = opts.length > 0 ? opts : undefined;
+            } else {
+              response.value_boolean = Boolean(fieldValue);
+            }
             break;
           case 'select': case 'radio':
-            response.selected_options = fieldValue ? [Number(fieldValue)] : [];
+            response.selected_options = fieldValue ? [Number(fieldValue)] : undefined;
             break;
-          case 'multiselect':
-            response.selected_options = Array.isArray(fieldValue) ? fieldValue.map(Number) : [];
+          case 'multiselect': {
+            const opts = Array.isArray(fieldValue) ? fieldValue.map(Number) : [];
+            response.selected_options = opts.length > 0 ? opts : undefined;
             break;
+          }
           default: response.value_text = fieldValue ? String(fieldValue) : null;
         }
         return response;
@@ -730,12 +745,14 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
       case 'date':
       case 'datetime':
       case 'time':
+        // Map field_type to valid HTML input types
+        const htmlInputType = field.field_type === 'datetime' ? 'datetime-local' : field.field_type;
         return (
           <div key={field.id} className="space-y-2">
             <Label htmlFor={fieldId}>{field.field_label}</Label>
             <Input
               id={fieldId}
-              type={field.field_type}
+              type={htmlInputType}
               value={value || ''}
               onChange={(e) => handleChange(e.target.value)}
             />
