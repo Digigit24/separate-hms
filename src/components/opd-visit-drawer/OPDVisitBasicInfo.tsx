@@ -1,5 +1,5 @@
 // src/components/opd-visit-drawer/OPDVisitBasicInfo.tsx
-import { forwardRef, useImperativeHandle, useEffect, useState } from 'react';
+import { forwardRef, useImperativeHandle, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -20,16 +20,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { TimePicker } from '@/components/ui/time-picker';
-import { UserPlus, Edit2, X, Clock } from 'lucide-react';
-import { toast } from 'sonner';
+import { Clock } from 'lucide-react';
 
 import type { OpdVisit, OpdVisitCreateData, OpdVisitUpdateData } from '@/types/opdVisit.types';
-import type { PatientCreateData } from '@/types/patient.types';
 import { useDoctor } from '@/hooks/useDoctor';
-import { usePatient } from '@/hooks/usePatient';
-import PatientsFormDrawer from '@/components/PatientsFormDrawer';
+import { PatientSelect } from '@/components/form/PatientSelect';
+import { DoctorSelect } from '@/components/form/DoctorSelect';
 
 // Validation schemas
 const createOpdVisitSchema = z.object({
@@ -103,32 +100,10 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
     const isReadOnly = mode === 'view';
     const isCreateMode = mode === 'create';
 
-    // State for inline patient creation
-    const [showInlinePatientForm, setShowInlinePatientForm] = useState(false);
-    const [inlinePatientData, setInlinePatientData] = useState({
-      first_name: '',
-      last_name: '',
-      date_of_birth: '',
-      gender: '' as 'male' | 'female' | 'other' | '',
-      mobile_primary: '',
-    });
-    const [isCreatingPatient, setIsCreatingPatient] = useState(false);
-
-    // State for patient drawer
-    const [patientDrawerOpen, setPatientDrawerOpen] = useState(false);
-    const [selectedPatientForEdit, setSelectedPatientForEdit] = useState<number | null>(null);
-
-    // State to control patient select dropdown
-    const [patientSelectOpen, setPatientSelectOpen] = useState(false);
-
-    // Fetch doctors and patients for selects
+    // Fetch doctors for fee auto-set
     const { useDoctors } = useDoctor();
-    const { usePatients, createPatient } = usePatient();
     const { data: doctorsData } = useDoctors({ page_size: 100 });
-    const { data: patientsData, mutate: mutatePatients } = usePatients({ page_size: 100 });
-
     const doctors = doctorsData?.results || [];
-    const patients = patientsData?.results || [];
 
     const schema = isCreateMode ? createOpdVisitSchema : updateOpdVisitSchema;
 
@@ -331,72 +306,6 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
       },
     }));
 
-    // Handle inline patient creation
-    const handleCreateInlinePatient = async () => {
-      // Validate required fields
-      if (!inlinePatientData.first_name.trim()) {
-        toast.error('First name is required');
-        return;
-      }
-      if (!inlinePatientData.gender) {
-        toast.error('Gender is required');
-        return;
-      }
-      if (!inlinePatientData.mobile_primary.trim() || inlinePatientData.mobile_primary.length < 9) {
-        toast.error('Valid mobile number is required (min 9 digits)');
-        return;
-      }
-
-      setIsCreatingPatient(true);
-      try {
-        const newPatient = await createPatient({
-          first_name: inlinePatientData.first_name.trim(),
-          last_name: inlinePatientData.last_name.trim() || undefined,
-          date_of_birth: inlinePatientData.date_of_birth || undefined,
-          gender: inlinePatientData.gender,
-          mobile_primary: inlinePatientData.mobile_primary.trim(),
-          create_user: false,
-        } as PatientCreateData);
-
-        toast.success('Patient created successfully');
-
-        // Refresh patients list
-        await mutatePatients();
-
-        // Select the newly created patient
-        setValue('patient_id', newPatient.id);
-
-        // Reset and hide form
-        setInlinePatientData({
-          first_name: '',
-          last_name: '',
-          date_of_birth: '',
-          gender: '',
-          mobile_primary: '',
-        });
-        setShowInlinePatientForm(false);
-      } catch (error: any) {
-        toast.error(error?.message || 'Failed to create patient');
-      } finally {
-        setIsCreatingPatient(false);
-      }
-    };
-
-    // Handle opening patient drawer for editing
-    const handleEditPatient = () => {
-      const patientId = watch('patient_id');
-      if (patientId) {
-        setSelectedPatientForEdit(Number(patientId));
-        setPatientDrawerOpen(true);
-      }
-    };
-
-    // Handle patient drawer success
-    const handlePatientDrawerSuccess = async () => {
-      await mutatePatients();
-      toast.success('Patient updated successfully');
-    };
-
     return (
       <div className="space-y-6">
         {/* Doctor & Patient Selection (Create Mode Only) */}
@@ -406,230 +315,21 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
               <CardTitle className="text-lg">Doctor & Patient</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Doctor Selection */}
-              <div className="space-y-2">
-                <Label htmlFor="doctor_id">Doctor *</Label>
-                <Select
-                  value={String(watchedDoctorId || '')}
-                  onValueChange={(value) => setValue('doctor_id', Number(value))}
-                >
-                  <SelectTrigger className={errors.doctor_id ? 'border-destructive' : ''}>
-                    <SelectValue placeholder="Select a doctor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {doctors.map((doctor) => (
-                      <SelectItem key={doctor.id} value={String(doctor.id)}>
-                        {doctor.full_name} - {doctor.specialties?.map(s => s.name).join(', ')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.doctor_id && (
-                  <p className="text-sm text-destructive">{errors.doctor_id.message as string}</p>
-                )}
-              </div>
+              <DoctorSelect
+                value={watchedDoctorId || null}
+                onChange={(doctorId) => setValue('doctor_id', Number(doctorId))}
+                label="Doctor"
+                required
+                error={errors.doctor_id?.message as string}
+              />
 
-              {/* Patient Selection */}
-              <div className="space-y-2">
-                <Label htmlFor="patient_id">Patient *</Label>
-
-                {/* Patient Selection with Edit Button */}
-                <div className="flex gap-2">
-                  <Select
-                    value={String(watch('patient_id') || '')}
-                    open={patientSelectOpen}
-                    onOpenChange={setPatientSelectOpen}
-                    onValueChange={(value) => {
-                      setValue('patient_id', Number(value));
-                      // Hide inline form when patient is selected
-                      if (showInlinePatientForm) {
-                        setShowInlinePatientForm(false);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className={errors.patient_id ? 'border-destructive' : ''}>
-                      <SelectValue placeholder="Select a patient" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* Add New Patient Button */}
-                      <div className="p-2 border-b">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full justify-start"
-                          size="sm"
-                          onClick={() => {
-                            setShowInlinePatientForm(!showInlinePatientForm);
-                            setPatientSelectOpen(false);
-                          }}
-                        >
-                          <UserPlus className="h-4 w-4 mr-2" />
-                          Add New Patient
-                        </Button>
-                      </div>
-
-                      {/* Patient List */}
-                      {patients.map((patient) => (
-                        <SelectItem key={patient.id} value={String(patient.id)}>
-                          {patient.full_name} - {patient.patient_id} - {patient.mobile_primary}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  {/* Edit Patient Button - Only show when patient is selected */}
-                  {watch('patient_id') && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={handleEditPatient}
-                      title="Edit patient details"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-
-                {errors.patient_id && (
-                  <p className="text-sm text-destructive">{errors.patient_id.message as string}</p>
-                )}
-
-                {/* Inline Patient Creation Form */}
-                {showInlinePatientForm && (
-                  <Card className="mt-2 border-2 border-primary">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-base">Quick Add Patient</CardTitle>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => {
-                            setShowInlinePatientForm(false);
-                            setInlinePatientData({
-                              first_name: '',
-                              last_name: '',
-                              date_of_birth: '',
-                              gender: '',
-                              mobile_primary: '',
-                            });
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {/* Name Fields - First and Last Name */}
-                      <div className="grid grid-cols-2 gap-2">
-                        {/* First Name */}
-                        <div className="space-y-1">
-                          <Label htmlFor="inline_first_name" className="text-sm">
-                            First Name <span className="text-destructive">*</span>
-                          </Label>
-                          <Input
-                            id="inline_first_name"
-                            value={inlinePatientData.first_name}
-                            onChange={(e) => setInlinePatientData(prev => ({ ...prev, first_name: e.target.value }))}
-                            placeholder="First name"
-                            className="h-9"
-                          />
-                        </div>
-
-                        {/* Last Name */}
-                        <div className="space-y-1">
-                          <Label htmlFor="inline_last_name" className="text-sm">
-                            Last Name
-                          </Label>
-                          <Input
-                            id="inline_last_name"
-                            value={inlinePatientData.last_name}
-                            onChange={(e) => setInlinePatientData(prev => ({ ...prev, last_name: e.target.value }))}
-                            placeholder="Last name"
-                            className="h-9"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Date of Birth */}
-                      <div className="space-y-1">
-                        <Label htmlFor="inline_date_of_birth" className="text-sm">
-                          Date of Birth
-                        </Label>
-                        <DatePicker
-                          date={inlinePatientData.date_of_birth ? parseLocalDate(inlinePatientData.date_of_birth) : undefined}
-                          onDateChange={(date) =>
-                            setInlinePatientData(prev => ({
-                              ...prev,
-                              date_of_birth: date ? formatLocalDate(date) : ''
-                            }))
-                          }
-                          placeholder="Select date of birth"
-                          className="h-9"
-                          mode="birth-date"
-                          fromYear={1920}
-                          toYear={new Date().getFullYear()}
-                        />
-                      </div>
-
-                      {/* Gender */}
-                      <div className="space-y-1">
-                        <Label htmlFor="inline_gender" className="text-sm">
-                          Gender <span className="text-destructive">*</span>
-                        </Label>
-                        <Select
-                          value={inlinePatientData.gender}
-                          onValueChange={(value) => setInlinePatientData(prev => ({ ...prev, gender: value as 'male' | 'female' | 'other' }))}
-                        >
-                          <SelectTrigger className="h-9">
-                            <SelectValue placeholder="Select gender" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="male">Male</SelectItem>
-                            <SelectItem value="female">Female</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Mobile Number */}
-                      <div className="space-y-1">
-                        <Label htmlFor="inline_mobile" className="text-sm">
-                          Mobile Number <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                          id="inline_mobile"
-                          type="tel"
-                          value={inlinePatientData.mobile_primary}
-                          onChange={(e) => setInlinePatientData(prev => ({ ...prev, mobile_primary: e.target.value }))}
-                          placeholder="Enter mobile number"
-                          className="h-9"
-                        />
-                      </div>
-
-                      {/* Create Button */}
-                      <Button
-                        type="button"
-                        className="w-full"
-                        size="sm"
-                        onClick={handleCreateInlinePatient}
-                        disabled={isCreatingPatient}
-                      >
-                        {isCreatingPatient ? (
-                          <>Creating...</>
-                        ) : (
-                          <>
-                            <UserPlus className="h-4 w-4 mr-2" />
-                            Create Patient
-                          </>
-                        )}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
+              <PatientSelect
+                value={watch('patient_id') || null}
+                onChange={(patientId) => setValue('patient_id', patientId)}
+                label="Patient"
+                required
+                error={errors.patient_id?.message as string}
+              />
             </CardContent>
           </Card>
         )}
@@ -1185,15 +885,6 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
           </Card>
         )}
 
-        {/* Patient Drawer for Editing */}
-        <PatientsFormDrawer
-          open={patientDrawerOpen}
-          onOpenChange={setPatientDrawerOpen}
-          patientId={selectedPatientForEdit}
-          mode="edit"
-          onSuccess={handlePatientDrawerSuccess}
-          onModeChange={() => {}}
-        />
       </div>
     );
   }
