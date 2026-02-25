@@ -216,7 +216,7 @@ export const OPDVisits: React.FC = () => {
         };
         const config = visit.status ? statusConfig[visit.status] : { label: 'Unknown', className: 'bg-neutral-400 dark:bg-neutral-600' };
         return (
-          <Badge variant="default" className={config.className}>
+          <Badge variant="default" className={`w-fit ${config.className}`}>
             {config.label}
           </Badge>
         );
@@ -231,7 +231,7 @@ export const OPDVisits: React.FC = () => {
           <span className="font-medium">₹{visit.total_amount || '0'}</span>
           <Badge
             variant={visit.payment_status === 'paid' ? 'default' : 'secondary'}
-            className={`text-xs ${visit.payment_status === 'paid' ? 'bg-neutral-900 dark:bg-neutral-200' : ''}`}
+            className={`text-xs w-fit ${visit.payment_status === 'paid' ? 'bg-neutral-900 dark:bg-neutral-200' : ''}`}
           >
             {visit.payment_status ? visit.payment_status.replace('_', ' ').toUpperCase() : 'PENDING'}
           </Badge>
