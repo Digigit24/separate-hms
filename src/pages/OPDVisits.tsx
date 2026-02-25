@@ -77,9 +77,10 @@ export const OPDVisits: React.FC = () => {
   };
 
   const handleView = (visit: OpdVisit) => {
-    setSelectedVisitId(visit.id);
-    setDrawerMode('view');
-    setDrawerOpen(true);
+    const visitIds = visits.map(v => v.id);
+    navigate(`/opd/consultation/${visit.id}`, {
+      state: { visitIds, from: '/opd/visits' }
+    });
   };
 
   const handleEdit = (visit: OpdVisit) => {

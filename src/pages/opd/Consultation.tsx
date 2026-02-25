@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { OPDVisitHeader, OPDPatientQuickInfo, OPDVisitTabs } from '@/components/opd/shared';
 import { OPDBillingContent } from '@/components/opd/OPDBillingContent';
+import OPDVisitFormDrawer from '@/components/OPDVisitFormDrawer';
 
 export const OPDConsultation: React.FC = () => {
   const { visitId } = useParams<{ visitId: string }>();
@@ -27,6 +28,8 @@ export const OPDConsultation: React.FC = () => {
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [completeNote, setCompleteNote] = useState('');
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+  const [editDrawerMode, setEditDrawerMode] = useState<'view' | 'edit'>('edit');
 
   // Update active tab when location state changes
   useEffect(() => {
@@ -162,7 +165,14 @@ export const OPDConsultation: React.FC = () => {
 
       <div className="flex-1 overflow-auto p-6 w-full w-full space-y-6">
         <div className="grid grid-cols-1 gap-6">
-          <OPDPatientQuickInfo visit={visit} patient={patient} />
+          <OPDPatientQuickInfo
+            visit={visit}
+            patient={patient}
+            onEdit={() => {
+              setEditDrawerMode('edit');
+              setEditDrawerOpen(true);
+            }}
+          />
           <OPDVisitTabs
             visit={visit}
             activeTab={activeTab}
@@ -171,6 +181,16 @@ export const OPDConsultation: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* Edit Visit/Patient Drawer */}
+      <OPDVisitFormDrawer
+        open={editDrawerOpen}
+        onOpenChange={setEditDrawerOpen}
+        visitId={visit.id}
+        mode={editDrawerMode}
+        onSuccess={() => mutateVisit()}
+        onModeChange={(mode) => setEditDrawerMode(mode as 'view' | 'edit')}
+      />
     </div>
   );
 };
