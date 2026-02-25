@@ -42,8 +42,8 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
 
   const { createAdmission, useWards, useAvailableBeds } = useIPD();
 
-  const { data: wardsData } = useWards({ is_active: true });
-  const { data: availableBeds } = useAvailableBeds();
+  const { data: wardsData, isLoading: isLoadingWards } = useWards({ is_active: true });
+  const { data: availableBeds, isLoading: isLoadingBeds } = useAvailableBeds();
 
   const wards = wardsData?.results || [];
   const beds = availableBeds || [];
@@ -154,15 +154,20 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
           <Label htmlFor="ward">Ward *</Label>
           <Select
             value={formData.ward ? formData.ward.toString() : ''}
-            onValueChange={(value) => setFormData({ ...formData, ward: parseInt(value) })}
+            onValueChange={(value) => setFormData({ ...formData, ward: parseInt(value), bed: null })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select ward" />
+              <SelectValue placeholder={isLoadingWards ? 'Loading wards...' : 'Select ward'} />
             </SelectTrigger>
             <SelectContent>
+              {wards.length === 0 && !isLoadingWards && (
+                <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                  No wards available. Create wards in IPD settings first.
+                </div>
+              )}
               {wards.map((ward) => (
                 <SelectItem key={ward.id} value={ward.id.toString()}>
-                  {ward.name} ({ward.available_beds_count} available)
+                  {ward.name} ({ward.available_beds_count ?? 0} available)
                 </SelectItem>
               ))}
             </SelectContent>
@@ -174,9 +179,10 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
           <Select
             value={formData.bed ? formData.bed.toString() : ''}
             onValueChange={(value) => setFormData({ ...formData, bed: (value && value !== 'unassigned') ? parseInt(value) : null })}
+            disabled={!formData.ward}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select bed (optional)" />
+              <SelectValue placeholder={isLoadingBeds ? 'Loading beds...' : !formData.ward ? 'Select a ward first' : 'Select bed (optional)'} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="unassigned">No bed assigned</SelectItem>
