@@ -1,7 +1,6 @@
 // src/components/admin-settings/WhatsAppDefaultsTab.tsx
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
+import { Card } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -148,70 +147,70 @@ export const WhatsAppDefaultsTab: React.FC<WhatsAppDefaultsTabProps> = ({
   const followupVariables = followupTemplateBody ? extractVariables(followupTemplateBody) : [];
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
+    <div className="space-y-3">
+      <Card className="border-border">
+        <div className="p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              <CardTitle>WhatsApp Default Templates</CardTitle>
+              <div className="w-7 h-7 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                <MessageSquare className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-300" />
+              </div>
+              <div>
+                <h3 className="text-[13px] font-semibold text-foreground">WhatsApp Default Templates</h3>
+                <p className="text-[11px] text-muted-foreground">Pre-selected templates for different message types</p>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchTemplates}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                )}
-                Refresh Templates
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-[12px]"
+              onClick={fetchTemplates}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5 mr-1" />
+              )}
+              Refresh
+            </Button>
           </div>
-          <CardDescription>
-            Configure default WhatsApp templates for different purposes. These templates will be pre-selected when sending messages.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+
           {error && (
-            <div className="flex items-center gap-2 p-4 mb-4 border border-destructive rounded-lg bg-destructive/10 text-destructive">
-              <AlertCircle className="h-5 w-5" />
-              <p className="text-sm">{error}</p>
+            <div className="flex items-center gap-2 p-2 border border-destructive rounded-lg bg-destructive/10 text-destructive">
+              <AlertCircle className="h-3.5 w-3.5" />
+              <p className="text-[12px]">{error}</p>
             </div>
           )}
 
           {isLoading && templates.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-8">
               <div className="text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-                <p className="text-sm text-muted-foreground">Loading templates...</p>
+                <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-muted-foreground" />
+                <p className="text-[12px] text-muted-foreground">Loading templates...</p>
               </div>
             </div>
           ) : templates.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-sm">No approved templates found</p>
-              <p className="text-xs mt-1">Create and approve templates in WhatsApp settings first</p>
+            <div className="text-center py-8 text-muted-foreground">
+              <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-[12px]">No approved templates found</p>
+              <p className="text-[11px] mt-0.5">Create and approve templates in WhatsApp settings first</p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-3">
               {TEMPLATE_PURPOSES.map((purpose) => {
                 const selectedId = whatsappDefaults[purpose.key as keyof WhatsAppDefaults];
                 const preview = getTemplatePreview(selectedId);
 
                 return (
-                  <div key={purpose.key} className="space-y-3 p-4 border rounded-lg">
+                  <div key={purpose.key} className="space-y-2 p-3 border rounded-lg">
                     <div className="flex items-start justify-between">
                       <div>
-                        <Label className="text-base font-medium">{purpose.label}</Label>
-                        <p className="text-sm text-muted-foreground">{purpose.description}</p>
+                        <p className="text-[12px] font-medium text-foreground">{purpose.label}</p>
+                        <p className="text-[11px] text-muted-foreground">{purpose.description}</p>
                       </div>
                       {selectedId && (
-                        <Badge variant="secondary">
+                        <Badge variant="secondary" className="text-[11px]">
                           ID: {selectedId}
                         </Badge>
                       )}
@@ -221,21 +220,21 @@ export const WhatsAppDefaultsTab: React.FC<WhatsAppDefaultsTabProps> = ({
                       value={selectedId?.toString() || 'none'}
                       onValueChange={(value) => handleTemplateSelect(purpose.key as keyof WhatsAppDefaults, value)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-8 text-[12px]">
                         <SelectValue placeholder="Select a template" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">
+                        <SelectItem value="none" className="text-[12px]">
                           <span className="text-muted-foreground">None (no default)</span>
                         </SelectItem>
                         {templates.map((template) => (
-                          <SelectItem key={template.id} value={template.id.toString()}>
+                          <SelectItem key={template.id} value={template.id.toString()} className="text-[12px]">
                             <div className="flex items-center gap-2">
                               <span>{template.name}</span>
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="text-[10px]">
                                 {template.language}
                               </Badge>
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="text-[10px]">
                                 {template.category}
                               </Badge>
                             </div>
@@ -245,37 +244,37 @@ export const WhatsAppDefaultsTab: React.FC<WhatsAppDefaultsTabProps> = ({
                     </Select>
 
                     {preview && (
-                      <div className="p-3 bg-muted/50 rounded-md">
-                        <Label className="text-xs text-muted-foreground">Preview:</Label>
-                        <p className="text-sm mt-1 whitespace-pre-wrap">{preview}</p>
+                      <div className="p-2 bg-neutral-50 dark:bg-neutral-900 rounded-md">
+                        <p className="text-[11px] text-muted-foreground mb-0.5">Preview:</p>
+                        <p className="text-[12px] whitespace-pre-wrap">{preview}</p>
                       </div>
                     )}
 
                     {/* Variable Mapping UI for Followup Template */}
                     {purpose.key === 'followup' && selectedId && followupVariables.length > 0 && (
-                      <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-md border border-blue-200 dark:border-blue-800">
-                        <Label className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-                          Variable Mapping (Auto-fill fields)
-                        </Label>
-                        <p className="text-xs text-muted-foreground mb-3">
-                          Configure which data fields map to template variables
+                      <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-md border border-blue-200 dark:border-blue-800">
+                        <p className="text-[11px] font-semibold text-blue-700 dark:text-blue-300">
+                          Variable Mapping
                         </p>
-                        <div className="space-y-2">
+                        <p className="text-[11px] text-muted-foreground mb-2">
+                          Map data fields to template variables
+                        </p>
+                        <div className="space-y-1.5">
                           {followupVariables.map((varNum) => (
-                            <div key={varNum} className="flex items-center gap-3">
-                              <span className="text-sm font-mono bg-white dark:bg-gray-800 px-2 py-1 rounded border min-w-[60px] text-center">
+                            <div key={varNum} className="flex items-center gap-2">
+                              <span className="text-[11px] font-mono bg-white dark:bg-gray-800 px-1.5 py-0.5 rounded border min-w-[50px] text-center">
                                 {`{{${varNum}}}`}
                               </span>
                               <Select
                                 value={getVariableMapping(varNum)}
                                 onValueChange={(value) => handleVariableMappingChange(varNum, value)}
                               >
-                                <SelectTrigger className="flex-1">
+                                <SelectTrigger className="flex-1 h-7 text-[12px]">
                                   <SelectValue placeholder="Select field source" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {FIELD_SOURCES.map((source) => (
-                                    <SelectItem key={source.value} value={source.value}>
+                                    <SelectItem key={source.value} value={source.value} className="text-[12px]">
                                       {source.label}
                                     </SelectItem>
                                   ))}
@@ -291,28 +290,26 @@ export const WhatsAppDefaultsTab: React.FC<WhatsAppDefaultsTabProps> = ({
               })}
             </div>
           )}
-        </CardContent>
+        </div>
       </Card>
 
       {/* Current Defaults Summary */}
       {Object.keys(whatsappDefaults).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Current Defaults Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+        <Card className="border-border">
+          <div className="p-4 space-y-2">
+            <h3 className="text-[13px] font-semibold text-foreground">Current Defaults</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {TEMPLATE_PURPOSES.map((purpose) => {
                 const selectedId = whatsappDefaults[purpose.key as keyof WhatsAppDefaults];
                 return (
-                  <div key={purpose.key} className="space-y-1">
-                    <p className="text-muted-foreground">{purpose.label}:</p>
-                    <p className="font-medium">{getTemplateName(selectedId)}</p>
+                  <div key={purpose.key}>
+                    <p className="text-[11px] text-muted-foreground">{purpose.label}</p>
+                    <p className="text-[12px] font-medium">{getTemplateName(selectedId)}</p>
                   </div>
                 );
               })}
             </div>
-          </CardContent>
+          </div>
         </Card>
       )}
 
@@ -320,12 +317,14 @@ export const WhatsAppDefaultsTab: React.FC<WhatsAppDefaultsTabProps> = ({
       <div className="flex justify-end">
         <Button
           onClick={onSave}
+          size="sm"
+          className="h-8 text-[12px]"
           disabled={isSaving || isLoading}
         >
           {isSaving ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
           ) : (
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="h-3.5 w-3.5 mr-1.5" />
           )}
           Save WhatsApp Defaults
         </Button>

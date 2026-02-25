@@ -1,7 +1,7 @@
 // src/pages/AdminSettings.tsx
 import React, { useState, useEffect } from 'react';
 import { formatLocalDate } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -347,11 +347,11 @@ export const AdminSettings: React.FC = () => {
 
         <Card className="border-destructive">
           <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-destructive font-semibold text-sm mb-2">
-              <AlertCircle className="h-4 w-4" />
+            <div className="flex items-center gap-2 text-destructive font-semibold text-[12px] mb-1">
+              <AlertCircle className="h-3.5 w-3.5" />
               No Tenant Found
             </div>
-            <p className="text-sm">
+            <p className="text-[12px] text-muted-foreground">
               Unable to retrieve tenant information from your session. Please try logging in again.
             </p>
           </CardContent>
@@ -391,13 +391,13 @@ export const AdminSettings: React.FC = () => {
       {/* Error State */}
       {error && (
         <Card className="border-destructive">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-destructive font-semibold text-sm mb-2">
-              <AlertCircle className="h-4 w-4" />
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2 text-destructive font-semibold text-[12px] mb-1">
+              <AlertCircle className="h-3.5 w-3.5" />
               Error Loading Tenant Data
             </div>
-            <p className="text-sm">{error.message || 'Failed to load tenant data'}</p>
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-[12px]">{error.message || 'Failed to load tenant data'}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">
               Tenant ID: {tenantId}
             </p>
           </CardContent>
@@ -406,11 +406,11 @@ export const AdminSettings: React.FC = () => {
 
       {/* Loading State */}
       {isLoading && !tenantData && (
-        <Card>
-          <CardContent className="flex items-center justify-center py-12">
+        <Card className="border-border">
+          <CardContent className="flex items-center justify-center py-8">
             <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-              <p className="text-sm text-muted-foreground">Loading tenant data...</p>
+              <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-muted-foreground" />
+              <p className="text-[12px] text-muted-foreground">Loading tenant data...</p>
             </div>
           </CardContent>
         </Card>
@@ -418,69 +418,75 @@ export const AdminSettings: React.FC = () => {
 
       {/* Tenant Settings Forms */}
       {tenantData && (
-        <Tabs defaultValue="tenant" className="w-full max-w-6xl">
-          <TabsList className="grid w-full grid-cols-4 max-w-3xl">
-            <TabsTrigger value="tenant">Tenant Settings</TabsTrigger>
-            <TabsTrigger value="currency">
-              <IndianRupee className="h-4 w-4 mr-2" />
+        <Tabs defaultValue="tenant" className="w-full">
+          <TabsList className="h-8 p-0.5 bg-neutral-100 dark:bg-neutral-800 w-fit">
+            <TabsTrigger value="tenant" className="text-[11px] h-7 px-3 data-[state=active]:bg-background">
+              <Building2 className="h-3.5 w-3.5 mr-1.5" />
+              Tenant
+            </TabsTrigger>
+            <TabsTrigger value="currency" className="text-[11px] h-7 px-3 data-[state=active]:bg-background">
+              <IndianRupee className="h-3.5 w-3.5 mr-1.5" />
               Currency
             </TabsTrigger>
-            <TabsTrigger value="whatsapp" onClick={() => fetchUserPreferences()}>
-              <MessageSquare className="h-4 w-4 mr-2" />
+            <TabsTrigger value="whatsapp" className="text-[11px] h-7 px-3 data-[state=active]:bg-background" onClick={() => fetchUserPreferences()}>
+              <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
               WhatsApp
             </TabsTrigger>
-            <TabsTrigger value="user" onClick={() => fetchUserPreferences()}>
-              <User className="h-4 w-4 mr-2" />
-              User Preferences
+            <TabsTrigger value="user" className="text-[11px] h-7 px-3 data-[state=active]:bg-background" onClick={() => fetchUserPreferences()}>
+              <User className="h-3.5 w-3.5 mr-1.5" />
+              Preferences
             </TabsTrigger>
           </TabsList>
 
           {/* Tenant Settings Tab */}
-          <TabsContent value="tenant">
-            <div className="space-y-6">
+          <TabsContent value="tenant" className="mt-3">
+            <div className="space-y-3">
           {/* Basic Information Card */}
-          <Card>
-            <CardHeader>
+          <Card className="border-border">
+            <div className="p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                <CardTitle>Tenant Information</CardTitle>
+                <div className="w-7 h-7 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                  <Building2 className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-300" />
+                </div>
+                <h3 className="text-[13px] font-semibold text-foreground">Tenant Information</h3>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Tenant Name</Label>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="name" className="text-[12px]">Tenant Name</Label>
                   <Input
                     id="name"
                     placeholder="Enter tenant name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    className="h-8 text-[12px]"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="slug">Slug</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="slug" className="text-[12px]">Slug</Label>
                   <Input
                     id="slug"
                     placeholder="tenant-slug"
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
+                    className="h-8 text-[12px]"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="logo">Logo</Label>
-                <div className="flex items-start gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="logo" className="text-[12px]">Logo</Label>
+                <div className="flex items-center gap-3">
                   <Input
                     id="logo"
                     type="file"
                     accept="image/*"
                     onChange={handleLogoUpload}
-                    className="cursor-pointer flex-1"
+                    className="cursor-pointer flex-1 h-8 text-[12px]"
                   />
                   {logoPreview && (
-                    <div className="w-12 h-12 border rounded overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 border rounded overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
                       <img
                         src={logoPreview}
                         alt="Logo"
@@ -491,136 +497,147 @@ export const AdminSettings: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="domain">Domain</Label>
-                <Input
-                  id="domain"
-                  type="text"
-                  placeholder="example.com"
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Textarea
-                  id="address"
-                  placeholder="Enter tenant address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  rows={2}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contactEmail">Email</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="domain" className="text-[12px]">Domain</Label>
                   <Input
-                    id="contactEmail"
-                    type="email"
-                    placeholder="contact@example.com"
-                    value={contactEmail}
-                    onChange={(e) => setContactEmail(e.target.value)}
+                    id="domain"
+                    type="text"
+                    placeholder="example.com"
+                    value={domain}
+                    onChange={(e) => setDomain(e.target.value)}
+                    className="h-8 text-[12px]"
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="contactPhone">Phone</Label>
-                  <Input
-                    id="contactPhone"
-                    type="tel"
-                    placeholder="+1 (555) 123-4567"
-                    value={contactPhone}
-                    onChange={(e) => setContactPhone(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="websiteUrl">Website</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="websiteUrl" className="text-[12px]">Website</Label>
                   <Input
                     id="websiteUrl"
                     type="url"
                     placeholder="https://example.com"
                     value={websiteUrl}
                     onChange={(e) => setWebsiteUrl(e.target.value)}
+                    className="h-8 text-[12px]"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="address" className="text-[12px]">Address</Label>
+                <Textarea
+                  id="address"
+                  placeholder="Enter tenant address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  rows={2}
+                  className="text-[12px]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="contactEmail" className="text-[12px]">Email</Label>
+                  <Input
+                    id="contactEmail"
+                    type="email"
+                    placeholder="contact@example.com"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    className="h-8 text-[12px]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="contactPhone" className="text-[12px]">Phone</Label>
+                  <Input
+                    id="contactPhone"
+                    type="tel"
+                    placeholder="+1 (555) 123-4567"
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
+                    className="h-8 text-[12px]"
                   />
                 </div>
               </div>
 
               {/* WhatsApp API Configuration */}
-              <div className="space-y-2 pt-4 border-t">
-                <Label htmlFor="whatsappVendorUid">WhatsApp Vendor UID</Label>
-                <Input
-                  id="whatsappVendorUid"
-                  type="text"
-                  placeholder="e.g., 90d99df2-4fc7-4957-a5ac-c5d95b771ee1"
-                  value={whatsappVendorUid}
-                  onChange={(e) => setWhatsappVendorUid(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Your WhatsApp API Vendor UID from the WhatsApp service dashboard
-                </p>
+              <div className="pt-3 border-t border-border space-y-3">
+                <h4 className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">WhatsApp API</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="whatsappVendorUid" className="text-[12px]">Vendor UID</Label>
+                    <Input
+                      id="whatsappVendorUid"
+                      type="text"
+                      placeholder="e.g., 90d99df2-4fc7-..."
+                      value={whatsappVendorUid}
+                      onChange={(e) => setWhatsappVendorUid(e.target.value)}
+                      className="h-8 text-[12px]"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="whatsappApiToken" className="text-[12px]">Access Token</Label>
+                    <Input
+                      id="whatsappApiToken"
+                      type="password"
+                      placeholder="Enter access token"
+                      value={whatsappApiToken}
+                      onChange={(e) => setWhatsappApiToken(e.target.value)}
+                      className="h-8 text-[12px]"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="whatsappApiToken">WhatsApp API Access Token</Label>
-                <Input
-                  id="whatsappApiToken"
-                  type="password"
-                  placeholder="Enter your WhatsApp API access token"
-                  value={whatsappApiToken}
-                  onChange={(e) => setWhatsappApiToken(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Your WhatsApp API access token for authentication (stored securely)
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                <div className="space-y-2">
-                  <Label htmlFor="trialEndsAt">Trial Ends At</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                <div className="space-y-1">
+                  <Label htmlFor="trialEndsAt" className="text-[12px]">Trial Ends At</Label>
                   <Input
                     id="trialEndsAt"
                     type="date"
                     value={trialEndsAt}
                     onChange={(e) => setTrialEndsAt(e.target.value)}
+                    className="h-8 text-[12px]"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="isActive">Status</Label>
-                  <div className="flex items-center gap-2 h-10">
+                <div className="space-y-1">
+                  <Label htmlFor="isActive" className="text-[12px]">Status</Label>
+                  <div className="flex items-center gap-2 h-8">
                     <input
                       type="checkbox"
                       id="isActive"
                       checked={isActive}
                       onChange={(e) => setIsActive(e.target.checked)}
-                      className="w-4 h-4 rounded"
+                      className="w-3.5 h-3.5 rounded"
                     />
-                    <Label htmlFor="isActive" className="font-normal cursor-pointer">
+                    <Label htmlFor="isActive" className="text-[12px] font-normal cursor-pointer">
                       Active
                     </Label>
                   </div>
                 </div>
               </div>
-            </CardContent>
+            </div>
           </Card>
 
           {/* Branding & Colors Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Branding & Colors</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          <Card className="border-border">
+            <div className="p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                  <ImageIcon className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-300" />
+                </div>
+                <h3 className="text-[13px] font-semibold text-foreground">Branding & Colors</h3>
+              </div>
+
               {/* Header Colors */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold">Header Colors</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
+              <div className="space-y-2">
+                <h4 className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Header</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label>Background Color</Label>
-                      <div className="flex items-center gap-2">
+                      <Label className="text-[12px]">Background</Label>
+                      <div className="flex items-center gap-1.5">
                         <input
                           type="checkbox"
                           id="headerUseGradient"
@@ -633,10 +650,10 @@ export const AdminSettings: React.FC = () => {
                               setHeaderBgColor('#3b82f6');
                             }
                           }}
-                          className="w-4 h-4 rounded"
+                          className="w-3 h-3 rounded"
                         />
-                        <Label htmlFor="headerUseGradient" className="text-xs font-normal cursor-pointer">
-                          Use Gradient
+                        <Label htmlFor="headerUseGradient" className="text-[11px] font-normal cursor-pointer">
+                          Gradient
                         </Label>
                       </div>
                     </div>
@@ -646,7 +663,7 @@ export const AdminSettings: React.FC = () => {
                         onChange={(e) => setHeaderBgColor(e.target.value)}
                         placeholder="linear-gradient(to right, #3b82f6, #8b5cf6)"
                         rows={2}
-                        className="font-mono text-xs"
+                        className="font-mono text-[11px]"
                       />
                     ) : (
                       <div className="flex gap-2">
@@ -654,39 +671,38 @@ export const AdminSettings: React.FC = () => {
                           type="color"
                           value={headerBgColor}
                           onChange={(e) => setHeaderBgColor(e.target.value)}
-                          className="w-16 h-10 cursor-pointer p-1"
+                          className="w-10 h-8 cursor-pointer p-0.5"
                         />
                         <Input
                           type="text"
                           value={headerBgColor}
                           onChange={(e) => setHeaderBgColor(e.target.value)}
                           placeholder="#3b82f6"
-                          className="flex-1"
+                          className="flex-1 h-8 text-[12px] font-mono"
                         />
                       </div>
                     )}
-                    {/* Preview */}
                     <div
-                      className="h-10 rounded border"
+                      className="h-6 rounded border"
                       style={{ background: headerBgColor }}
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Text Color</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-[12px]">Text Color</Label>
                     <div className="flex gap-2">
                       <Input
                         type="color"
                         value={headerTextColor}
                         onChange={(e) => setHeaderTextColor(e.target.value)}
-                        className="w-16 h-10 cursor-pointer p-1"
+                        className="w-10 h-8 cursor-pointer p-0.5"
                       />
                       <Input
                         type="text"
                         value={headerTextColor}
                         onChange={(e) => setHeaderTextColor(e.target.value)}
                         placeholder="#ffffff"
-                        className="flex-1"
+                        className="flex-1 h-8 text-[12px] font-mono"
                       />
                     </div>
                   </div>
@@ -694,13 +710,13 @@ export const AdminSettings: React.FC = () => {
               </div>
 
               {/* Footer Colors */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold">Footer Colors</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
+              <div className="space-y-2 pt-2 border-t border-border">
+                <h4 className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Footer</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label>Background Color</Label>
-                      <div className="flex items-center gap-2">
+                      <Label className="text-[12px]">Background</Label>
+                      <div className="flex items-center gap-1.5">
                         <input
                           type="checkbox"
                           id="footerUseGradient"
@@ -713,10 +729,10 @@ export const AdminSettings: React.FC = () => {
                               setFooterBgColor('#3b82f6');
                             }
                           }}
-                          className="w-4 h-4 rounded"
+                          className="w-3 h-3 rounded"
                         />
-                        <Label htmlFor="footerUseGradient" className="text-xs font-normal cursor-pointer">
-                          Use Gradient
+                        <Label htmlFor="footerUseGradient" className="text-[11px] font-normal cursor-pointer">
+                          Gradient
                         </Label>
                       </div>
                     </div>
@@ -726,7 +742,7 @@ export const AdminSettings: React.FC = () => {
                         onChange={(e) => setFooterBgColor(e.target.value)}
                         placeholder="linear-gradient(to right, #3b82f6, #8b5cf6)"
                         rows={2}
-                        className="font-mono text-xs"
+                        className="font-mono text-[11px]"
                       />
                     ) : (
                       <div className="flex gap-2">
@@ -734,103 +750,105 @@ export const AdminSettings: React.FC = () => {
                           type="color"
                           value={footerBgColor}
                           onChange={(e) => setFooterBgColor(e.target.value)}
-                          className="w-16 h-10 cursor-pointer p-1"
+                          className="w-10 h-8 cursor-pointer p-0.5"
                         />
                         <Input
                           type="text"
                           value={footerBgColor}
                           onChange={(e) => setFooterBgColor(e.target.value)}
                           placeholder="#3b82f6"
-                          className="flex-1"
+                          className="flex-1 h-8 text-[12px] font-mono"
                         />
                       </div>
                     )}
-                    {/* Preview */}
                     <div
-                      className="h-10 rounded border"
+                      className="h-6 rounded border"
                       style={{ background: footerBgColor }}
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Text Color</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-[12px]">Text Color</Label>
                     <div className="flex gap-2">
                       <Input
                         type="color"
                         value={footerTextColor}
                         onChange={(e) => setFooterTextColor(e.target.value)}
-                        className="w-16 h-10 cursor-pointer p-1"
+                        className="w-10 h-8 cursor-pointer p-0.5"
                       />
                       <Input
                         type="text"
                         value={footerTextColor}
                         onChange={(e) => setFooterTextColor(e.target.value)}
                         placeholder="#ffffff"
-                        className="flex-1"
+                        className="flex-1 h-8 text-[12px] font-mono"
                       />
                     </div>
                   </div>
                 </div>
               </div>
-            </CardContent>
+            </div>
           </Card>
 
           {/* Database Configuration Card */}
-          <Card>
-            <CardHeader>
+          <Card className="border-border">
+            <div className="p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <Database className="h-5 w-5" />
-                <CardTitle className="text-lg">Database Configuration</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="databaseName">Database Name</Label>
-                <Input
-                  id="databaseName"
-                  placeholder="Neon database name"
-                  value={databaseName}
-                  onChange={(e) => setDatabaseName(e.target.value)}
-                />
+                <div className="w-7 h-7 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                  <Database className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-300" />
+                </div>
+                <h3 className="text-[13px] font-semibold text-foreground">Database Configuration</h3>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="databaseUrl">Database URL</Label>
-                <Textarea
-                  id="databaseUrl"
-                  placeholder="postgresql://..."
-                  value={databaseUrl}
-                  onChange={(e) => setDatabaseUrl(e.target.value)}
-                  rows={3}
-                  className="font-mono text-sm"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="databaseName" className="text-[12px]">Database Name</Label>
+                  <Input
+                    id="databaseName"
+                    placeholder="Neon database name"
+                    value={databaseName}
+                    onChange={(e) => setDatabaseName(e.target.value)}
+                    className="h-8 text-[12px]"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="databaseUrl" className="text-[12px]">Database URL</Label>
+                  <Input
+                    id="databaseUrl"
+                    placeholder="postgresql://..."
+                    value={databaseUrl}
+                    onChange={(e) => setDatabaseUrl(e.target.value)}
+                    className="h-8 text-[12px] font-mono"
+                  />
+                </div>
               </div>
-            </CardContent>
+            </div>
           </Card>
 
           {/* Enabled Modules Card */}
-          <Card>
-            <CardHeader>
+          <Card className="border-border">
+            <div className="p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <SettingsIcon className="h-5 w-5" />
-                <CardTitle className="text-lg">Enabled Modules</CardTitle>
+                <div className="w-7 h-7 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                  <SettingsIcon className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-300" />
+                </div>
+                <h3 className="text-[13px] font-semibold text-foreground">Enabled Modules</h3>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
+
+              <div className="flex flex-wrap gap-1.5">
                 {enabledModules.map((module) => (
-                  <Badge key={module} variant="secondary" className="px-3 py-1">
+                  <Badge key={module} variant="secondary" className="text-[11px] px-2 py-0.5">
                     {module}
                     <button
                       onClick={() => handleRemoveModule(module)}
-                      className="ml-2 hover:text-destructive"
+                      className="ml-1.5 hover:text-destructive"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-2.5 w-2.5" />
                     </button>
                   </Badge>
                 ))}
                 {enabledModules.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No modules enabled</p>
+                  <p className="text-[12px] text-muted-foreground">No modules enabled</p>
                 )}
               </div>
 
@@ -840,26 +858,27 @@ export const AdminSettings: React.FC = () => {
                   value={newModule}
                   onChange={(e) => setNewModule(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleAddModule()}
+                  className="h-8 text-[12px]"
                 />
-                <Button onClick={handleAddModule} variant="outline">
+                <Button onClick={handleAddModule} variant="outline" size="sm" className="h-8 text-[12px]">
                   Add
                 </Button>
               </div>
-            </CardContent>
+            </div>
           </Card>
 
           {/* Save Button */}
-          <div className="flex justify-end sticky bottom-4 z-10">
+          <div className="flex justify-end">
             <Button
               onClick={handleSave}
-              size="lg"
-              className="shadow-lg"
+              size="sm"
+              className="h-8 text-[12px]"
               disabled={isMutating}
             >
               {isMutating ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
               ) : (
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="h-3.5 w-3.5 mr-1.5" />
               )}
               Save Settings
             </Button>
@@ -868,7 +887,7 @@ export const AdminSettings: React.FC = () => {
           </TabsContent>
 
           {/* Currency Settings Tab */}
-          <TabsContent value="currency">
+          <TabsContent value="currency" className="mt-3">
             <CurrencySettingsTab
               currencyCode={currencyCode}
               currencySymbol={currencySymbol}
@@ -889,15 +908,17 @@ export const AdminSettings: React.FC = () => {
             />
 
             {/* Save Button */}
-            <div className="flex justify-end mt-6">
+            <div className="flex justify-end mt-3">
               <Button
                 onClick={handleSave}
+                size="sm"
+                className="h-8 text-[12px]"
                 disabled={isMutating}
               >
                 {isMutating ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                 ) : (
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="h-3.5 w-3.5 mr-1.5" />
                 )}
                 Save Currency Settings
               </Button>
@@ -905,7 +926,7 @@ export const AdminSettings: React.FC = () => {
           </TabsContent>
 
           {/* WhatsApp Defaults Tab */}
-          <TabsContent value="whatsapp">
+          <TabsContent value="whatsapp" className="mt-3">
             <WhatsAppDefaultsTab
               whatsappDefaults={whatsappDefaults}
               onWhatsAppDefaultsChange={setWhatsappDefaults}
@@ -915,75 +936,78 @@ export const AdminSettings: React.FC = () => {
           </TabsContent>
 
           {/* User Preferences Tab */}
-          <TabsContent value="user">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
+          <TabsContent value="user" className="mt-3">
+            <div className="space-y-3">
+              <Card className="border-border">
+                <div className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <User className="h-5 w-5" />
-                      <CardTitle>User Preferences</CardTitle>
+                      <div className="w-7 h-7 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                        <User className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-300" />
+                      </div>
+                      <h3 className="text-[13px] font-semibold text-foreground">User Preferences</h3>
                     </div>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
+                        className="h-7 text-[12px]"
                         onClick={fetchUserPreferences}
                         disabled={userPreferencesLoading}
                       >
                         {userPreferencesLoading ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
                         ) : (
-                          <RefreshCw className="h-4 w-4 mr-2" />
+                          <RefreshCw className="h-3.5 w-3.5 mr-1" />
                         )}
                         Refresh
                       </Button>
                       <Button
                         size="sm"
+                        className="h-7 text-[12px]"
                         onClick={saveUserPreferences}
                         disabled={isSavingPreferences || userPreferencesLoading}
                       >
                         {isSavingPreferences ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
                         ) : (
-                          <Save className="h-4 w-4 mr-2" />
+                          <Save className="h-3.5 w-3.5 mr-1" />
                         )}
-                        Save Preferences
+                        Save
                       </Button>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
+
                   {userPreferencesLoading && (
-                    <div className="flex items-center justify-center py-12">
+                    <div className="flex items-center justify-center py-8">
                       <div className="text-center">
-                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-                        <p className="text-sm text-muted-foreground">Loading user data...</p>
+                        <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-[12px] text-muted-foreground">Loading user data...</p>
                       </div>
                     </div>
                   )}
 
                   {userPreferencesError && (
-                    <div className="text-destructive py-4">
-                      <p className="text-sm font-semibold">Error:</p>
-                      <p className="text-sm">{userPreferencesError}</p>
+                    <div className="text-destructive py-3">
+                      <p className="text-[12px] font-semibold">Error:</p>
+                      <p className="text-[12px]">{userPreferencesError}</p>
                     </div>
                   )}
 
                   {userPreferencesData && !userPreferencesLoading && (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       {/* Theme Preference */}
-                      <div className="space-y-2">
-                        <Label>Theme Preference</Label>
-                        <div className="flex items-center gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-[12px]">Theme</Label>
+                        <div className="flex items-center gap-2">
                           <Button
                             type="button"
                             variant={editedPreferences.theme === 'light' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => updatePreferenceValue('theme', 'light')}
-                            className="flex items-center gap-2"
+                            className="h-7 text-[11px] px-3"
                           >
-                            <Sun className="h-4 w-4" />
+                            <Sun className="h-3 w-3 mr-1.5" />
                             Light
                           </Button>
                           <Button
@@ -991,14 +1015,14 @@ export const AdminSettings: React.FC = () => {
                             variant={editedPreferences.theme === 'dark' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => updatePreferenceValue('theme', 'dark')}
-                            className="flex items-center gap-2"
+                            className="h-7 text-[11px] px-3"
                           >
-                            <Moon className="h-4 w-4" />
+                            <Moon className="h-3 w-3 mr-1.5" />
                             Dark
                           </Button>
                           {editedPreferences.theme && (
-                            <Badge variant="secondary">
-                              Current: {editedPreferences.theme}
+                            <Badge variant="secondary" className="text-[11px]">
+                              {editedPreferences.theme}
                             </Badge>
                           )}
                         </div>
@@ -1006,19 +1030,19 @@ export const AdminSettings: React.FC = () => {
 
                       {/* Custom Preferences */}
                       <div className="space-y-2">
-                        <Label>Custom Preferences</Label>
-                        <div className="space-y-3">
+                        <Label className="text-[12px]">Custom Preferences</Label>
+                        <div className="space-y-2">
                           {Object.entries(editedPreferences)
                             .filter(([key]) => key !== 'theme')
                             .map(([key, value]) => (
-                              <div key={key} className="flex items-center gap-2 p-3 border rounded-lg bg-muted/50">
+                              <div key={key} className="flex items-center gap-2 p-2 border rounded-lg bg-muted/50">
                                 <div className="flex-1 grid grid-cols-2 gap-2">
                                   <div>
-                                    <Label className="text-xs text-muted-foreground">Key</Label>
-                                    <p className="font-medium">{key}</p>
+                                    <Label className="text-[11px] text-muted-foreground">Key</Label>
+                                    <p className="text-[12px] font-medium">{key}</p>
                                   </div>
                                   <div>
-                                    <Label className="text-xs text-muted-foreground">Value</Label>
+                                    <Label className="text-[11px] text-muted-foreground">Value</Label>
                                     <Input
                                       value={typeof value === 'object' ? JSON.stringify(value) : String(value)}
                                       onChange={(e) => {
@@ -1029,7 +1053,7 @@ export const AdminSettings: React.FC = () => {
                                           updatePreferenceValue(key, e.target.value);
                                         }
                                       }}
-                                      className="h-8"
+                                      className="h-7 text-[12px]"
                                     />
                                   </div>
                                 </div>
@@ -1038,9 +1062,9 @@ export const AdminSettings: React.FC = () => {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => removeCustomPreference(key)}
-                                  className="text-destructive hover:text-destructive"
+                                  className="h-7 w-7 p-0 text-destructive hover:text-destructive"
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                               </div>
                             ))}
@@ -1048,33 +1072,36 @@ export const AdminSettings: React.FC = () => {
                       </div>
 
                       {/* Add New Preference */}
-                      <div className="space-y-2 pt-4 border-t">
-                        <Label>Add New Preference</Label>
+                      <div className="space-y-2 pt-3 border-t border-border">
+                        <Label className="text-[12px]">Add New Preference</Label>
                         <div className="flex items-end gap-2">
-                          <div className="flex-1">
-                            <Label htmlFor="newPrefKey" className="text-xs">Key</Label>
+                          <div className="flex-1 space-y-1">
+                            <Label htmlFor="newPrefKey" className="text-[11px] text-muted-foreground">Key</Label>
                             <Input
                               id="newPrefKey"
                               placeholder="e.g., language, timezone"
                               value={newPrefKey}
                               onChange={(e) => setNewPrefKey(e.target.value)}
+                              className="h-8 text-[12px]"
                             />
                           </div>
-                          <div className="flex-1">
-                            <Label htmlFor="newPrefValue" className="text-xs">Value</Label>
+                          <div className="flex-1 space-y-1">
+                            <Label htmlFor="newPrefValue" className="text-[11px] text-muted-foreground">Value</Label>
                             <Input
                               id="newPrefValue"
                               placeholder="Enter value"
                               value={newPrefValue}
                               onChange={(e) => setNewPrefValue(e.target.value)}
+                              className="h-8 text-[12px]"
                             />
                           </div>
                           <Button
                             type="button"
                             onClick={addCustomPreference}
                             size="sm"
+                            className="h-8 text-[12px]"
                           >
-                            <Plus className="h-4 w-4 mr-2" />
+                            <Plus className="h-3.5 w-3.5 mr-1" />
                             Add
                           </Button>
                         </div>
@@ -1083,42 +1110,40 @@ export const AdminSettings: React.FC = () => {
                   )}
 
                   {!userPreferencesData && !userPreferencesLoading && !userPreferencesError && (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-sm">Click the tab to load user preferences data</p>
+                    <div className="text-center py-8 text-muted-foreground">
+                      <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-[12px]">Click the tab to load user preferences data</p>
                     </div>
                   )}
-                </CardContent>
+                </div>
               </Card>
 
               {/* User Info Card (Read-only) */}
               {userPreferencesData && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">User Information</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                <Card className="border-border">
+                  <div className="p-4 space-y-3">
+                    <h3 className="text-[13px] font-semibold text-foreground">User Information</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       <div>
-                        <Label className="text-xs text-muted-foreground">Email</Label>
-                        <p className="font-medium">{userPreferencesData.email}</p>
+                        <p className="text-[11px] text-muted-foreground">Email</p>
+                        <p className="text-[12px] font-medium">{userPreferencesData.email}</p>
                       </div>
                       <div>
-                        <Label className="text-xs text-muted-foreground">Name</Label>
-                        <p className="font-medium">{userPreferencesData.first_name} {userPreferencesData.last_name}</p>
+                        <p className="text-[11px] text-muted-foreground">Name</p>
+                        <p className="text-[12px] font-medium">{userPreferencesData.first_name} {userPreferencesData.last_name}</p>
                       </div>
                       <div>
-                        <Label className="text-xs text-muted-foreground">Timezone</Label>
-                        <p className="font-medium">{userPreferencesData.timezone || 'Not set'}</p>
+                        <p className="text-[11px] text-muted-foreground">Timezone</p>
+                        <p className="text-[12px] font-medium">{userPreferencesData.timezone || 'Not set'}</p>
                       </div>
                       <div>
-                        <Label className="text-xs text-muted-foreground">Status</Label>
-                        <Badge variant={userPreferencesData.is_active ? 'default' : 'secondary'}>
+                        <p className="text-[11px] text-muted-foreground">Status</p>
+                        <Badge variant={userPreferencesData.is_active ? 'default' : 'secondary'} className="text-[11px] mt-0.5">
                           {userPreferencesData.is_active ? 'Active' : 'Inactive'}
                         </Badge>
                       </div>
                     </div>
-                  </CardContent>
+                  </div>
                 </Card>
               )}
             </div>

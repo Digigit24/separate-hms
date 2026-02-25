@@ -1,6 +1,6 @@
 // src/components/admin-settings/CurrencySettingsTab.tsx
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import {
@@ -124,28 +124,29 @@ export const CurrencySettingsTab: React.FC<CurrencySettingsTabProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
+    <div className="space-y-3">
+      <Card className="border-border">
+        <div className="p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <IndianRupee className="h-5 w-5" />
-            <CardTitle>Currency Configuration</CardTitle>
+            <div className="w-7 h-7 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+              <IndianRupee className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-300" />
+            </div>
+            <div>
+              <h3 className="text-[13px] font-semibold text-foreground">Currency Configuration</h3>
+              <p className="text-[11px] text-muted-foreground">Configure the currency used throughout your application</p>
+            </div>
           </div>
-          <CardDescription>
-            Configure the currency used throughout your application
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+
           {/* Quick Currency Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="currency-select">Select Currency</Label>
+          <div className="space-y-1">
+            <Label htmlFor="currency-select" className="text-[12px]">Select Currency</Label>
             <Select value={currencyCode} onValueChange={handleCurrencySelect}>
-              <SelectTrigger id="currency-select">
+              <SelectTrigger id="currency-select" className="h-8 text-[12px]">
                 <SelectValue placeholder="Select a currency" />
               </SelectTrigger>
               <SelectContent>
                 {CURRENCY_OPTIONS.map((currency) => (
-                  <SelectItem key={currency.code} value={currency.code}>
+                  <SelectItem key={currency.code} value={currency.code} className="text-[12px]">
                     {currency.symbol} {currency.code} - {currency.name}
                   </SelectItem>
                 ))}
@@ -154,155 +155,152 @@ export const CurrencySettingsTab: React.FC<CurrencySettingsTabProps> = ({
           </div>
 
           {/* Currency Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="currency-code">Currency Code</Label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="currency-code" className="text-[12px]">Code</Label>
               <Input
                 id="currency-code"
                 placeholder="INR"
                 value={currencyCode}
                 onChange={(e) => onCurrencyCodeChange(e.target.value)}
+                className="h-8 text-[12px]"
               />
-              <p className="text-xs text-muted-foreground">ISO 4217 currency code</p>
+              <p className="text-[11px] text-muted-foreground">ISO 4217</p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="currency-symbol">Currency Symbol</Label>
+            <div className="space-y-1">
+              <Label htmlFor="currency-symbol" className="text-[12px]">Symbol</Label>
               <Input
                 id="currency-symbol"
                 placeholder="₹"
                 value={currencySymbol}
                 onChange={(e) => onCurrencySymbolChange(e.target.value)}
+                className="h-8 text-[12px]"
               />
-              <p className="text-xs text-muted-foreground">Symbol displayed with amounts</p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="currency-name">Currency Name</Label>
+            <div className="space-y-1">
+              <Label htmlFor="currency-name" className="text-[12px]">Name</Label>
               <Input
                 id="currency-name"
                 placeholder="Indian Rupee"
                 value={currencyName}
                 onChange={(e) => onCurrencyNameChange(e.target.value)}
+                className="h-8 text-[12px]"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="currency-decimals">Decimal Places</Label>
+            <div className="space-y-1">
+              <Label htmlFor="currency-decimals" className="text-[12px]">Decimals</Label>
               <Select
                 value={currencyDecimals.toString()}
                 onValueChange={(value) => onCurrencyDecimalsChange(parseInt(value))}
               >
-                <SelectTrigger id="currency-decimals">
+                <SelectTrigger id="currency-decimals" className="h-8 text-[12px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">0</SelectItem>
-                  <SelectItem value="2">2</SelectItem>
-                  <SelectItem value="3">3</SelectItem>
+                  <SelectItem value="0" className="text-[12px]">0</SelectItem>
+                  <SelectItem value="2" className="text-[12px]">2</SelectItem>
+                  <SelectItem value="3" className="text-[12px]">3</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           {/* Formatting Options */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="thousand-separator">Thousand Separator</Label>
-              <Select
-                value={currencyThousandSeparator || "none"}
-                onValueChange={(value) => onCurrencyThousandSeparatorChange(value === "none" ? "" : value)}
-              >
-                <SelectTrigger id="thousand-separator">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value=",">Comma (,)</SelectItem>
-                  <SelectItem value=".">Period (.)</SelectItem>
-                  <SelectItem value=" ">Space ( )</SelectItem>
-                  <SelectItem value="none">None</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="decimal-separator">Decimal Separator</Label>
-              <Select
-                value={currencyDecimalSeparator}
-                onValueChange={onCurrencyDecimalSeparatorChange}
-              >
-                <SelectTrigger id="decimal-separator">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value=".">Period (.)</SelectItem>
-                  <SelectItem value=",">Comma (,)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="symbol-position">Symbol Position</Label>
-              <Select
-                value={currencySymbolPosition}
-                onValueChange={(value) => onCurrencySymbolPositionChange(value as 'before' | 'after')}
-              >
-                <SelectTrigger id="symbol-position">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="before">Before amount ({currencySymbol}100)</SelectItem>
-                  <SelectItem value="after">After amount (100{currencySymbol})</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center justify-between space-y-2 pt-6">
-              <div className="space-y-0.5">
-                <Label htmlFor="indian-numbering">Indian Numbering</Label>
-                <p className="text-xs text-muted-foreground">
-                  Use Indian numbering system (1,00,000 instead of 100,000)
-                </p>
+          <div className="pt-2 border-t border-border space-y-3">
+            <h4 className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Formatting</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="thousand-separator" className="text-[12px]">Thousands</Label>
+                <Select
+                  value={currencyThousandSeparator || "none"}
+                  onValueChange={(value) => onCurrencyThousandSeparatorChange(value === "none" ? "" : value)}
+                >
+                  <SelectTrigger id="thousand-separator" className="h-8 text-[12px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="," className="text-[12px]">Comma (,)</SelectItem>
+                    <SelectItem value="." className="text-[12px]">Period (.)</SelectItem>
+                    <SelectItem value=" " className="text-[12px]">Space ( )</SelectItem>
+                    <SelectItem value="none" className="text-[12px]">None</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Switch
-                id="indian-numbering"
-                checked={currencyUseIndianNumbering}
-                onCheckedChange={onCurrencyUseIndianNumberingChange}
-              />
+
+              <div className="space-y-1">
+                <Label htmlFor="decimal-separator" className="text-[12px]">Decimal</Label>
+                <Select
+                  value={currencyDecimalSeparator}
+                  onValueChange={onCurrencyDecimalSeparatorChange}
+                >
+                  <SelectTrigger id="decimal-separator" className="h-8 text-[12px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="." className="text-[12px]">Period (.)</SelectItem>
+                    <SelectItem value="," className="text-[12px]">Comma (,)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="symbol-position" className="text-[12px]">Position</Label>
+                <Select
+                  value={currencySymbolPosition}
+                  onValueChange={(value) => onCurrencySymbolPositionChange(value as 'before' | 'after')}
+                >
+                  <SelectTrigger id="symbol-position" className="h-8 text-[12px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="before" className="text-[12px]">Before ({currencySymbol}100)</SelectItem>
+                    <SelectItem value="after" className="text-[12px]">After (100{currencySymbol})</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between pt-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="indian-numbering" className="text-[12px]">Indian Numbering</Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    1,00,000
+                  </p>
+                </div>
+                <Switch
+                  id="indian-numbering"
+                  checked={currencyUseIndianNumbering}
+                  onCheckedChange={onCurrencyUseIndianNumberingChange}
+                />
+              </div>
             </div>
           </div>
-        </CardContent>
+        </div>
       </Card>
 
       {/* Preview Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Preview</CardTitle>
-          <CardDescription>
-            See how amounts will be displayed with your current settings
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
-              <span className="text-sm text-muted-foreground">Sample Amount (123456.78):</span>
-              <span className="text-2xl font-bold">{formatPreview()}</span>
+      <Card className="border-border">
+        <div className="p-4 space-y-3">
+          <h3 className="text-[13px] font-semibold text-foreground">Preview</h3>
+          <div className="flex items-center justify-between p-3 border rounded-lg bg-neutral-50 dark:bg-neutral-900">
+            <span className="text-[12px] text-muted-foreground">Sample (123456.78):</span>
+            <span className="text-lg font-bold text-foreground">{formatPreview()}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-[11px] text-muted-foreground">Currency</p>
+              <p className="text-[12px] font-medium">{currencySymbol} {currencyCode}</p>
             </div>
-
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="space-y-1">
-                <p className="text-muted-foreground">Currency:</p>
-                <p className="font-medium">{currencySymbol} {currencyCode}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-muted-foreground">Format:</p>
-                <p className="font-medium">
-                  {currencyUseIndianNumbering ? 'Indian Numbering' : 'Standard Numbering'}
-                </p>
-              </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground">Format</p>
+              <p className="text-[12px] font-medium">
+                {currencyUseIndianNumbering ? 'Indian Numbering' : 'Standard Numbering'}
+              </p>
             </div>
           </div>
-        </CardContent>
+        </div>
       </Card>
     </div>
   );
