@@ -1,9 +1,11 @@
 // src/components/consultation/ProfileTab.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, User, Phone, Mail, MapPin, Heart, Shield, Calendar, Briefcase } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, User, Phone, Mail, MapPin, Heart, Shield, Calendar, Briefcase, Pencil } from 'lucide-react';
 import { usePatient } from '@/hooks/usePatient';
 import { format } from 'date-fns';
+import PatientsFormDrawer from '@/components/PatientsFormDrawer';
 
 interface ProfileTabProps {
   patientId: number;
@@ -11,7 +13,9 @@ interface ProfileTabProps {
 
 export const ProfileTab: React.FC<ProfileTabProps> = ({ patientId }) => {
   const { usePatientById } = usePatient();
-  const { data: patient, isLoading, error } = usePatientById(patientId);
+  const { data: patient, isLoading, error, mutate: mutatePatient } = usePatientById(patientId);
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+  const [drawerMode, setDrawerMode] = useState<'view' | 'edit'>('edit');
 
   if (isLoading) {
     return (
@@ -68,18 +72,32 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ patientId }) => {
             </div>
           </div>
         </div>
-        <Badge
-          variant="outline"
-          className={`text-[10px] uppercase ${
-            patient.status === 'active'
-              ? 'border-foreground/20 text-foreground'
-              : patient.status === 'deceased'
-              ? 'border-red-300 text-red-600'
-              : 'border-muted-foreground/30 text-muted-foreground'
-          }`}
-        >
-          {patient.status}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setDrawerMode('edit');
+              setEditDrawerOpen(true);
+            }}
+            className="h-7 gap-1.5 text-xs"
+          >
+            <Pencil className="h-3 w-3" />
+            Edit
+          </Button>
+          <Badge
+            variant="outline"
+            className={`text-[10px] uppercase ${
+              patient.status === 'active'
+                ? 'border-foreground/20 text-foreground'
+                : patient.status === 'deceased'
+                ? 'border-red-300 text-red-600'
+                : 'border-muted-foreground/30 text-muted-foreground'
+            }`}
+          >
+            {patient.status}
+          </Badge>
+        </div>
       </div>
 
       {/* Personal Info */}
@@ -161,6 +179,16 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ patientId }) => {
           <Field label="Total Visits" value={patient.total_visits} />
         </div>
       </div>
+
+      {/* Edit Patient Drawer */}
+      <PatientsFormDrawer
+        open={editDrawerOpen}
+        onOpenChange={setEditDrawerOpen}
+        patientId={patientId}
+        mode={drawerMode}
+        onSuccess={() => mutatePatient()}
+        onModeChange={(mode) => setDrawerMode(mode as 'view' | 'edit')}
+      />
     </div>
   );
 };
