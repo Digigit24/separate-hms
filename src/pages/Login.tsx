@@ -52,7 +52,7 @@ const Login = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="doctor@hospital.com"
+                placeholder="Enter email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
