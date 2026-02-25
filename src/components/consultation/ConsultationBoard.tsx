@@ -120,6 +120,14 @@ export const ConsultationBoard: React.FC<ConsultationBoardProps> = ({
           template: templateId,
           status: 'draft',
         });
+
+        if (!newResponse?.id) {
+          console.error('createTemplateResponse returned without id:', newResponse);
+          toast.error('Note created but failed to get ID. Please refresh.');
+          onRefresh();
+          return;
+        }
+
         toast.success('New clinical note created');
         onRefresh();
         onViewResponse(newResponse);

@@ -239,8 +239,10 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
   }, []);
 
   const handleSave = async () => {
-    if (!selectedResponse) {
-      toast.error('No active response to save.');
+    // Use detailedResponse.id (fresh from API) as primary, fall back to selectedResponse.id
+    const responseId = detailedResponse?.id ?? selectedResponse?.id;
+    if (!responseId) {
+      toast.error('No active response to save. Please close and reopen the form.');
       return;
     }
 
@@ -273,7 +275,7 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
         return response;
       });
 
-      await updateTemplateResponse(selectedResponse.id, { field_responses });
+      await updateTemplateResponse(responseId, { field_responses });
       toast.success('Form fields saved successfully!');
       await mutateResponses();
     } catch (error: any) {

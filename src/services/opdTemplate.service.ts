@@ -416,7 +416,10 @@ class OPDTemplateService {
         `${this.baseURL}/template-responses/`,
         data
       );
-      return response.data;
+      // Handle both plain response and wrapped { data: {...} } format
+      const result = response.data;
+      const unwrapped = (result as any)?.data && (result as any).data.id ? (result as any).data : result;
+      return unwrapped;
     } catch (error: any) {
       const message =
         error.response?.data?.error ||
