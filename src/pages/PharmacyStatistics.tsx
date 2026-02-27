@@ -39,18 +39,18 @@ function StatCard({ title, value, icon, variant = 'default', subtitle }: StatCar
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-4">
+        <CardTitle className="text-xs font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        <div className={cn('p-2 rounded-lg', variantStyles[variant])}>
+        <div className={cn('p-1.5 rounded-md', variantStyles[variant])}>
           {icon}
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+      <CardContent className="pb-3 px-4">
+        <div className="text-xl font-bold">{value}</div>
         {subtitle && (
-          <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>
         )}
       </CardContent>
     </Card>
@@ -302,8 +302,8 @@ export const PharmacyStatisticsPage: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading statistics...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">Loading statistics...</p>
         </div>
       </div>
     );
@@ -313,9 +313,9 @@ export const PharmacyStatisticsPage: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Error Loading Statistics</h3>
-          <p className="text-sm text-muted-foreground">
+          <XCircle className="h-8 w-8 text-destructive mx-auto mb-3" />
+          <h3 className="text-sm font-semibold mb-1">Error Loading Statistics</h3>
+          <p className="text-xs text-muted-foreground">
             {productStatsError?.message || orderStatsError?.message || 'Failed to load statistics'}
           </p>
         </div>
@@ -336,21 +336,25 @@ export const PharmacyStatisticsPage: React.FC = () => {
     : '0';
 
   return (
-    <div className="flex flex-col h-full overflow-auto p-6 space-y-6">
+    <div className="flex flex-col h-full overflow-auto p-4 md:p-5 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Pharmacy Statistics</h1>
-          <p className="text-muted-foreground mt-1">
-            Overview of products, inventory, and orders
-          </p>
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-lg font-bold leading-none">Pharmacy Statistics</h1>
+          <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1"><Package className="h-3 w-3" /> <span className="font-semibold text-foreground">{productStats?.total_products || 0}</span> Products</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><ShoppingCart className="h-3 w-3" /> <span className="font-semibold text-foreground">{orderStats?.total_orders || 0}</span> Orders</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><CheckCircle className="h-3 w-3" /> <span className="font-semibold text-foreground">{stockPercentage}%</span> In Stock</span>
+          </div>
         </div>
       </div>
 
       {/* Product Statistics */}
       <div>
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Package className="h-5 w-5" />
+        <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <Package className="h-4 w-4" />
           Product Statistics
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -386,8 +390,8 @@ export const PharmacyStatisticsPage: React.FC = () => {
 
       {/* Inventory Alerts */}
       <div>
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5" />
+        <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4" />
           Inventory Alerts
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -424,8 +428,8 @@ export const PharmacyStatisticsPage: React.FC = () => {
 
       {/* Order Statistics */}
       <div>
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <ShoppingCart className="h-5 w-5" />
+        <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <ShoppingCart className="h-4 w-4" />
           Order Statistics
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -459,10 +463,10 @@ export const PharmacyStatisticsPage: React.FC = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Stock Health</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Stock Health</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between">
@@ -493,8 +497,8 @@ export const PharmacyStatisticsPage: React.FC = () => {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Expiry Overview</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Expiry Overview</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between">
@@ -521,12 +525,12 @@ export const PharmacyStatisticsPage: React.FC = () => {
 
       {/* Charts Section */}
       <div>
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <BarChart3 className="h-5 w-5" />
+        <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <BarChart3 className="h-4 w-4" />
           Visual Analytics
         </h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Inventory Status Chart */}
           <Card>
             <CardHeader>

@@ -217,27 +217,38 @@ export default function POSPage() {
   const cartTotal = Number(cart?.total_amount || 0);
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="flex-shrink-0 border-b bg-background">
-        <div className="flex items-center justify-between px-4 sm:px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10">
-              <ShoppingCart className="h-5 w-5 text-primary" />
+      <div className="flex-shrink-0 px-4 py-2.5 border-b">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h1 className="text-lg font-bold leading-none">Pharmacy POS</h1>
+            <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
+              <span className="flex items-center gap-1"><Package className="h-3 w-3" /> <span className="font-semibold text-foreground">{filteredProducts.length}</span> Products</span>
+              <span className="text-border">|</span>
+              <span className="flex items-center gap-1"><ShoppingCart className="h-3 w-3" /> <span className="font-semibold text-foreground">{cartItemsCount}</span> {cartItemsCount === 1 ? 'Item' : 'Items'}</span>
+              {cartTotal > 0 && (
+                <>
+                  <span className="text-border">|</span>
+                  <span className="font-semibold text-foreground">₹{cartTotal.toFixed(2)}</span>
+                </>
+              )}
             </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Pharmacy POS</h1>
-              <p className="text-sm text-muted-foreground">Point of Sale System</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-base px-3 py-1">
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              {cartItemsCount} {cartItemsCount === 1 ? 'item' : 'items'}
-            </Badge>
           </div>
         </div>
+      </div>
+
+      {/* Mobile-only stats */}
+      <div className="flex sm:hidden items-center gap-3 text-[11px] text-muted-foreground px-4 py-1.5 border-b">
+        <span><span className="font-semibold text-foreground">{filteredProducts.length}</span> Products</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{cartItemsCount}</span> Items</span>
+        {cartTotal > 0 && (
+          <>
+            <span className="text-border">|</span>
+            <span className="font-semibold text-foreground">₹{cartTotal.toFixed(2)}</span>
+          </>
+        )}
       </div>
 
       {/* Main Content */}
@@ -246,14 +257,14 @@ export default function POSPage() {
           {/* Products Section - Left 2/3 */}
           <div className="lg:col-span-2 border-r flex flex-col h-full">
             {/* Search Bar */}
-            <div className="flex-shrink-0 p-4 border-b bg-muted/30">
+            <div className="flex-shrink-0 px-3 py-2 border-b">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="Search products by name, company, or batch number..."
+                  placeholder="Search products by name, company, or batch..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-8 h-7 text-[12px]"
                 />
               </div>
             </div>
@@ -378,12 +389,12 @@ export default function POSPage() {
           {/* Cart Section - Right 1/3 */}
           <div className="lg:col-span-1 flex flex-col h-full bg-muted/30">
             {/* Cart Header */}
-            <div className="flex-shrink-0 p-4 border-b bg-background">
+            <div className="flex-shrink-0 px-3 py-2 border-b bg-background">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Current Order</h2>
+                <h2 className="text-sm font-semibold">Current Order</h2>
                 {cartItemsCount > 0 && (
-                  <Button variant="ghost" size="sm" onClick={handleClearCart}>
-                    <Trash2 className="h-4 w-4 mr-2" />
+                  <Button variant="ghost" size="sm" className="h-7 text-[12px]" onClick={handleClearCart}>
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
                     Clear
                   </Button>
                 )}
@@ -391,13 +402,13 @@ export default function POSPage() {
             </div>
 
             {/* Cart Items */}
-            <div className="flex-1 overflow-auto p-4 space-y-3">
+            <div className="flex-1 overflow-auto p-3 space-y-2">
               {!cart || !cart.cart_items || cart.cart_items.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
-                    <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <ShoppingCart className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                     <h3 className="text-sm font-medium text-foreground mb-1">Cart is empty</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Add products to start an order
                     </p>
                   </div>
@@ -458,28 +469,28 @@ export default function POSPage() {
 
             {/* Cart Footer */}
             {cart && cart.cart_items && cart.cart_items.length > 0 && (
-              <div className="flex-shrink-0 border-t bg-background p-4 space-y-3">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
+              <div className="flex-shrink-0 border-t bg-background px-3 py-2.5 space-y-2">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span className="font-medium">₹{cartTotal.toFixed(2)}</span>
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
-                    <span className="text-lg font-semibold">Total</span>
-                    <span className="text-2xl font-bold text-primary">
+                    <span className="text-sm font-semibold">Total</span>
+                    <span className="text-lg font-bold text-primary">
                       ₹{cartTotal.toFixed(2)}
                     </span>
                   </div>
                 </div>
 
                 <Button
-                  size="lg"
-                  className="w-full"
+                  size="sm"
+                  className="w-full h-8 text-[12px]"
                   onClick={handleOpenCheckout}
                   disabled={isLoadingCart}
                 >
-                  <Receipt className="h-4 w-4 mr-2" />
+                  <Receipt className="h-3.5 w-3.5 mr-1.5" />
                   Proceed to Checkout
                 </Button>
               </div>

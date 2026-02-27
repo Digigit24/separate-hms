@@ -1,6 +1,6 @@
 // src/pages/pharmacy/ProductsPage.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
 import { ProductSideDrawer } from '@/components/pharmacy/ProductSideDrawer';
 import { CategorySideDrawer } from '@/components/pharmacy/CategorySideDrawer';
@@ -8,6 +8,7 @@ import { PharmacyProductCard } from '@/components/pharmacy/PharmacyProductCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
@@ -15,13 +16,12 @@ import {
   Plus,
   Package,
   AlertTriangle,
-  Calendar,
   Tag,
-  TrendingUp,
-  TrendingDown,
   FolderTree,
   LayoutGrid,
   List,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 import { PharmacyProduct, ProductCategory } from '@/types/pharmacy.types';
 import { pharmacyProductService, productCategoryService, cartService } from '@/services/pharmacy.service';
@@ -243,216 +243,224 @@ export default function ProductsPage() {
     },
   ];
 
-  return (
-    <div className="flex flex-col h-screen bg-background">
-      {/* Header */}
-      <div className="flex-shrink-0 border-b bg-background">
-        <div className="flex items-center justify-between px-4 sm:px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10">
-              <Package className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Pharmacy Products</h1>
-              <p className="text-sm text-muted-foreground">
-                Manage your pharmacy inventory and products
-              </p>
-            </div>
-          </div>
+  const stats = useMemo(() => {
+    const total = products.length;
+    const active = products.filter(p => p.is_active).length;
+    const lowStock = products.filter(p => p.quantity > 0 && p.quantity <= p.minimum_stock_level).length;
+    const outOfStock = products.filter(p => p.quantity === 0).length;
+    return { total, active, lowStock, outOfStock };
+  }, [products]);
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleManageCategories}
-              className="hidden sm:flex"
-            >
-              <FolderTree className="h-4 w-4 mr-2" />
-              Categories
-            </Button>
-            <Button onClick={handleCreateProduct} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
+  return (
+    <div className="p-4 md:p-5 w-full space-y-3">
+      {/* Row 1: Title + inline stats + actions */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-lg font-bold leading-none">Pharmacy Products</h1>
+          <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1"><Package className="h-3 w-3" /> <span className="font-semibold text-foreground">{stats.total}</span> Total</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><CheckCircle className="h-3 w-3" /> <span className="font-semibold text-foreground">{stats.active}</span> Active</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> <span className="font-semibold text-foreground">{stats.lowStock}</span> Low Stock</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><XCircle className="h-3 w-3" /> <span className="font-semibold text-foreground">{stats.outOfStock}</span> Out of Stock</span>
           </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="h-7 text-[12px] hidden sm:flex" onClick={handleManageCategories}>
+            <FolderTree className="h-3.5 w-3.5 mr-1" /> Categories
+          </Button>
+          <Button size="sm" className="w-full sm:w-auto h-7 text-[12px]" onClick={handleCreateProduct}>
+            <Plus className="h-3.5 w-3.5 mr-1" /> Add Product
+          </Button>
         </div>
       </div>
 
+      {/* Mobile-only stats */}
+      <div className="flex sm:hidden items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+        <span><span className="font-semibold text-foreground">{stats.total}</span> Total</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{stats.active}</span> Active</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{stats.lowStock}</span> Low Stock</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{stats.outOfStock}</span> Out</span>
+      </div>
+
       {/* View Tabs */}
-      <div className="flex-1 overflow-hidden flex flex-col">
-        <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'table' | 'grid')} className="flex-1 flex flex-col">
-          <div className="border-b px-4 sm:px-6">
-            <TabsList className="bg-transparent h-auto p-0">
-              <TabsTrigger
-                value="table"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-              >
-                <List className="h-4 w-4 mr-2" />
-                Table View
-              </TabsTrigger>
-              <TabsTrigger
-                value="grid"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-              >
-                <LayoutGrid className="h-4 w-4 mr-2" />
-                Grid View
-              </TabsTrigger>
-            </TabsList>
-          </div>
+      <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'table' | 'grid')}>
+        <TabsList className="bg-transparent h-auto p-0 border-b w-full justify-start rounded-none">
+          <TabsTrigger
+            value="table"
+            className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-3 py-1.5 text-[12px] h-8"
+          >
+            <List className="h-3.5 w-3.5 mr-1.5" />
+            Table
+          </TabsTrigger>
+          <TabsTrigger
+            value="grid"
+            className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-3 py-1.5 text-[12px] h-8"
+          >
+            <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />
+            Grid
+          </TabsTrigger>
+        </TabsList>
 
-          {/* Table View */}
-          <TabsContent value="table" className="flex-1 overflow-hidden mt-0">
-            <DataTable
-          rows={products}
-          columns={columns}
-          isLoading={isLoading}
-          getRowId={(row) => row.id}
-          getRowLabel={(row) => row.product_name}
-          onRowClick={handleViewProduct}
-          onView={handleViewProduct}
-          onEdit={handleEditProduct}
-          onDelete={handleDeleteProduct}
-          extraActions={(row) => (
-            <>
-              <DropdownMenuItem onClick={() => handleViewProduct(row)}>
-                <Tag className="h-4 w-4 mr-2" />
-                View Details
-              </DropdownMenuItem>
-            </>
-          )}
-          renderMobileCard={(row, actions) => (
-            <>
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-sm truncate">{row.product_name}</h3>
-                  {row.company && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{row.company}</p>
-                  )}
-                </div>
-                <div className="flex flex-col items-end gap-1 ml-2">
-                  <Badge variant={row.is_active ? 'default' : 'secondary'} className="text-xs">
-                    {row.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                  {row.category && (
-                    <Badge variant="outline" className="text-xs font-normal">
-                      {row.category.name}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">MRP</p>
-                  <p className="font-semibold">₹{Number(row.mrp).toFixed(2)}</p>
-                  {row.selling_price && Number(row.selling_price) < Number(row.mrp) && (
-                    <p className="text-xs text-green-600">SP: ₹{Number(row.selling_price).toFixed(2)}</p>
-                  )}
-                </div>
-
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Stock</p>
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant={
-                        row.quantity === 0
-                          ? 'destructive'
-                          : row.quantity <= row.minimum_stock_level
-                          ? 'outline'
-                          : 'default'
-                      }
-                      className={
-                        row.quantity > 0 && row.quantity <= row.minimum_stock_level
-                          ? 'border-orange-500 text-orange-500'
-                          : ''
-                      }
-                    >
-                      {row.quantity}
-                    </Badge>
-                    {row.quantity > 0 && row.quantity <= row.minimum_stock_level && (
-                      <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
-                    )}
-                  </div>
-                </div>
-
-                {row.batch_no && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Batch No</p>
-                    <p className="text-sm">{row.batch_no}</p>
-                  </div>
+        {/* Table View */}
+        <TabsContent value="table" className="mt-3">
+          <Card>
+            <CardContent className="p-0">
+              <DataTable
+                rows={products}
+                columns={columns}
+                isLoading={isLoading}
+                getRowId={(row) => row.id}
+                getRowLabel={(row) => row.product_name}
+                onRowClick={handleViewProduct}
+                onView={handleViewProduct}
+                onEdit={handleEditProduct}
+                onDelete={handleDeleteProduct}
+                extraActions={(row) => (
+                  <>
+                    <DropdownMenuItem onClick={() => handleViewProduct(row)}>
+                      <Tag className="h-4 w-4 mr-2" />
+                      View Details
+                    </DropdownMenuItem>
+                  </>
                 )}
+                renderMobileCard={(row, actions) => (
+                  <>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm truncate">{row.product_name}</h3>
+                        {row.company && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{row.company}</p>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-1 ml-2">
+                        <Badge variant={row.is_active ? 'default' : 'secondary'} className="text-xs">
+                          {row.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                        {row.category && (
+                          <Badge variant="outline" className="text-xs font-normal">
+                            {row.category.name}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
 
-                {row.expiry_date && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Expiry</p>
-                    <div className="flex items-center gap-1">
-                      <p className="text-sm">
-                        {new Date(row.expiry_date).toLocaleDateString()}
-                      </p>
-                      {new Date(row.expiry_date) < new Date() && (
-                        <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                    <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">MRP</p>
+                        <p className="font-semibold">₹{Number(row.mrp).toFixed(2)}</p>
+                        {row.selling_price && Number(row.selling_price) < Number(row.mrp) && (
+                          <p className="text-xs text-green-600">SP: ₹{Number(row.selling_price).toFixed(2)}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Stock</p>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={
+                              row.quantity === 0
+                                ? 'destructive'
+                                : row.quantity <= row.minimum_stock_level
+                                ? 'outline'
+                                : 'default'
+                            }
+                            className={
+                              row.quantity > 0 && row.quantity <= row.minimum_stock_level
+                                ? 'border-orange-500 text-orange-500'
+                                : ''
+                            }
+                          >
+                            {row.quantity}
+                          </Badge>
+                          {row.quantity > 0 && row.quantity <= row.minimum_stock_level && (
+                            <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
+                          )}
+                        </div>
+                      </div>
+
+                      {row.batch_no && (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Batch No</p>
+                          <p className="text-sm">{row.batch_no}</p>
+                        </div>
+                      )}
+
+                      {row.expiry_date && (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Expiry</p>
+                          <div className="flex items-center gap-1">
+                            <p className="text-sm">
+                              {new Date(row.expiry_date).toLocaleDateString()}
+                            </p>
+                            {new Date(row.expiry_date) < new Date() && (
+                              <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </div>
-                )}
-              </div>
 
-              <div className="flex items-center gap-2 mt-3">
-                {actions.view && (
-                  <Button variant="outline" size="sm" onClick={actions.view} className="flex-1">
-                    View
-                  </Button>
+                    <div className="flex items-center gap-2 mt-3">
+                      {actions.view && (
+                        <Button variant="outline" size="sm" onClick={actions.view} className="flex-1">
+                          View
+                        </Button>
+                      )}
+                      {actions.edit && (
+                        <Button variant="outline" size="sm" onClick={actions.edit} className="flex-1">
+                          Edit
+                        </Button>
+                      )}
+                    </div>
+                  </>
                 )}
-                {actions.edit && (
-                  <Button variant="outline" size="sm" onClick={actions.edit} className="flex-1">
-                    Edit
-                  </Button>
-                )}
-              </div>
-            </>
-          )}
-          emptyTitle="No products found"
-          emptySubtitle="Get started by adding your first product"
-            />
-          </TabsContent>
+                emptyTitle="No products found"
+                emptySubtitle="Get started by adding your first product"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          {/* Grid View */}
-          <TabsContent value="grid" className="flex-1 overflow-auto mt-0">
-            <div className="p-4 sm:p-6">
-              {isLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {[...Array(10)].map((_, i) => (
-                    <div key={i} className="h-64 bg-muted animate-pulse rounded-lg" />
-                  ))}
-                </div>
-              ) : products.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full py-12">
-                  <Package className="h-16 w-16 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No products found</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Get started by adding your first product
-                  </p>
-                  <Button onClick={handleCreateProduct}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Product
-                  </Button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {products.map((product) => (
-                    <PharmacyProductCard
-                      key={product.id}
-                      product={product}
-                      onAddToCart={handleAddToCart}
-                      onViewDetails={handleViewProduct}
-                    />
-                  ))}
-                </div>
-              )}
+        {/* Grid View */}
+        <TabsContent value="grid" className="mt-3">
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              {[...Array(10)].map((_, i) => (
+                <div key={i} className="h-56 bg-muted animate-pulse rounded-lg" />
+              ))}
             </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+          ) : products.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Package className="h-12 w-12 text-muted-foreground mb-3" />
+              <h3 className="text-sm font-semibold mb-1">No products found</h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Get started by adding your first product
+              </p>
+              <Button size="sm" className="h-7 text-[12px]" onClick={handleCreateProduct}>
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Add Product
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              {products.map((product) => (
+                <PharmacyProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={handleAddToCart}
+                  onViewDetails={handleViewProduct}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Product Drawer */}
       <ProductSideDrawer
@@ -470,7 +478,6 @@ export default function ProductsPage() {
         mode={categoryDrawerMode}
         category={selectedCategory}
         onSuccess={() => {
-          // Reload products to get updated category data
           loadProducts();
         }}
       />
