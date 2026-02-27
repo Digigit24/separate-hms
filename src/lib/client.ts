@@ -63,7 +63,14 @@ const authClient: AxiosInstance = axios.create({
   },
 });
 
-// CRM client removed - not used in HMS app
+// Create CRM client for CRM API (port 8001)
+const crmClient: AxiosInstance = axios.create({
+  baseURL: API_CONFIG.CRM_BASE_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 // Create HMS client for HMS API (port 8000)
 const hmsClient: AxiosInstance = axios.create({
@@ -135,7 +142,39 @@ authClient.interceptors.request.use(
   }
 );
 
-// CRM client interceptors removed - not used in HMS app
+// Request interceptor for CRM client - attach token and tenant headers
+crmClient.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const token = tokenManager.getAccessToken();
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    try {
+      const userJson = localStorage.getItem(USER_KEY);
+      if (userJson) {
+        const user = JSON.parse(userJson);
+        const tenant = user?.tenant;
+        if (tenant) {
+          const tenantId = tenant.id || tenant.tenant_id;
+          if (tenantId) {
+            config.headers['X-Tenant-Id'] = tenantId;
+            config.headers['tenanttoken'] = tenantId;
+          }
+          if (tenant.slug) {
+            config.headers['X-Tenant-Slug'] = tenant.slug;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to attach tenant headers for CRM:', error);
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Request interceptor for HMS client - attach token and tenant headers
 hmsClient.interceptors.request.use(
@@ -234,7 +273,39 @@ authClient.interceptors.response.use(
   }
 );
 
-// CRM response interceptor removed - not used in HMS app
+// Response interceptor for CRM client
+crmClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const refreshToken = tokenManager.getRefreshToken();
+        if (refreshToken) {
+          const response = await authClient.post(API_CONFIG.AUTH.REFRESH, {
+            refresh: refreshToken
+          });
+          const { access, refresh } = response.data;
+          tokenManager.setAccessToken(access);
+          if (refresh) tokenManager.setRefreshToken(refresh);
+          originalRequest.headers.Authorization = `Bearer ${access}`;
+          return crmClient(originalRequest);
+        }
+      } catch (refreshError) {
+        tokenManager.removeTokens();
+        localStorage.removeItem(USER_KEY);
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 // Response interceptor for HMS client
 hmsClient.interceptors.response.use(
@@ -312,7 +383,7 @@ hmsClient.interceptors.response.use(
 );
 
 // Export all clients
-export { authClient, hmsClient };
+export { authClient, crmClient, hmsClient };
 
 // Export auth client as default for backward compatibility
 export default authClient;

@@ -20,6 +20,8 @@ import {
   Microscope,
   Package,
   Receipt,
+  Briefcase,
+  CheckSquare,
   Shield,
   Settings2,
   UserCog,
@@ -138,6 +140,15 @@ const menuItems: MenuItem[] = [
       { id: "pharmacy-pos", label: "POS", icon: ShoppingCart, path: "/pharmacy/pos" },
       { id: "pharmacy-statistics", label: "Statistics", icon: BarChart3, path: "/pharmacy/statistics" },
       { id: "pharmacy-cart", label: "Cart", icon: Receipt, path: "/cart" },
+    ],
+  },
+  {
+    id: "crm",
+    label: "CRM",
+    icon: Briefcase,
+    module: "crm",
+    children: [
+      { id: "crm-tasks", label: "Tasks", icon: CheckSquare, path: "/crm/tasks" },
     ],
   },
   {

@@ -56,6 +56,7 @@ import { Requisitions } from "./pages/diagnostics/Requisitions";
 import { Investigations } from "./pages/diagnostics/Investigations";
 import { LabReports } from "./pages/diagnostics/LabReports";
 
+import { CRMTasks } from "./pages/CRMTasks";
 import { WebSocketProvider } from "./context/WebSocketProvider";
 
 const queryClient = new QueryClient({
@@ -135,6 +136,9 @@ const AppLayout = () => {
               <Route path="/pharmacy/pos" element={<ModuleProtectedRoute requiredModule="pharmacy"><POSPage /></ModuleProtectedRoute>} />
               <Route path="/pharmacy/statistics" element={<ModuleProtectedRoute requiredModule="pharmacy"><PharmacyStatisticsPage /></ModuleProtectedRoute>} />
               <Route path="/cart" element={<ModuleProtectedRoute requiredModule="pharmacy"><CartListPage /></ModuleProtectedRoute>} />
+
+              {/* CRM Routes */}
+              <Route path="/crm/tasks" element={<ModuleProtectedRoute requiredModule="crm"><CRMTasks /></ModuleProtectedRoute>} />
 
               {/* Admin Routes */}
               <Route path="/admin/users" element={<ModuleProtectedRoute requiredModule="admin"><Users /></ModuleProtectedRoute>} />

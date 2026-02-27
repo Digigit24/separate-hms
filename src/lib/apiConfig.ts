@@ -434,7 +434,16 @@ export const API_CONFIG = {
   },
 
 
-  // CRM endpoints removed - not used in HMS app
+  // ==================== CRM ====================
+  CRM: {
+    TASKS: {
+      LIST: '/tasks/',
+      DETAIL: '/tasks/:id/',
+      CREATE: '/tasks/',
+      UPDATE: '/tasks/:id/',
+      DELETE: '/tasks/:id/',
+    },
+  },
 
   // ==================== WHATSAPP ====================
   // NOTE: These endpoints are for the legacy FastAPI backend.
