@@ -1,67 +1,20 @@
-import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
-import { useTheme } from 'next-themes';
 import {
   Users,
   Calendar,
-  TrendingUp,
-  TrendingDown,
   FileText,
   Loader2,
-  ArrowRight,
   ClipboardList,
-  Activity,
   IndianRupee,
   UserPlus,
-  Stethoscope,
   Receipt,
   Microscope,
-  Pill,
   ChevronRight,
 } from 'lucide-react';
 import { usePatient } from '@/hooks/usePatient';
 import { useOpdVisit } from '@/hooks/useOpdVisit';
 import { useOPDBill } from '@/hooks/useOPDBill';
-
-// ==================== TOGGLE BETWEEN DEMO & REAL DATA ====================
-const USE_DEMO_DATA = true;
-// ========================================================================
-
-const DEMO_DATA = {
-  patients: {
-    total_patients: 1247,
-    active_patients: 1180,
-    inactive_patients: 52,
-    deceased_patients: 15,
-    patients_with_insurance: 834,
-    average_age: 42.5,
-    total_visits: 4832,
-    gender_distribution: { Male: 687, Female: 523, Other: 37 },
-    blood_group_distribution: { 'A+': 342, 'A-': 87, 'B+': 298, 'B-': 64, 'AB+': 156, 'AB-': 43, 'O+': 187, 'O-': 70 },
-  },
-  visits: {
-    total_visits: 4832,
-    today_visits: 48,
-    waiting_patients: 12,
-    in_progress_patients: 5,
-    completed_today: 31,
-    average_waiting_time: '15 mins',
-    visits_by_type: { new: 1245, follow_up: 2987, emergency: 432, referral: 168 },
-    visits_by_status: { waiting: 12, in_progress: 5, completed: 4698, cancelled: 87, no_show: 30 },
-    revenue_today: '45680',
-    pending_payments: 23,
-  },
-  bills: {
-    total_bills: 3421,
-    total_amount: '12450000',
-    received_amount: '10890000',
-    balance_amount: '1560000',
-    paid_bills: 2856,
-    unpaid_bills: 398,
-    partial_bills: 167,
-  },
-};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -70,16 +23,13 @@ const Dashboard = () => {
   const { useOpdVisitStatistics } = useOpdVisit();
   const { useOPDBillStatistics } = useOPDBill();
 
-  const { data: realPatientStats, isLoading: patientLoading } = usePatientStatistics();
-  const { data: realVisitStats, isLoading: visitLoading } = useOpdVisitStatistics();
-  const { data: realBillStats, isLoading: billLoading } = useOPDBillStatistics();
+  const { data: patientStats, isLoading: patientLoading } = usePatientStatistics();
+  const { data: visitStats, isLoading: visitLoading } = useOpdVisitStatistics();
+  const { data: billStats, isLoading: billLoading } = useOPDBillStatistics();
 
-  const patientStats = USE_DEMO_DATA ? DEMO_DATA.patients : realPatientStats;
-  const visitStats = USE_DEMO_DATA ? DEMO_DATA.visits : realVisitStats;
-  const billStats = USE_DEMO_DATA ? DEMO_DATA.bills : realBillStats;
-  const isLoading = USE_DEMO_DATA ? false : (patientLoading || visitLoading || billLoading);
+  const isLoading = patientLoading || visitLoading || billLoading;
 
-  const pendingBills = (billStats?.unpaid_bills || 0) + (billStats?.partial_bills || 0);
+  const pendingBills = (billStats?.bills_unpaid || 0) + (billStats?.bills_partial || 0);
 
   // Quick nav items
   const quickNav = [
@@ -99,11 +49,6 @@ const Dashboard = () => {
             <h1 className="text-2xl font-bold text-foreground tracking-tight">Dashboard</h1>
             <p className="text-sm text-muted-foreground mt-0.5">Welcome back! Here's your hospital overview.</p>
           </div>
-          {USE_DEMO_DATA && (
-            <span className="text-[11px] font-medium px-2 py-1 rounded-md border border-border text-muted-foreground">
-              Demo Mode
-            </span>
-          )}
         </div>
 
         {/* Stat Cards */}
@@ -111,32 +56,28 @@ const Dashboard = () => {
           <StatCard
             title="Total Patients"
             value={patientStats?.total_patients?.toLocaleString() || '0'}
-            change="+12%"
-            changeUp={true}
+            subtitle={`${patientStats?.active_patients?.toLocaleString() || '0'} active`}
             icon={<Users className="w-4 h-4" />}
             loading={isLoading}
           />
           <StatCard
             title="Today's Visits"
             value={visitStats?.today_visits?.toLocaleString() || '0'}
-            change="+5%"
-            changeUp={true}
+            subtitle={`${visitStats?.waiting_patients || 0} waiting`}
             icon={<Calendar className="w-4 h-4" />}
             loading={isLoading}
           />
           <StatCard
             title="Revenue"
-            value={`₹${parseFloat(billStats?.received_amount || '0').toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
-            change="+8%"
-            changeUp={true}
+            value={`₹${parseFloat(billStats?.paid_revenue || '0').toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+            subtitle={`₹${parseFloat(billStats?.pending_amount || '0').toLocaleString('en-IN', { maximumFractionDigits: 0 })} pending`}
             icon={<IndianRupee className="w-4 h-4" />}
             loading={isLoading}
           />
           <StatCard
             title="Pending Bills"
             value={pendingBills.toString()}
-            change="-3%"
-            changeUp={false}
+            subtitle={`${billStats?.total_bills?.toLocaleString() || '0'} total bills`}
             icon={<FileText className="w-4 h-4" />}
             loading={isLoading}
           />
@@ -212,21 +153,21 @@ const Dashboard = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[12px] text-muted-foreground">Paid</span>
-                  <span className="text-[12px] font-medium text-green-600 dark:text-green-400">{(billStats?.paid_bills || 0).toLocaleString()}</span>
+                  <span className="text-[12px] font-medium text-green-600 dark:text-green-400">{(billStats?.bills_paid || 0).toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[12px] text-muted-foreground">Unpaid</span>
-                  <span className="text-[12px] font-medium text-red-600 dark:text-red-400">{(billStats?.unpaid_bills || 0).toLocaleString()}</span>
+                  <span className="text-[12px] font-medium text-red-600 dark:text-red-400">{(billStats?.bills_unpaid || 0).toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[12px] text-muted-foreground">Partial</span>
-                  <span className="text-[12px] font-medium text-amber-600 dark:text-amber-400">{(billStats?.partial_bills || 0).toLocaleString()}</span>
+                  <span className="text-[12px] font-medium text-amber-600 dark:text-amber-400">{(billStats?.bills_partial || 0).toLocaleString()}</span>
                 </div>
                 <div className="pt-2 mt-2 border-t border-border">
                   <div className="flex items-center justify-between">
-                    <span className="text-[12px] text-muted-foreground">Balance</span>
+                    <span className="text-[12px] text-muted-foreground">Pending Amount</span>
                     <span className="text-[13px] font-semibold text-foreground">
-                      ₹{parseFloat(billStats?.balance_amount || '0').toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      ₹{parseFloat(billStats?.pending_amount || '0').toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                     </span>
                   </div>
                 </div>
@@ -270,13 +211,12 @@ const Dashboard = () => {
 interface StatCardProps {
   title: string;
   value: string;
-  change: string;
-  changeUp: boolean;
+  subtitle?: string;
   icon: React.ReactNode;
   loading?: boolean;
 }
 
-const StatCard = ({ title, value, change, changeUp, icon, loading }: StatCardProps) => (
+const StatCard = ({ title, value, subtitle, icon, loading }: StatCardProps) => (
   <Card className="p-4 border-border">
     <div className="flex items-start justify-between">
       <div>
@@ -291,18 +231,8 @@ const StatCard = ({ title, value, change, changeUp, icon, loading }: StatCardPro
         {icon}
       </div>
     </div>
-    {!loading && (
-      <div className="mt-2 flex items-center gap-1">
-        {changeUp ? (
-          <TrendingUp className="w-3 h-3 text-green-600 dark:text-green-400" />
-        ) : (
-          <TrendingDown className="w-3 h-3 text-red-600 dark:text-red-400" />
-        )}
-        <span className={`text-[11px] font-medium ${changeUp ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-          {change}
-        </span>
-        <span className="text-[11px] text-muted-foreground ml-0.5">from last period</span>
-      </div>
+    {!loading && subtitle && (
+      <p className="mt-2 text-[11px] text-muted-foreground">{subtitle}</p>
     )}
   </Card>
 );
