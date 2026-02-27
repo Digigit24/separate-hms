@@ -195,7 +195,7 @@ export const useOpdVisit = () => {
    *
    * @example
    * const { updateOpdVisit, isLoading } = useOpdVisit();
-   * await updateOpdVisit(12, { status: 'in_progress', notes: 'Updated' });
+   * await updateOpdVisit(12, { status: 'in_consultation', notes: 'Updated' });
    */
   const updateOpdVisit = useCallback(async (id: number, visitData: OpdVisitUpdateData) => {
     if (!hasHMSAccess) {
@@ -222,7 +222,7 @@ export const useOpdVisit = () => {
    *
    * @example
    * const { patchOpdVisit, isLoading } = useOpdVisit();
-   * await patchOpdVisit(12, { status: 'in_progress' });
+   * await patchOpdVisit(12, { status: 'in_consultation' });
    */
   const patchOpdVisit = useCallback(async (id: number, visitData: Partial<OpdVisitUpdateData>) => {
     if (!hasHMSAccess) {

@@ -5,7 +5,7 @@ import { Patient } from './patient.types';
 import { Doctor } from './doctor.types';
 
 // ==================== ENUMS & CONSTANTS ====================
-export type VisitStatus = 'waiting' | 'in_consultation' | 'in_progress' | 'completed' | 'cancelled' | 'no_show';
+export type VisitStatus = 'waiting' | 'in_consultation' | 'completed' | 'cancelled' | 'no_show';
 export type VisitType = 'new' | 'follow_up' | 'emergency' | 'referral';
 export type PaymentStatus = 'pending' | 'paid' | 'partially_paid' | 'refunded';
 export type VisitPriority = 'low' | 'normal' | 'high' | 'urgent';
@@ -225,7 +225,6 @@ export interface OpdVisitStatistics {
   visits_by_status: {
     waiting: number;
     in_consultation: number;
-    in_progress: number;
     completed: number;
     cancelled: number;
     no_show: number;

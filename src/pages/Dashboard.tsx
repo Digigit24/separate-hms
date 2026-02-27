@@ -120,7 +120,7 @@ const Dashboard = () => {
               <div className="space-y-3">
                 {[
                   { label: 'Completed', value: visitStats?.visits_by_status?.completed || 0, total: visitStats?.total_visits || 1 },
-                  { label: 'In Progress', value: visitStats?.visits_by_status?.in_progress || 0, total: visitStats?.total_visits || 1 },
+                  { label: 'In Consultation', value: visitStats?.visits_by_status?.in_consultation || 0, total: visitStats?.total_visits || 1 },
                   { label: 'Waiting', value: visitStats?.visits_by_status?.waiting || 0, total: visitStats?.total_visits || 1 },
                   { label: 'Cancelled', value: visitStats?.visits_by_status?.cancelled || 0, total: visitStats?.total_visits || 1 },
                 ].map((item) => {
@@ -282,7 +282,7 @@ const RecentActivitiesTable = () => {
       cell: (row) => (
         <span className={`px-1.5 py-0.5 rounded text-[11px] capitalize ${
           row.status === 'completed' ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300' :
-          row.status === 'in_progress' ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300' :
+          row.status === 'in_consultation' ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300' :
           'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400'
         }`}>
           {row.status?.replace('_', ' ')}

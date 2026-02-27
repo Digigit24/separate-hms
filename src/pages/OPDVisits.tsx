@@ -34,7 +34,7 @@ export const OPDVisits: React.FC = () => {
 
   // State for search and filters
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'waiting' | 'in_consultation' | 'in_progress' | 'completed' | 'cancelled' | ''>('');
+  const [statusFilter, setStatusFilter] = useState<'waiting' | 'in_consultation' | 'completed' | 'cancelled' | ''>('');
   const [currentPage, setCurrentPage] = useState(1);
 
   // Drawer state
@@ -71,7 +71,7 @@ export const OPDVisits: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const handleStatusFilter = (status: 'waiting' | 'in_consultation' | 'in_progress' | 'completed' | 'cancelled' | '') => {
+  const handleStatusFilter = (status: 'waiting' | 'in_consultation' | 'completed' | 'cancelled' | '') => {
     setStatusFilter(status);
     setCurrentPage(1);
   };
@@ -209,7 +209,6 @@ export const OPDVisits: React.FC = () => {
         const statusConfig = {
           waiting: { label: 'Waiting', className: 'bg-neutral-600 dark:bg-neutral-500' },
           in_consultation: { label: 'In Consultation', className: 'bg-neutral-800 dark:bg-neutral-300' },
-          in_progress: { label: 'In Progress', className: 'bg-neutral-800 dark:bg-neutral-300' },
           completed: { label: 'Completed', className: 'bg-neutral-900 dark:bg-neutral-200' },
           cancelled: { label: 'Cancelled', className: 'bg-neutral-500' },
           no_show: { label: 'No Show', className: 'bg-neutral-400 dark:bg-neutral-600' },
@@ -260,7 +259,7 @@ export const OPDVisits: React.FC = () => {
             className={
               visit.status === 'completed'
                 ? 'bg-neutral-900 dark:bg-neutral-200'
-                : visit.status === 'in_consultation' || visit.status === 'in_progress'
+                : visit.status === 'in_consultation'
                 ? 'bg-neutral-800 dark:bg-neutral-300'
                 : visit.status === 'waiting'
                 ? 'bg-neutral-600 dark:bg-neutral-500'
@@ -403,7 +402,6 @@ export const OPDVisits: React.FC = () => {
             { value: '', label: 'All' },
             { value: 'waiting', label: 'Waiting' },
             { value: 'in_consultation', label: 'Consulting' },
-            { value: 'in_progress', label: 'In Progress' },
             { value: 'completed', label: 'Done' },
           ].map((f) => (
             <Button

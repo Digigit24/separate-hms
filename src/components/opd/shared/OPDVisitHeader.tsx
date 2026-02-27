@@ -159,7 +159,7 @@ export const OPDVisitHeader: React.FC<OPDVisitHeaderProps> = ({
               variant={visit.status === 'completed' ? 'default' : 'secondary'}
               className={`px-2 sm:px-3 py-1 text-xs uppercase tracking-wide shrink-0 ${
                 visit.status === 'completed' ? 'bg-green-100 text-green-700 hover:bg-green-100' :
-                visit.status === 'in_consultation' || visit.status === 'in_progress' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' :
+                visit.status === 'in_consultation' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' :
                 'bg-orange-100 text-orange-700 hover:bg-orange-100'
               }`}
             >
@@ -176,7 +176,7 @@ export const OPDVisitHeader: React.FC<OPDVisitHeaderProps> = ({
               </Button>
             )}
 
-            {(visit.status === 'in_consultation' || visit.status === 'in_progress') && (
+            {visit.status === 'in_consultation' && (
               <Button onClick={() => setShowCompleteDialog(true)} disabled={isSaving} className="gap-1 sm:gap-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm shrink-0">
                 {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                 <span className="hidden sm:inline">Complete Visit</span>

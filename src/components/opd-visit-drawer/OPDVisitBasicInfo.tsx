@@ -58,7 +58,7 @@ const updateOpdVisitSchema = z.object({
   visit_date: z.string().optional(),
   visit_time: z.string().optional(),
   visit_type: z.enum(['new', 'follow_up', 'emergency', 'referral']).optional(),
-  status: z.enum(['waiting', 'in_consultation', 'in_progress', 'completed', 'cancelled', 'no_show']).optional(),
+  status: z.enum(['waiting', 'in_consultation', 'completed', 'cancelled', 'no_show']).optional(),
   priority: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
   chief_complaint: z.string().optional(),
   symptoms: z.string().optional(),
@@ -855,7 +855,7 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
                       }
                       className={
                         watchedStatus === 'completed' ? 'bg-green-600' :
-                        watchedStatus === 'in_consultation' || watchedStatus === 'in_progress' ? 'bg-blue-600' :
+                        watchedStatus === 'in_consultation' ? 'bg-blue-600' :
                         watchedStatus === 'waiting' ? 'bg-orange-600' : ''
                       }
                     >
@@ -873,7 +873,6 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
                     <SelectContent>
                       <SelectItem value="waiting">Waiting</SelectItem>
                       <SelectItem value="in_consultation">In Consultation</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>
                       <SelectItem value="no_show">No Show</SelectItem>

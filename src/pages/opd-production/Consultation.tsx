@@ -378,7 +378,7 @@ export const OPDConsultation: React.FC = () => {
             <Badge
               variant="outline"
               className={`text-[10px] uppercase tracking-wide font-medium px-2 h-5 ${
-                visit.status === 'in_consultation' || visit.status === 'in_progress'
+                visit.status === 'in_consultation'
                   ? 'bg-emerald-500/15 text-emerald-700 border-emerald-300 dark:text-emerald-400 dark:border-emerald-600'
                   : visit.status === 'waiting'
                     ? 'bg-amber-500/15 text-amber-700 border-amber-300 dark:text-amber-400 dark:border-amber-600'
@@ -397,7 +397,7 @@ export const OPDConsultation: React.FC = () => {
               </Button>
             )}
 
-            {(visit.status === 'in_consultation' || visit.status === 'in_progress') && (
+            {visit.status === 'in_consultation' && (
               <Button size="sm" onClick={() => setShowCompleteDialog(true)} disabled={isSaving} className="h-7 text-xs px-3 gap-1.5 bg-foreground hover:bg-foreground/90 text-background">
                 {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
                 Complete

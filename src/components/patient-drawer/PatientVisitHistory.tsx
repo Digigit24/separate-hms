@@ -40,7 +40,6 @@ export default function PatientVisitHistory({ patientId, onViewVisit }: PatientV
   const statusConfig = {
     waiting: { label: 'Waiting', className: 'bg-orange-600' },
     in_consultation: { label: 'In Consultation', className: 'bg-blue-600' },
-    in_progress: { label: 'In Progress', className: 'bg-blue-600' },
     completed: { label: 'Completed', className: 'bg-green-600' },
     cancelled: { label: 'Cancelled', className: 'bg-red-600' },
     no_show: { label: 'No Show', className: 'bg-gray-600' },
@@ -236,7 +235,7 @@ export default function PatientVisitHistory({ patientId, onViewVisit }: PatientV
           <CardContent className="p-4">
             <div className="text-sm text-muted-foreground">Pending</div>
             <div className="text-2xl font-bold text-orange-600">
-              {visits.filter((v) => ['waiting', 'in_consultation', 'in_progress'].includes(v.status)).length}
+              {visits.filter((v) => ['waiting', 'in_consultation'].includes(v.status)).length}
             </div>
           </CardContent>
         </Card>
