@@ -27,7 +27,7 @@ export const OrderDetailsDrawer: React.FC<OrderDetailsDrawerProps> = ({ open, on
     <SideDrawer
       open={open}
       onOpenChange={onOpenChange}
-      title={`Order #${order.order_id}`}
+      title={`Order #${order.id}`}
       description={`Details for order placed on ${format(new Date(order.created_at), 'PPpp')}`}
     >
       <div className="space-y-6">
@@ -35,16 +35,16 @@ export const OrderDetailsDrawer: React.FC<OrderDetailsDrawerProps> = ({ open, on
             <h3 className="font-medium">Order Summary</h3>
             <div className="mt-2 space-y-2 text-sm">
                 <div className="flex justify-between">
-                    <span className="text-muted-foreground">Patient:</span>
-                    <span>{order.patient_name}</span>
-                </div>
-                <div className="flex justify-between">
                     <span className="text-muted-foreground">Status:</span>
-                    <Badge variant={order.status === 'completed' ? 'default' : order.status === 'cancelled' ? 'destructive' : 'secondary'}>{order.status}</Badge>
+                    <Badge variant={order.status === 'completed' ? 'default' : order.status === 'cancelled' ? 'destructive' : 'secondary'}>{order.status_display || order.status}</Badge>
                 </div>
                 <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total Price:</span>
-                    <span className="font-semibold">₹{order.total_price}</span>
+                    <span className="text-muted-foreground">Payment:</span>
+                    <Badge variant="outline">{order.payment_status_display || order.payment_status}</Badge>
+                </div>
+                <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total:</span>
+                    <span className="font-semibold">₹{Number(order.total_amount).toFixed(2)}</span>
                 </div>
             </div>
         </div>
@@ -52,17 +52,17 @@ export const OrderDetailsDrawer: React.FC<OrderDetailsDrawerProps> = ({ open, on
         <Separator />
 
         <div>
-            <h3 className="font-medium">Items ({order.items.length})</h3>
+            <h3 className="font-medium">Items ({order.order_items?.length || 0})</h3>
             <ul className="mt-2 space-y-2">
-                {order.items.map(item => (
+                {order.order_items?.map(item => (
                     <li key={item.id} className="flex justify-between items-center text-sm">
                         <div>
                             <p>{item.product.product_name}</p>
                             <p className="text-xs text-muted-foreground">
-                                {item.quantity} x ₹{item.price}
+                                {item.quantity} x ₹{Number(item.price_at_time).toFixed(2)}
                             </p>
                         </div>
-                        <p className="font-medium">₹{item.total_price}</p>
+                        <p className="font-medium">₹{Number(item.total_price).toFixed(2)}</p>
                     </li>
                 ))}
             </ul>

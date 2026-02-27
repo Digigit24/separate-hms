@@ -34,7 +34,7 @@ export const CartListPage: React.FC = () => {
     setOrderDetailsDrawerOpen(true);
   };
 
-  const cartItems = cart?.items || [];
+  const cartItems = cart?.cart_items || [];
   const orders = ordersData?.results || [];
 
   const orderStats = useMemo(() => {
@@ -54,7 +54,7 @@ export const CartListPage: React.FC = () => {
     {
       header: 'Price',
       key: 'price',
-      cell: (item) => `₹${item.price}`,
+      cell: (item) => `₹${Number(item.price_at_time).toFixed(2)}`,
     },
     {
       header: 'Quantity',
@@ -85,30 +85,30 @@ export const CartListPage: React.FC = () => {
     {
       header: 'Total',
       key: 'total',
-      cell: (item) => `₹${item.total_price}`,
+      cell: (item) => `₹${Number(item.total_price).toFixed(2)}`,
     },
   ], [updateCartItem]);
 
   const ordersColumns = useMemo((): DataTableColumn<PharmacyOrder>[] => [
     {
       header: 'Order ID',
-      key: 'order_id',
-      cell: (order) => <div className="font-mono">{order.order_id}</div>,
-    },
-    {
-      header: 'Patient',
-      key: 'patient',
-      cell: (order) => order.patient_name,
+      key: 'id',
+      cell: (order) => <div className="font-mono">#{order.id}</div>,
     },
     {
       header: 'Status',
       key: 'status',
-      cell: (order) => <Badge variant={order.status === 'completed' ? 'default' : order.status === 'cancelled' ? 'destructive' : 'secondary'}>{order.status}</Badge>,
+      cell: (order) => <Badge variant={order.status === 'completed' ? 'default' : order.status === 'cancelled' ? 'destructive' : 'secondary'}>{order.status_display || order.status}</Badge>,
+    },
+    {
+      header: 'Payment',
+      key: 'payment_status',
+      cell: (order) => <Badge variant="outline">{order.payment_status_display || order.payment_status}</Badge>,
     },
     {
       header: 'Total',
       key: 'total',
-      cell: (order) => `₹${order.total_price}`,
+      cell: (order) => `₹${Number(order.total_amount).toFixed(2)}`,
     },
     {
       header: 'Date',
@@ -195,7 +195,7 @@ export const CartListPage: React.FC = () => {
                 columns={ordersColumns}
                 isLoading={ordersLoading}
                 getRowId={(row) => row.id}
-                getRowLabel={(row) => row.order_id}
+                getRowLabel={(row) => `#${row.id}`}
                 onView={handleViewOrder}
                 emptyTitle="No orders found"
                 emptySubtitle="You haven't placed any orders yet."
