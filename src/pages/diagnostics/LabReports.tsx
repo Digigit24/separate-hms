@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import { Plus, Search, FileText, CheckCircle2, Download, Upload } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Plus, Search, FileText, CheckCircle2, Download, Upload, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { LabReport, CreateLabReportPayload } from '@/types/diagnostics.types';
@@ -256,81 +256,96 @@ export const LabReports: React.FC = () => {
     ];
   }, [drawerMode, isSubmitting]);
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex-shrink-0 border-b bg-background p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <FileText className="h-8 w-8 text-primary" />
-              </div>
-              Lab Reports
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              View and verify test results
-            </p>
-          </div>
-          <Button onClick={handleCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Report
-          </Button>
-        </div>
+  // Stats
+  const reportStats = useMemo(() => {
+    const total = filteredReports.length;
+    const verified = filteredReports.filter((r) => r.verified_by).length;
+    const pending = total - verified;
+    return { total, verified, pending };
+  }, [filteredReports]);
 
-        {/* Filters */}
-        <div className="flex gap-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by report ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+  return (
+    <div className="p-4 md:p-5 w-full space-y-3">
+      {/* Row 1: Title + inline stats + action */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-lg font-bold leading-none">Lab Reports</h1>
+          <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1"><FileText className="h-3 w-3" /> <span className="font-semibold text-foreground">{reportStats.total}</span> Total</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> <span className="font-semibold text-foreground">{reportStats.verified}</span> Verified</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> <span className="font-semibold text-foreground">{reportStats.pending}</span> Pending</span>
           </div>
+        </div>
+        <Button size="sm" className="w-full sm:w-auto h-7 text-[12px]" onClick={handleCreate}>
+          <Plus className="h-3.5 w-3.5 mr-1" /> Add Report
+        </Button>
+      </div>
+
+      {/* Mobile-only stats */}
+      <div className="flex sm:hidden items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+        <span><span className="font-semibold text-foreground">{reportStats.total}</span> Total</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{reportStats.verified}</span> Verified</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{reportStats.pending}</span> Pending</span>
+      </div>
+
+      {/* Row 2: Search */}
+      <div className="flex gap-2 items-center flex-wrap">
+        <div className="relative w-full sm:w-52">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search reports..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8 h-7 text-[12px]"
+          />
         </div>
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-hidden">
-        <DataTable
-          rows={filteredReports}
-          columns={columns}
-          isLoading={isLoading}
-          onRowClick={handleView}
-          getRowId={(row) => row.id}
-          getRowLabel={(row) => `Report #${row.id}`}
-          onView={handleView}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          emptyTitle="No lab reports found"
-          emptySubtitle="Create your first lab report to get started"
-          renderMobileCard={(row, actions) => (
-            <div className="space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="font-mono font-semibold text-sm text-primary">Report #{row.id}</div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    Order #{row.diagnostic_order}
+      <Card>
+        <CardContent className="p-0">
+          <DataTable
+            rows={filteredReports}
+            columns={columns}
+            isLoading={isLoading}
+            onRowClick={handleView}
+            getRowId={(row) => row.id}
+            getRowLabel={(row) => `Report #${row.id}`}
+            onView={handleView}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            emptyTitle="No lab reports found"
+            emptySubtitle="Create your first lab report to get started"
+            renderMobileCard={(row, actions) => (
+              <div className="space-y-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="font-mono font-semibold text-sm text-primary">Report #{row.id}</div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      Order #{row.diagnostic_order}
+                    </div>
                   </div>
+                  {row.verified_by ? (
+                    <Badge className="bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      Verified
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">Pending</Badge>
+                  )}
                 </div>
-                {row.verified_by ? (
-                  <Badge className="bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Verified
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary">Pending</Badge>
-                )}
+                <div className="text-sm text-muted-foreground">
+                  {format(new Date(row.created_at), 'MMM dd, yyyy HH:mm')}
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground">
-                {format(new Date(row.created_at), 'MMM dd, yyyy HH:mm')}
-              </div>
-            </div>
-          )}
-        />
-      </div>
+            )}
+          />
+        </CardContent>
+      </Card>
 
       {/* Side Drawer */}
       <SideDrawer

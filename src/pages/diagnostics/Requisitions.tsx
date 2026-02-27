@@ -343,91 +343,110 @@ export const Requisitions: React.FC = () => {
     ];
   }, [drawerMode, isSubmitting]);
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex-shrink-0 border-b bg-background p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <ClipboardList className="h-8 w-8 text-primary" />
-              </div>
-              Requisitions
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              View and manage test orders
-            </p>
-          </div>
-          <Button onClick={handleCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Requisition
-          </Button>
-        </div>
+  // Stats
+  const reqStats = useMemo(() => {
+    const total = filteredRequisitions.length;
+    const ordered = filteredRequisitions.filter((r) => r.status === 'ordered').length;
+    const completed = filteredRequisitions.filter((r) => r.status === 'completed').length;
+    const cancelled = filteredRequisitions.filter((r) => r.status === 'cancelled').length;
+    return { total, ordered, completed, cancelled };
+  }, [filteredRequisitions]);
 
-        {/* Filters */}
-        <div className="flex gap-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by requisition number or patient..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+  return (
+    <div className="p-4 md:p-5 w-full space-y-3">
+      {/* Row 1: Title + inline stats + action */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-lg font-bold leading-none">Requisitions</h1>
+          <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1"><ClipboardList className="h-3 w-3" /> <span className="font-semibold text-foreground">{reqStats.total}</span> Total</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> <span className="font-semibold text-foreground">{reqStats.ordered}</span> Ordered</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> <span className="font-semibold text-foreground">{reqStats.completed}</span> Completed</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><XCircle className="h-3 w-3" /> <span className="font-semibold text-foreground">{reqStats.cancelled}</span> Cancelled</span>
           </div>
-          <Select
-            value={statusFilter}
-            onValueChange={(value) => setStatusFilter(value as RequisitionStatus | 'all')}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              {STATUS_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={typeFilter}
-            onValueChange={(value) => setTypeFilter(value as RequisitionType | 'all')}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Filter by type" />
-            </SelectTrigger>
-            <SelectContent>
-              {TYPE_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  <span className="flex items-center gap-2">
-                    {option.icon}
-                    {option.label}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
+        <Button size="sm" className="w-full sm:w-auto h-7 text-[12px]" onClick={handleCreate}>
+          <Plus className="h-3.5 w-3.5 mr-1" /> New Requisition
+        </Button>
+      </div>
+
+      {/* Mobile-only stats */}
+      <div className="flex sm:hidden items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+        <span><span className="font-semibold text-foreground">{reqStats.total}</span> Total</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{reqStats.ordered}</span> Ordered</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{reqStats.completed}</span> Completed</span>
+        <span className="text-border">|</span>
+        <span><span className="font-semibold text-foreground">{reqStats.cancelled}</span> Cancelled</span>
+      </div>
+
+      {/* Row 2: Search + filters */}
+      <div className="flex gap-2 items-center flex-wrap">
+        <div className="relative w-full sm:w-52">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search requisitions..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8 h-7 text-[12px]"
+          />
+        </div>
+        <Select
+          value={statusFilter}
+          onValueChange={(value) => setStatusFilter(value as RequisitionStatus | 'all')}
+        >
+          <SelectTrigger className="w-[160px] h-7 text-[12px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            {STATUS_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={typeFilter}
+          onValueChange={(value) => setTypeFilter(value as RequisitionType | 'all')}
+        >
+          <SelectTrigger className="w-[160px] h-7 text-[12px]">
+            <SelectValue placeholder="Filter by type" />
+          </SelectTrigger>
+          <SelectContent>
+            {TYPE_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                <span className="flex items-center gap-2">
+                  {option.icon}
+                  {option.label}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-hidden">
-        <DataTable
-          rows={filteredRequisitions}
-          columns={columns}
-          isLoading={isLoading}
-          onRowClick={handleView}
-          getRowId={(row) => row.id}
-          getRowLabel={(row) => row.requisition_number}
-          onView={handleView}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          emptyTitle="No requisitions found"
-          emptySubtitle="Create your first requisition to get started"
-          renderMobileCard={(row, actions) => {
+      <Card>
+        <CardContent className="p-0">
+          <DataTable
+            rows={filteredRequisitions}
+            columns={columns}
+            isLoading={isLoading}
+            onRowClick={handleView}
+            getRowId={(row) => row.id}
+            getRowLabel={(row) => row.requisition_number}
+            onView={handleView}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            emptyTitle="No requisitions found"
+            emptySubtitle="Create your first requisition to get started"
+            renderMobileCard={(row, actions) => {
             const counts = {
               investigation: row.investigation_orders?.length || 0,
               medicine: row.medicine_orders?.length || 0,
@@ -473,7 +492,8 @@ export const Requisitions: React.FC = () => {
             );
           }}
         />
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Side Drawer */}
       <SideDrawer
