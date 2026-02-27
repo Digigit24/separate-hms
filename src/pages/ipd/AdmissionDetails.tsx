@@ -1,16 +1,11 @@
 // src/pages/ipd/AdmissionDetails.tsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useIPD } from '@/hooks/useIPD';
-import { Loader2, Activity, User, Calendar, Droplet } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { ADMISSION_STATUS_LABELS } from '@/types/ipd.types';
 import { IPDAdmissionHeader } from '@/components/ipd/IPDAdmissionHeader';
-import { IPDPatientQuickInfo } from '@/components/ipd/IPDPatientQuickInfo';
 import { IPDAdmissionTabs } from '@/components/ipd/IPDAdmissionTabs';
 
 export default function AdmissionDetails() {
@@ -64,45 +59,41 @@ export default function AdmissionDetails() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (error || !admission) {
     return (
-      <div className="p-6 max-w-8xl mx-auto">
-        <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-destructive">Failed to load admission details</p>
-            <Button onClick={handleBack} className="mt-4">
-              Back
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center space-y-3">
+          <p className="text-sm text-muted-foreground">Failed to load admission details</p>
+          <Button variant="outline" size="sm" onClick={handleBack}>Back</Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-background/95">
+    <div className="flex flex-col h-full bg-background">
       <IPDAdmissionHeader
         admission={admission}
         isSaving={isSaving}
         showDischargeDialog={showDischargeDialog}
         dischargeData={dischargeData}
+        activeTab={activeTab}
         onBack={handleBack}
         onDischarge={handleDischargePatient}
+        onTabChange={setActiveTab}
         setShowDischargeDialog={setShowDischargeDialog}
         setDischargeData={setDischargeData}
       />
 
-      <div className="flex-1 overflow-auto p-4 sm:p-6 w-full space-y-6">
-        <IPDPatientQuickInfo admission={admission} />
+      <div className="flex-1 overflow-auto">
         <IPDAdmissionTabs
           admission={admission}
           activeTab={activeTab}
-          onTabChange={setActiveTab}
         />
       </div>
     </div>
