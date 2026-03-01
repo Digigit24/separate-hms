@@ -50,6 +50,8 @@ export function PatientSelect({
   const [isCreating, setIsCreating] = useState(false);
   const [inlineData, setInlineData] = useState({
     first_name: '',
+    middle_name: '',
+    last_name: '',
     gender: '' as 'male' | 'female' | 'other' | '',
     mobile_primary: '',
   });
@@ -93,6 +95,8 @@ export function PatientSelect({
     try {
       const newPatient = await createPatient({
         first_name: inlineData.first_name.trim(),
+        middle_name: inlineData.middle_name.trim() || undefined,
+        last_name: inlineData.last_name.trim() || undefined,
         gender: inlineData.gender,
         mobile_primary: inlineData.mobile_primary.trim(),
       } as PatientCreateData);
@@ -102,7 +106,7 @@ export function PatientSelect({
       onChange(newPatient.id);
 
       // Reset and hide form
-      setInlineData({ first_name: '', gender: '', mobile_primary: '' });
+      setInlineData({ first_name: '', middle_name: '', last_name: '', gender: '', mobile_primary: '' });
       setShowInlineForm(false);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to create patient');
@@ -238,7 +242,7 @@ export function PatientSelect({
                 size="icon"
                 onClick={() => {
                   setShowInlineForm(false);
-                  setInlineData({ first_name: '', gender: '', mobile_primary: '' });
+                  setInlineData({ first_name: '', middle_name: '', last_name: '', gender: '', mobile_primary: '' });
                 }}
               >
                 <X className="h-4 w-4" />
@@ -254,6 +258,27 @@ export function PatientSelect({
                 onChange={(e) => setInlineData({ ...inlineData, first_name: e.target.value })}
                 placeholder="Enter first name"
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="inline_middle_name">Middle Name</Label>
+                <Input
+                  id="inline_middle_name"
+                  value={inlineData.middle_name}
+                  onChange={(e) => setInlineData({ ...inlineData, middle_name: e.target.value })}
+                  placeholder="Middle name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="inline_last_name">Last Name</Label>
+                <Input
+                  id="inline_last_name"
+                  value={inlineData.last_name}
+                  onChange={(e) => setInlineData({ ...inlineData, last_name: e.target.value })}
+                  placeholder="Last name"
+                />
+              </div>
             </div>
 
             <div>

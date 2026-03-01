@@ -128,6 +128,12 @@ export const OPDVisits: React.FC = () => {
     });
   };
 
+  // Clean patient name - remove "None" parts from full_name
+  const cleanName = (name: string | undefined) => {
+    if (!name) return undefined;
+    return name.replace(/\bNone\b/g, '').replace(/\s+/g, ' ').trim() || undefined;
+  };
+
   // Format date and time for display
   const formatDateTime = (date: string, time: string) => {
     try {
@@ -162,7 +168,7 @@ export const OPDVisits: React.FC = () => {
       className: 'w-[20%]',
       cell: (visit) => (
         <div className="flex flex-col">
-          <span className="font-medium">{visit.patient_details?.full_name || visit.patient_name || 'N/A'}</span>
+          <span className="font-medium">{cleanName(visit.patient_details?.full_name) || cleanName(visit.patient_name) || 'N/A'}</span>
           <span className="text-xs text-muted-foreground">
             {visit.patient_details?.patient_id || visit.patient_id || 'N/A'}
             {visit.patient_details?.mobile_primary && ` • ${visit.patient_details.mobile_primary}`}
@@ -276,7 +282,7 @@ export const OPDVisits: React.FC = () => {
         <div className="space-y-1">
           <div className="text-sm">
             <span className="text-muted-foreground">Patient: </span>
-            <span className="font-medium">{visit.patient_details?.full_name || visit.patient_name || 'N/A'}</span>
+            <span className="font-medium">{cleanName(visit.patient_details?.full_name) || cleanName(visit.patient_name) || 'N/A'}</span>
           </div>
           <div className="text-sm">
             <span className="text-muted-foreground">Doctor: </span>
