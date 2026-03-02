@@ -135,11 +135,17 @@ export const OPDVisits: React.FC = () => {
   };
 
   // Format date and time for display
-  const formatDateTime = (date: string, time: string) => {
+  const formatDateTime = (date: string, time?: string | null) => {
     try {
+      if (!date) return 'N/A';
+      if (!time) {
+        const dateOnly = new Date(`${date}T00:00:00`);
+        return format(dateOnly, 'MMM dd, yyyy');
+      }
       const dateTime = new Date(`${date}T${time}`);
       return format(dateTime, 'MMM dd, yyyy • hh:mm a');
     } catch {
+      if (!time) return date;
       return `${date} • ${time}`;
     }
   };
