@@ -332,7 +332,13 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
         }
 
         if (status.status === 'completed') {
-          setResult(status.result);
+          setResult({
+            imported: status.imported ?? status.result?.imported ?? 0,
+            updated: status.updated ?? status.result?.updated ?? 0,
+            skipped: status.skipped ?? status.result?.skipped ?? 0,
+            total_rows: status.total_rows ?? status.result?.total_rows ?? 0,
+            errors: status.errors ?? status.result?.errors ?? [],
+          });
           setStep('done');
           onDone();
           break;
@@ -617,13 +623,17 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
                   <CheckCircle2 className="h-4 w-4 text-green-600" />
                   Import completed
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                  <div className="rounded-md bg-muted/50 p-3">
-                    <div className="text-lg font-bold text-green-600">{result.imported}</div>
-                    <div className="text-xs text-muted-foreground">Imported</div>
+                <div className="grid grid-cols-4 gap-2 text-center text-sm">
+                  <div className="rounded-md bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3">
+                    <div className="text-lg font-bold text-green-700 dark:text-green-400">{result.imported}</div>
+                    <div className="text-xs text-muted-foreground">Inserted</div>
                   </div>
-                  <div className="rounded-md bg-muted/50 p-3">
-                    <div className="text-lg font-bold text-yellow-600">{result.skipped}</div>
+                  <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3">
+                    <div className="text-lg font-bold text-blue-700 dark:text-blue-400">{result.updated}</div>
+                    <div className="text-xs text-muted-foreground">Updated</div>
+                  </div>
+                  <div className="rounded-md bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 p-3">
+                    <div className="text-lg font-bold text-yellow-700 dark:text-yellow-400">{result.skipped}</div>
                     <div className="text-xs text-muted-foreground">Skipped</div>
                   </div>
                   <div className="rounded-md bg-muted/50 p-3">
