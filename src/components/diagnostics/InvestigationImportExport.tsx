@@ -684,10 +684,12 @@ export const InvestigationImportExport: React.FC<InvestigationImportExportProps>
         <Upload className="h-3.5 w-3.5 mr-1" />
         Import
       </Button>
+      {/* TODO: Export button hidden until backend export endpoint is stable
       <Button variant="outline" size="sm" className="h-7 text-[12px]" onClick={() => setExportOpen(true)}>
         <Download className="h-3.5 w-3.5 mr-1" />
         Export
       </Button>
+      */}
 
       <ImportDialog
         open={importOpen}
