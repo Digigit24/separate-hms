@@ -33,6 +33,8 @@ const CATEGORY_OPTIONS: { value: InvestigationCategory; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+
 export const Investigations: React.FC = () => {
   const {
     useInvestigations,
@@ -47,6 +49,8 @@ export const Investigations: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<InvestigationCategory | 'all'>('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   // Form state
   const [formData, setFormData] = useState<Partial<CreateInvestigationPayload>>({
@@ -58,25 +62,30 @@ export const Investigations: React.FC = () => {
     is_active: true,
   });
 
+  // Build query params — server-side search, filter, and pagination
+  const queryParams = useMemo(() => {
+    const p: Record<string, any> = { page, page_size: pageSize };
+    if (searchTerm) p.search = searchTerm;
+    if (categoryFilter !== 'all') p.category = categoryFilter;
+    return p;
+  }, [page, pageSize, searchTerm, categoryFilter]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1); }, [searchTerm, categoryFilter, pageSize]);
+
   // Fetch data
-  const { data, isLoading, mutate } = useInvestigations();
+  const { data, isLoading, mutate } = useInvestigations(queryParams);
   const investigations = data?.results || [];
+  const totalCount = data?.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   // Debug: Log form data changes
   useEffect(() => {
     console.log('Form data updated:', formData);
   }, [formData]);
 
-  // Filtered investigations
-  const filteredInvestigations = useMemo(() => {
-    return investigations.filter((inv) => {
-      const matchesSearch =
-        inv.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        inv.code.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = categoryFilter === 'all' || inv.category === categoryFilter;
-      return matchesSearch && matchesCategory;
-    });
-  }, [investigations, searchTerm, categoryFilter]);
+  // filteredInvestigations is now just the server-returned page
+  const filteredInvestigations = investigations;
 
   // DataTable columns
   const columns: DataTableColumn<Investigation>[] = [
@@ -282,9 +291,9 @@ export const Investigations: React.FC = () => {
         <div className="flex items-center gap-4 flex-wrap">
           <h1 className="text-lg font-bold leading-none">Investigations</h1>
           <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
-            <span className="flex items-center gap-1"><Microscope className="h-3 w-3" /> <span className="font-semibold text-foreground">{filteredInvestigations.length}</span> Showing</span>
+            <span className="flex items-center gap-1"><Microscope className="h-3 w-3" /> <span className="font-semibold text-foreground">{investigations.length}</span> Showing</span>
             <span className="text-border">|</span>
-            <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" /> <span className="font-semibold text-foreground">{investigations.length}</span> Total</span>
+            <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" /> <span className="font-semibold text-foreground">{totalCount}</span> Total</span>
           </div>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -297,12 +306,12 @@ export const Investigations: React.FC = () => {
 
       {/* Mobile-only stats */}
       <div className="flex sm:hidden items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
-        <span><span className="font-semibold text-foreground">{filteredInvestigations.length}</span> Showing</span>
+        <span><span className="font-semibold text-foreground">{investigations.length}</span> Showing</span>
         <span className="text-border">|</span>
-        <span><span className="font-semibold text-foreground">{investigations.length}</span> Total</span>
+        <span><span className="font-semibold text-foreground">{totalCount}</span> Total</span>
       </div>
 
-      {/* Row 2: Search + filters */}
+      {/* Row 2: Search + filters + page size */}
       <div className="flex gap-2 items-center flex-wrap">
         <div className="relative w-full sm:w-52">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -329,6 +338,19 @@ export const Investigations: React.FC = () => {
             ))}
           </SelectContent>
         </Select>
+        <div className="ml-auto flex items-center gap-1.5 text-[12px] text-muted-foreground">
+          <span>Rows per page:</span>
+          <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+            <SelectTrigger className="w-16 h-7 text-[12px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((n) => (
+                <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Table */}
@@ -366,6 +388,56 @@ export const Investigations: React.FC = () => {
               </div>
             )}
           />
+
+          {/* Pagination footer */}
+          {totalCount > 0 && (
+            <div className="flex items-center justify-between px-4 py-2 border-t text-[12px] text-muted-foreground">
+              <span>
+                {((page - 1) * pageSize) + 1}–{Math.min(page * pageSize, totalCount)} of {totalCount}
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  disabled={page <= 1}
+                  onClick={() => setPage(1)}
+                >
+                  «
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  ‹ Prev
+                </Button>
+                <span className="px-2 font-medium text-foreground">
+                  {page} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next ›
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage(totalPages)}
+                >
+                  »
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
