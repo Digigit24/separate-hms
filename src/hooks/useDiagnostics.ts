@@ -167,6 +167,9 @@ export const useDiagnostics = () => {
   const getImportStatus = (taskId: string) =>
     diagnosticsService.getImportStatus(taskId);
 
+  const cancelImport = (taskId: string) =>
+    diagnosticsService.cancelImport(taskId);
+
   const exportInvestigations = (params?: Parameters<typeof diagnosticsService.exportInvestigations>[0]) =>
     diagnosticsService.exportInvestigations(params);
 
@@ -186,6 +189,7 @@ export const useDiagnostics = () => {
     previewImport,
     startImport,
     getImportStatus,
+    cancelImport,
     exportInvestigations,
     downloadExport,
     downloadImportTemplate,

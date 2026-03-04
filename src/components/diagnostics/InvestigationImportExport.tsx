@@ -203,9 +203,10 @@ const IMPORT_POLL_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
 const IMPORT_POLL_INTERVAL_MS = 2500;
 
 export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDone }) => {
-  const { previewImport, startImport, getImportStatus, downloadImportTemplate } = useDiagnostics();
+  const { previewImport, startImport, getImportStatus, cancelImport, downloadImportTemplate } = useDiagnostics();
   const fileRef = useRef<HTMLInputElement>(null);
   const cancelledRef = useRef(false);
+  const taskIdRef = useRef<string | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
 
   const [step, setStep] = useState<ImportStep>('idle');
@@ -218,6 +219,10 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
   const [progress, setProgress] = useState(0);
   const [processedCount, setProcessedCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [liveImported, setLiveImported] = useState(0);
+  const [liveUpdated, setLiveUpdated] = useState(0);
+  const [liveSkipped, setLiveSkipped] = useState(0);
+  const [isStopping, setIsStopping] = useState(false);
   const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
@@ -230,6 +235,11 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
     setProgress(0);
     setProcessedCount(0);
     setTotalCount(0);
+    setLiveImported(0);
+    setLiveUpdated(0);
+    setLiveSkipped(0);
+    setIsStopping(false);
+    taskIdRef.current = null;
     setLogEntries([]);
     setResult(null);
     setImportError(null);
@@ -288,34 +298,36 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
         update_existing: updateExisting,
       });
       const taskId = data.task_id;
+      taskIdRef.current = taskId;
 
       // Poll with timeout
       const deadline = Date.now() + IMPORT_POLL_TIMEOUT_MS;
-      let lastProcessed = -1;
+      let lastRowNum = -1;
       while (true) {
         if (cancelledRef.current) return;
 
         const status = await getImportStatus(taskId);
-        const pct = status.progress ?? 0;
-        const processed = status.processed ?? status.current_row ?? 0;
-        const total = status.total ?? status.total_rows ?? 0;
-        setProgress(pct);
-        if (total > 0) setTotalCount(total);
-        if (processed > 0) setProcessedCount(processed);
 
-        // Append new log entry when a new row is processed
-        const currentItem = status.current_item ?? status.current_row_data ?? null;
-        if (currentItem && processed > lastProcessed) {
-          lastProcessed = processed;
+        // Live counters from backend
+        setProgress(status.progress ?? 0);
+        if (typeof status.imported === 'number') setLiveImported(status.imported);
+        if (typeof status.updated  === 'number') setLiveUpdated(status.updated);
+        if (typeof status.skipped  === 'number') setLiveSkipped(status.skipped);
+
+        // current_row: { row_num, total, name, action }
+        const cr = status.current_row ?? null;
+        if (cr && cr.row_num > lastRowNum) {
+          lastRowNum = cr.row_num;
+          if (cr.total > 0) setTotalCount(cr.total);
+          setProcessedCount(cr.row_num);
           const entry: LogEntry = {
-            row: processed,
-            name: currentItem.name ?? currentItem.test_name ?? `Row ${processed}`,
-            code: currentItem.code ?? currentItem.test_code,
-            action: currentItem.action ?? 'imported',
-            message: currentItem.message ?? currentItem.error,
+            row: cr.row_num,
+            name: cr.name ?? `Row ${cr.row_num}`,
+            code: cr.code,
+            action: cr.action ?? 'imported',
+            message: cr.message,
           };
           setLogEntries((prev) => [...prev, entry]);
-          // Auto-scroll to bottom
           setTimeout(() => logEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
         }
 
@@ -496,28 +508,56 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
         {/* ── Step 3: Progress ── */}
         {step === 'importing' && (
           <div className="space-y-3 pt-3 pb-2">
-            {/* Header + counters */}
+            {/* Header + Stop */}
             <div className="flex items-center justify-between">
               <div className="text-sm font-medium">
                 {totalCount > 0
-                  ? `Processing row ${processedCount} of ${totalCount}`
-                  : 'Importing…'}
+                  ? `Row ${processedCount} of ${totalCount}`
+                  : isStopping ? 'Stopping after current row…' : 'Waiting for server…'}
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs text-destructive border-destructive/40 hover:bg-destructive/10"
-                onClick={() => { cancelledRef.current = true; setStep('done'); setImportError('Import stopped by user. Data inserted so far has been saved.'); }}
+                disabled={isStopping}
+                className="h-7 text-xs text-destructive border-destructive/40 hover:bg-destructive/10 disabled:opacity-60"
+                onClick={async () => {
+                  if (!taskIdRef.current) return;
+                  setIsStopping(true);
+                  try {
+                    await cancelImport(taskIdRef.current);
+                  } catch {
+                    // best-effort; polling loop will stop naturally
+                    cancelledRef.current = true;
+                    setStep('done');
+                    setImportError('Import stopped. Data inserted so far has been saved.');
+                  }
+                }}
               >
                 <StopCircle className="h-3.5 w-3.5 mr-1.5" />
-                Stop
+                {isStopping ? 'Stopping…' : 'Stop'}
               </Button>
+            </div>
+
+            {/* Live counters */}
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+              <div className="rounded bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 py-1.5">
+                <div className="text-base font-bold text-green-700 dark:text-green-400">{liveImported}</div>
+                <div className="text-muted-foreground">Inserted</div>
+              </div>
+              <div className="rounded bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 py-1.5">
+                <div className="text-base font-bold text-blue-700 dark:text-blue-400">{liveUpdated}</div>
+                <div className="text-muted-foreground">Updated</div>
+              </div>
+              <div className="rounded bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 py-1.5">
+                <div className="text-base font-bold text-yellow-700 dark:text-yellow-400">{liveSkipped}</div>
+                <div className="text-muted-foreground">Skipped</div>
+              </div>
             </div>
 
             {/* Progress bar */}
             <div className="space-y-1">
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{progress > 0 ? `${progress}% complete` : 'Waiting for server…'}</span>
+                <span>{progress > 0 ? `${progress}% complete` : 'Starting…'}</span>
                 {totalCount > 0 && <span>{processedCount} / {totalCount} rows</span>}
               </div>
               <Progress value={progress} className="h-2" />
@@ -526,7 +566,7 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
             {/* Live row feed */}
             <div className="space-y-1">
               <p className="text-xs font-medium text-muted-foreground">Live import feed</p>
-              <div className="rounded border bg-muted/20 h-48 overflow-y-auto p-2 space-y-0.5 font-mono text-[11px]">
+              <div className="rounded border bg-muted/20 h-44 overflow-y-auto p-2 space-y-0.5 font-mono text-[11px]">
                 {logEntries.length === 0 ? (
                   <p className="text-muted-foreground animate-pulse">Waiting for rows…</p>
                 ) : (

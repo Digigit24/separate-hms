@@ -401,6 +401,7 @@ export const API_CONFIG = {
         PREVIEW_IMPORT: '/diagnostics/investigations/preview_import/',
         START_IMPORT: '/diagnostics/investigations/start_import/',
         IMPORT_STATUS: '/diagnostics/investigations/import_status/',
+        CANCEL_IMPORT: '/diagnostics/investigations/cancel_import/',
         EXPORT: '/diagnostics/investigations/export_investigations/',
         DOWNLOAD_EXPORT: '/diagnostics/investigations/download_export/',
         IMPORT_TEMPLATE: '/diagnostics/investigations/import_template/',
