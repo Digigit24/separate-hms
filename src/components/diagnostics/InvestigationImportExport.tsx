@@ -97,7 +97,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose }) => {
     setIsExporting(true);
     setProgress(0);
     try {
-      const params: any = { format };
+      const params: any = { file_format: format };
       if (category) params.category = category;
 
       const data = await exportInvestigations(params);
