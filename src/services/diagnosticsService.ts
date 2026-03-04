@@ -63,7 +63,9 @@ export const diagnosticsService = {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('format', format);
-    const response = await hmsClient.post(API_CONFIG.HMS.DIAGNOSTICS.INVESTIGATIONS.PREVIEW_IMPORT, formData);
+    const response = await hmsClient.post(API_CONFIG.HMS.DIAGNOSTICS.INVESTIGATIONS.PREVIEW_IMPORT, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   },
 
