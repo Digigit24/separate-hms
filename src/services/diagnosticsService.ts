@@ -59,6 +59,50 @@ export const diagnosticsService = {
     await hmsClient.delete(url);
   },
 
+  async previewImport(file: File, format: 'xlsx' | 'csv'): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('format', format);
+    const response = await hmsClient.post(API_CONFIG.HMS.DIAGNOSTICS.INVESTIGATIONS.PREVIEW_IMPORT, formData);
+    return response.data;
+  },
+
+  async startImport(payload: {
+    session_key: string;
+    file_format: string;
+    field_mapping: Record<string, string>;
+    skip_duplicates?: boolean;
+    update_existing?: boolean;
+  }): Promise<any> {
+    const response = await hmsClient.post(API_CONFIG.HMS.DIAGNOSTICS.INVESTIGATIONS.START_IMPORT, payload);
+    return response.data;
+  },
+
+  async getImportStatus(taskId: string): Promise<any> {
+    const response = await hmsClient.get(API_CONFIG.HMS.DIAGNOSTICS.INVESTIGATIONS.IMPORT_STATUS, {
+      params: { task_id: taskId },
+    });
+    return response.data;
+  },
+
+  async exportInvestigations(params?: { format: 'xlsx' | 'csv'; category?: string; is_active?: string; search?: string }): Promise<any> {
+    const response = await hmsClient.get(API_CONFIG.HMS.DIAGNOSTICS.INVESTIGATIONS.EXPORT, { params });
+    return response.data;
+  },
+
+  async downloadExport(taskId: string): Promise<Blob> {
+    const response = await hmsClient.get(API_CONFIG.HMS.DIAGNOSTICS.INVESTIGATIONS.DOWNLOAD_EXPORT, {
+      params: { task_id: taskId },
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  async downloadImportTemplate(): Promise<void> {
+    const base = (hmsClient.defaults.baseURL || '').replace(/\/$/, '');
+    window.open(`${base}${API_CONFIG.HMS.DIAGNOSTICS.INVESTIGATIONS.IMPORT_TEMPLATE}`, '_blank');
+  },
+
   // ==================== REQUISITIONS ====================
   async getRequisitions(params?: Record<string, any>): Promise<PaginatedRequisitionsResponse> {
     const response = await hmsClient.get(API_CONFIG.HMS.DIAGNOSTICS.REQUISITIONS.LIST, { params });

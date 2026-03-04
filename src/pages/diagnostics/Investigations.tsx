@@ -19,6 +19,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Search, Microscope, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Investigation, InvestigationCategory, CreateInvestigationPayload } from '@/types/diagnostics.types';
+import { InvestigationImportExport } from '@/components/diagnostics/InvestigationImportExport';
 
 const CATEGORY_OPTIONS: { value: InvestigationCategory; label: string }[] = [
   { value: 'laboratory', label: 'Laboratory' },
@@ -286,9 +287,12 @@ export const Investigations: React.FC = () => {
             <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" /> <span className="font-semibold text-foreground">{investigations.length}</span> Total</span>
           </div>
         </div>
-        <Button size="sm" className="w-full sm:w-auto h-7 text-[12px]" onClick={handleCreate}>
-          <Plus className="h-3.5 w-3.5 mr-1" /> Add Investigation
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <InvestigationImportExport onImportDone={mutate} />
+          <Button size="sm" className="h-7 text-[12px] flex-1 sm:flex-none" onClick={handleCreate}>
+            <Plus className="h-3.5 w-3.5 mr-1" /> Add Investigation
+          </Button>
+        </div>
       </div>
 
       {/* Mobile-only stats */}
