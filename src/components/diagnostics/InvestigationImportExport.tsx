@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Upload, Download, FileText, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { Upload, Download, FileText, CheckCircle2, AlertCircle, X, StopCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDiagnostics } from '@/hooks/useDiagnostics';
 
@@ -34,6 +34,14 @@ interface ImportResult {
   skipped: number;
   total_rows: number;
   errors: string[];
+}
+
+interface LogEntry {
+  row: number;
+  name: string;
+  code?: string;
+  action: 'imported' | 'updated' | 'skipped' | 'error';
+  message?: string;
 }
 
 interface ExportState {
@@ -198,6 +206,7 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
   const { previewImport, startImport, getImportStatus, downloadImportTemplate } = useDiagnostics();
   const fileRef = useRef<HTMLInputElement>(null);
   const cancelledRef = useRef(false);
+  const logEndRef = useRef<HTMLDivElement>(null);
 
   const [step, setStep] = useState<ImportStep>('idle');
   const [format, setFormat] = useState<'xlsx' | 'csv'>('xlsx');
@@ -207,6 +216,9 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
   const [updateExisting, setUpdateExisting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [processedCount, setProcessedCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
 
@@ -216,6 +228,9 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
     setPreview(null);
     setMapping({});
     setProgress(0);
+    setProcessedCount(0);
+    setTotalCount(0);
+    setLogEntries([]);
     setResult(null);
     setImportError(null);
     if (fileRef.current) fileRef.current.value = '';
@@ -276,11 +291,33 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
 
       // Poll with timeout
       const deadline = Date.now() + IMPORT_POLL_TIMEOUT_MS;
+      let lastProcessed = -1;
       while (true) {
         if (cancelledRef.current) return;
 
         const status = await getImportStatus(taskId);
-        setProgress(status.progress ?? 0);
+        const pct = status.progress ?? 0;
+        const processed = status.processed ?? status.current_row ?? 0;
+        const total = status.total ?? status.total_rows ?? 0;
+        setProgress(pct);
+        if (total > 0) setTotalCount(total);
+        if (processed > 0) setProcessedCount(processed);
+
+        // Append new log entry when a new row is processed
+        const currentItem = status.current_item ?? status.current_row_data ?? null;
+        if (currentItem && processed > lastProcessed) {
+          lastProcessed = processed;
+          const entry: LogEntry = {
+            row: processed,
+            name: currentItem.name ?? currentItem.test_name ?? `Row ${processed}`,
+            code: currentItem.code ?? currentItem.test_code,
+            action: currentItem.action ?? 'imported',
+            message: currentItem.message ?? currentItem.error,
+          };
+          setLogEntries((prev) => [...prev, entry]);
+          // Auto-scroll to bottom
+          setTimeout(() => logEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+        }
 
         if (status.status === 'completed') {
           setResult(status.result);
@@ -458,16 +495,70 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
 
         {/* ── Step 3: Progress ── */}
         {step === 'importing' && (
-          <div className="space-y-4 pt-4 pb-2">
-            <p className="text-sm text-center text-muted-foreground">
-              Import running in background — you can leave this open or close it.
-            </p>
-            <div className="space-y-1.5">
+          <div className="space-y-3 pt-3 pb-2">
+            {/* Header + counters */}
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium">
+                {totalCount > 0
+                  ? `Processing row ${processedCount} of ${totalCount}`
+                  : 'Importing…'}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs text-destructive border-destructive/40 hover:bg-destructive/10"
+                onClick={() => { cancelledRef.current = true; setStep('done'); setImportError('Import stopped by user. Data inserted so far has been saved.'); }}
+              >
+                <StopCircle className="h-3.5 w-3.5 mr-1.5" />
+                Stop
+              </Button>
+            </div>
+
+            {/* Progress bar */}
+            <div className="space-y-1">
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Importing…</span>
-                <span>{progress}%</span>
+                <span>{progress > 0 ? `${progress}% complete` : 'Waiting for server…'}</span>
+                {totalCount > 0 && <span>{processedCount} / {totalCount} rows</span>}
               </div>
               <Progress value={progress} className="h-2" />
+            </div>
+
+            {/* Live row feed */}
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Live import feed</p>
+              <div className="rounded border bg-muted/20 h-48 overflow-y-auto p-2 space-y-0.5 font-mono text-[11px]">
+                {logEntries.length === 0 ? (
+                  <p className="text-muted-foreground animate-pulse">Waiting for rows…</p>
+                ) : (
+                  logEntries.map((entry, i) => (
+                    <div
+                      key={i}
+                      className={`flex items-center gap-2 px-1 py-0.5 rounded ${
+                        entry.action === 'imported' ? 'text-green-700 dark:text-green-400' :
+                        entry.action === 'updated'  ? 'text-blue-700 dark:text-blue-400' :
+                        entry.action === 'skipped'  ? 'text-yellow-700 dark:text-yellow-400' :
+                        'text-destructive'
+                      }`}
+                    >
+                      <span className="text-muted-foreground w-8 shrink-0 text-right">{entry.row}</span>
+                      <Badge
+                        variant="outline"
+                        className={`text-[9px] px-1 py-0 shrink-0 border ${
+                          entry.action === 'imported' ? 'border-green-400 text-green-700 dark:text-green-400' :
+                          entry.action === 'updated'  ? 'border-blue-400 text-blue-700 dark:text-blue-400' :
+                          entry.action === 'skipped'  ? 'border-yellow-400 text-yellow-700 dark:text-yellow-400' :
+                          'border-destructive text-destructive'
+                        }`}
+                      >
+                        {entry.action}
+                      </Badge>
+                      <span className="truncate">{entry.name}{entry.code ? ` (${entry.code})` : ''}</span>
+                      {entry.message && <span className="text-muted-foreground truncate"> — {entry.message}</span>}
+                    </div>
+                  ))
+                )}
+                <div ref={logEndRef} />
+              </div>
             </div>
           </div>
         )}
