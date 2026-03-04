@@ -96,12 +96,14 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose }) => {
       const taskId = data.task_id;
 
       // Poll status
+      const deadline = Date.now() + IMPORT_POLL_TIMEOUT_MS;
       while (true) {
         const status = await getImportStatus(taskId);
         setProgress(status.progress ?? 0);
         if (status.status === 'completed') break;
         if (status.status === 'failed') throw new Error(status.error || 'Export failed');
-        await new Promise((r) => setTimeout(r, 2500));
+        if (Date.now() > deadline) throw new Error('Export timed out. The task may still be running on the server.');
+        await new Promise((r) => setTimeout(r, IMPORT_POLL_INTERVAL_MS));
       }
 
       // Download file
@@ -189,9 +191,13 @@ interface ImportDialogProps {
   onDone: () => void;
 }
 
+const IMPORT_POLL_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
+const IMPORT_POLL_INTERVAL_MS = 2500;
+
 export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDone }) => {
   const { previewImport, startImport, getImportStatus, downloadImportTemplate } = useDiagnostics();
   const fileRef = useRef<HTMLInputElement>(null);
+  const cancelledRef = useRef(false);
 
   const [step, setStep] = useState<ImportStep>('idle');
   const [format, setFormat] = useState<'xlsx' | 'csv'>('xlsx');
@@ -205,6 +211,7 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
   const [importError, setImportError] = useState<string | null>(null);
 
   const reset = () => {
+    cancelledRef.current = true;
     setStep('idle');
     setPreview(null);
     setMapping({});
@@ -253,6 +260,7 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
       if (v) field_mapping[k] = v;
     });
 
+    cancelledRef.current = false;
     setStep('importing');
     setProgress(0);
     setImportError(null);
@@ -266,10 +274,14 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
       });
       const taskId = data.task_id;
 
-      // Poll
+      // Poll with timeout
+      const deadline = Date.now() + IMPORT_POLL_TIMEOUT_MS;
       while (true) {
+        if (cancelledRef.current) return;
+
         const status = await getImportStatus(taskId);
         setProgress(status.progress ?? 0);
+
         if (status.status === 'completed') {
           setResult(status.result);
           setStep('done');
@@ -281,9 +293,19 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
           setStep('done');
           break;
         }
-        await new Promise((r) => setTimeout(r, 2500));
+        if (Date.now() > deadline) {
+          setImportError(
+            'Import is taking too long. The task may still be running on the server — ' +
+            'please refresh the page in a few minutes to check if data was added.'
+          );
+          setStep('done');
+          break;
+        }
+
+        await new Promise((r) => setTimeout(r, IMPORT_POLL_INTERVAL_MS));
       }
     } catch (err: any) {
+      if (cancelledRef.current) return;
       setImportError(err?.response?.data?.error || err.message || 'Import failed');
       setStep('done');
     }
