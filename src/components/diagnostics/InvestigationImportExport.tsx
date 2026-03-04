@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Upload, Download, FileText, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { Upload, Download, FileText, CheckCircle2, AlertCircle, X, StopCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDiagnostics } from '@/hooks/useDiagnostics';
 
@@ -34,6 +34,14 @@ interface ImportResult {
   skipped: number;
   total_rows: number;
   errors: string[];
+}
+
+interface LogEntry {
+  row: number;
+  name: string;
+  code?: string;
+  action: 'imported' | 'updated' | 'skipped' | 'error';
+  message?: string;
 }
 
 interface ExportState {
@@ -96,12 +104,14 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose }) => {
       const taskId = data.task_id;
 
       // Poll status
+      const deadline = Date.now() + IMPORT_POLL_TIMEOUT_MS;
       while (true) {
         const status = await getImportStatus(taskId);
         setProgress(status.progress ?? 0);
         if (status.status === 'completed') break;
         if (status.status === 'failed') throw new Error(status.error || 'Export failed');
-        await new Promise((r) => setTimeout(r, 2500));
+        if (Date.now() > deadline) throw new Error('Export timed out. The task may still be running on the server.');
+        await new Promise((r) => setTimeout(r, IMPORT_POLL_INTERVAL_MS));
       }
 
       // Download file
@@ -189,9 +199,15 @@ interface ImportDialogProps {
   onDone: () => void;
 }
 
+const IMPORT_POLL_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
+const IMPORT_POLL_INTERVAL_MS = 2500;
+
 export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDone }) => {
-  const { previewImport, startImport, getImportStatus, downloadImportTemplate } = useDiagnostics();
+  const { previewImport, startImport, getImportStatus, cancelImport, downloadImportTemplate } = useDiagnostics();
   const fileRef = useRef<HTMLInputElement>(null);
+  const cancelledRef = useRef(false);
+  const taskIdRef = useRef<string | null>(null);
+  const logEndRef = useRef<HTMLDivElement>(null);
 
   const [step, setStep] = useState<ImportStep>('idle');
   const [format, setFormat] = useState<'xlsx' | 'csv'>('xlsx');
@@ -201,14 +217,30 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
   const [updateExisting, setUpdateExisting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [processedCount, setProcessedCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [liveImported, setLiveImported] = useState(0);
+  const [liveUpdated, setLiveUpdated] = useState(0);
+  const [liveSkipped, setLiveSkipped] = useState(0);
+  const [isStopping, setIsStopping] = useState(false);
+  const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
 
   const reset = () => {
+    cancelledRef.current = true;
     setStep('idle');
     setPreview(null);
     setMapping({});
     setProgress(0);
+    setProcessedCount(0);
+    setTotalCount(0);
+    setLiveImported(0);
+    setLiveUpdated(0);
+    setLiveSkipped(0);
+    setIsStopping(false);
+    taskIdRef.current = null;
+    setLogEntries([]);
     setResult(null);
     setImportError(null);
     if (fileRef.current) fileRef.current.value = '';
@@ -253,6 +285,7 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
       if (v) field_mapping[k] = v;
     });
 
+    cancelledRef.current = false;
     setStep('importing');
     setProgress(0);
     setImportError(null);
@@ -265,11 +298,39 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
         update_existing: updateExisting,
       });
       const taskId = data.task_id;
+      taskIdRef.current = taskId;
 
-      // Poll
+      // Poll with timeout
+      const deadline = Date.now() + IMPORT_POLL_TIMEOUT_MS;
+      let lastRowNum = -1;
       while (true) {
+        if (cancelledRef.current) return;
+
         const status = await getImportStatus(taskId);
+
+        // Live counters from backend
         setProgress(status.progress ?? 0);
+        if (typeof status.imported === 'number') setLiveImported(status.imported);
+        if (typeof status.updated  === 'number') setLiveUpdated(status.updated);
+        if (typeof status.skipped  === 'number') setLiveSkipped(status.skipped);
+
+        // current_row: { row_num, total, name, action }
+        const cr = status.current_row ?? null;
+        if (cr && cr.row_num > lastRowNum) {
+          lastRowNum = cr.row_num;
+          if (cr.total > 0) setTotalCount(cr.total);
+          setProcessedCount(cr.row_num);
+          const entry: LogEntry = {
+            row: cr.row_num,
+            name: cr.name ?? `Row ${cr.row_num}`,
+            code: cr.code,
+            action: cr.action ?? 'imported',
+            message: cr.message,
+          };
+          setLogEntries((prev) => [...prev, entry]);
+          setTimeout(() => logEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+        }
+
         if (status.status === 'completed') {
           setResult(status.result);
           setStep('done');
@@ -281,9 +342,19 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
           setStep('done');
           break;
         }
-        await new Promise((r) => setTimeout(r, 2500));
+        if (Date.now() > deadline) {
+          setImportError(
+            'Import is taking too long. The task may still be running on the server — ' +
+            'please refresh the page in a few minutes to check if data was added.'
+          );
+          setStep('done');
+          break;
+        }
+
+        await new Promise((r) => setTimeout(r, IMPORT_POLL_INTERVAL_MS));
       }
     } catch (err: any) {
+      if (cancelledRef.current) return;
       setImportError(err?.response?.data?.error || err.message || 'Import failed');
       setStep('done');
     }
@@ -436,16 +507,98 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onClose, onDon
 
         {/* ── Step 3: Progress ── */}
         {step === 'importing' && (
-          <div className="space-y-4 pt-4 pb-2">
-            <p className="text-sm text-center text-muted-foreground">
-              Import running in background — you can leave this open or close it.
-            </p>
-            <div className="space-y-1.5">
+          <div className="space-y-3 pt-3 pb-2">
+            {/* Header + Stop */}
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium">
+                {totalCount > 0
+                  ? `Row ${processedCount} of ${totalCount}`
+                  : isStopping ? 'Stopping after current row…' : 'Waiting for server…'}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isStopping}
+                className="h-7 text-xs text-destructive border-destructive/40 hover:bg-destructive/10 disabled:opacity-60"
+                onClick={async () => {
+                  if (!taskIdRef.current) return;
+                  setIsStopping(true);
+                  try {
+                    await cancelImport(taskIdRef.current);
+                  } catch {
+                    // best-effort; polling loop will stop naturally
+                    cancelledRef.current = true;
+                    setStep('done');
+                    setImportError('Import stopped. Data inserted so far has been saved.');
+                  }
+                }}
+              >
+                <StopCircle className="h-3.5 w-3.5 mr-1.5" />
+                {isStopping ? 'Stopping…' : 'Stop'}
+              </Button>
+            </div>
+
+            {/* Live counters */}
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+              <div className="rounded bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 py-1.5">
+                <div className="text-base font-bold text-green-700 dark:text-green-400">{liveImported}</div>
+                <div className="text-muted-foreground">Inserted</div>
+              </div>
+              <div className="rounded bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 py-1.5">
+                <div className="text-base font-bold text-blue-700 dark:text-blue-400">{liveUpdated}</div>
+                <div className="text-muted-foreground">Updated</div>
+              </div>
+              <div className="rounded bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 py-1.5">
+                <div className="text-base font-bold text-yellow-700 dark:text-yellow-400">{liveSkipped}</div>
+                <div className="text-muted-foreground">Skipped</div>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="space-y-1">
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Importing…</span>
-                <span>{progress}%</span>
+                <span>{progress > 0 ? `${progress}% complete` : 'Starting…'}</span>
+                {totalCount > 0 && <span>{processedCount} / {totalCount} rows</span>}
               </div>
               <Progress value={progress} className="h-2" />
+            </div>
+
+            {/* Live row feed */}
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Live import feed</p>
+              <div className="rounded border bg-muted/20 h-44 overflow-y-auto p-2 space-y-0.5 font-mono text-[11px]">
+                {logEntries.length === 0 ? (
+                  <p className="text-muted-foreground animate-pulse">Waiting for rows…</p>
+                ) : (
+                  logEntries.map((entry, i) => (
+                    <div
+                      key={i}
+                      className={`flex items-center gap-2 px-1 py-0.5 rounded ${
+                        entry.action === 'imported' ? 'text-green-700 dark:text-green-400' :
+                        entry.action === 'updated'  ? 'text-blue-700 dark:text-blue-400' :
+                        entry.action === 'skipped'  ? 'text-yellow-700 dark:text-yellow-400' :
+                        'text-destructive'
+                      }`}
+                    >
+                      <span className="text-muted-foreground w-8 shrink-0 text-right">{entry.row}</span>
+                      <Badge
+                        variant="outline"
+                        className={`text-[9px] px-1 py-0 shrink-0 border ${
+                          entry.action === 'imported' ? 'border-green-400 text-green-700 dark:text-green-400' :
+                          entry.action === 'updated'  ? 'border-blue-400 text-blue-700 dark:text-blue-400' :
+                          entry.action === 'skipped'  ? 'border-yellow-400 text-yellow-700 dark:text-yellow-400' :
+                          'border-destructive text-destructive'
+                        }`}
+                      >
+                        {entry.action}
+                      </Badge>
+                      <span className="truncate">{entry.name}{entry.code ? ` (${entry.code})` : ''}</span>
+                      {entry.message && <span className="text-muted-foreground truncate"> — {entry.message}</span>}
+                    </div>
+                  ))
+                )}
+                <div ref={logEndRef} />
+              </div>
             </div>
           </div>
         )}

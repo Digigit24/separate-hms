@@ -87,6 +87,13 @@ export const diagnosticsService = {
     return response.data;
   },
 
+  async cancelImport(taskId: string): Promise<any> {
+    const response = await hmsClient.post(API_CONFIG.HMS.DIAGNOSTICS.INVESTIGATIONS.CANCEL_IMPORT, {
+      task_id: taskId,
+    });
+    return response.data;
+  },
+
   async exportInvestigations(params?: { format: 'xlsx' | 'csv'; category?: string; is_active?: string; search?: string }): Promise<any> {
     const response = await hmsClient.get(API_CONFIG.HMS.DIAGNOSTICS.INVESTIGATIONS.EXPORT, { params });
     return response.data;
