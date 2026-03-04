@@ -158,6 +158,24 @@ export const useDiagnostics = () => {
     return await diagnosticsService.deleteInvestigationRange(id);
   };
 
+  const previewImport = (file: File, format: 'xlsx' | 'csv') =>
+    diagnosticsService.previewImport(file, format);
+
+  const startImport = (payload: Parameters<typeof diagnosticsService.startImport>[0]) =>
+    diagnosticsService.startImport(payload);
+
+  const getImportStatus = (taskId: string) =>
+    diagnosticsService.getImportStatus(taskId);
+
+  const exportInvestigations = (params?: Parameters<typeof diagnosticsService.exportInvestigations>[0]) =>
+    diagnosticsService.exportInvestigations(params);
+
+  const downloadExport = (taskId: string) =>
+    diagnosticsService.downloadExport(taskId);
+
+  const downloadImportTemplate = () =>
+    diagnosticsService.downloadImportTemplate();
+
   return {
     // Investigations
     useInvestigations,
@@ -165,6 +183,12 @@ export const useDiagnostics = () => {
     createInvestigation,
     updateInvestigation,
     deleteInvestigation,
+    previewImport,
+    startImport,
+    getImportStatus,
+    exportInvestigations,
+    downloadExport,
+    downloadImportTemplate,
 
     // Requisitions
     useRequisitions,

@@ -227,9 +227,8 @@ export const LabReports: React.FC = () => {
   };
 
   // Drawer action buttons
-  const drawerButtons: DrawerActionButton[] = useMemo(() => {
-    if (drawerMode === 'view') {
-      return [
+  const drawerButtons: DrawerActionButton[] = drawerMode === 'view'
+    ? [
         {
           label: 'Edit',
           onClick: () => {
@@ -237,24 +236,21 @@ export const LabReports: React.FC = () => {
           },
           variant: 'default',
         },
+      ]
+    : [
+        {
+          label: 'Cancel',
+          onClick: handleDrawerClose,
+          variant: 'outline',
+        },
+        {
+          label: drawerMode === 'create' ? 'Create' : 'Update',
+          onClick: handleSubmit,
+          variant: 'default',
+          loading: isSubmitting,
+          disabled: isSubmitting,
+        },
       ];
-    }
-
-    return [
-      {
-        label: 'Cancel',
-        onClick: handleDrawerClose,
-        variant: 'outline',
-      },
-      {
-        label: drawerMode === 'create' ? 'Create' : 'Update',
-        onClick: handleSubmit,
-        variant: 'default',
-        loading: isSubmitting,
-        disabled: isSubmitting,
-      },
-    ];
-  }, [drawerMode, isSubmitting]);
 
   // Stats
   const reportStats = useMemo(() => {

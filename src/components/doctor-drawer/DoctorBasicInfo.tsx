@@ -44,6 +44,9 @@ const createDoctorSchema = z.object({
 });
 
 const updateDoctorSchema = z.object({
+  first_name: z.string().min(1, 'First name is required').optional(),
+  last_name: z.string().min(1, 'Last name is required').optional(),
+  email: z.string().email('Invalid email address').optional(),
   medical_license_number: z.string().optional(),
   license_issuing_authority: z.string().optional(),
   license_issue_date: z.string().optional(),
@@ -98,6 +101,9 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
           follow_up_fee: 0,
         }
       : {
+          first_name: doctor?.user?.first_name || '',
+          last_name: doctor?.user?.last_name || '',
+          email: doctor?.user?.email || '',
           medical_license_number: doctor?.medical_license_number || '',
           license_issuing_authority: doctor?.license_issuing_authority || '',
           license_issue_date: doctor?.license_issue_date || '',
@@ -129,6 +135,9 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
     useEffect(() => {
       if (!isCreateMode && doctor) {
         const formValues = {
+          first_name: doctor.user?.first_name || '',
+          last_name: doctor.user?.last_name || '',
+          email: doctor.user?.email || '',
           medical_license_number: doctor.medical_license_number || '',
           license_issuing_authority: doctor.license_issuing_authority || '',
           license_issue_date: doctor.license_issue_date || '',
@@ -176,6 +185,9 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
               } else {
                 const payload: any = {};
 
+                if (data.first_name) payload.first_name = data.first_name;
+                if (data.last_name) payload.last_name = data.last_name;
+                if (data.email) payload.email = data.email;
                 if (data.medical_license_number) payload.medical_license_number = data.medical_license_number;
                 if (data.license_issuing_authority) payload.license_issuing_authority = data.license_issuing_authority;
                 if (data.license_issue_date) payload.license_issue_date = data.license_issue_date;
@@ -328,6 +340,48 @@ const DoctorBasicInfo = forwardRef<DoctorBasicInfoHandle, DoctorBasicInfoProps>(
               />
               {errors.phone && (
                 <p className="text-xs text-destructive">{errors.phone.message as string}</p>
+              )}
+            </div>
+          </div>
+        ) : isEditMode ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="first_name" className="text-xs">First Name</Label>
+                <Input
+                  id="first_name"
+                  {...register('first_name')}
+                  placeholder="John"
+                  className={`h-8 text-sm ${errors.first_name ? 'border-destructive' : ''}`}
+                />
+                {errors.first_name && (
+                  <p className="text-xs text-destructive">{errors.first_name.message as string}</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="last_name" className="text-xs">Last Name</Label>
+                <Input
+                  id="last_name"
+                  {...register('last_name')}
+                  placeholder="Smith"
+                  className={`h-8 text-sm ${errors.last_name ? 'border-destructive' : ''}`}
+                />
+                {errors.last_name && (
+                  <p className="text-xs text-destructive">{errors.last_name.message as string}</p>
+                )}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                {...register('email')}
+                placeholder="doctor@example.com"
+                className={`h-8 text-sm ${errors.email ? 'border-destructive' : ''}`}
+              />
+              {errors.email && (
+                <p className="text-xs text-destructive">{errors.email.message as string}</p>
               )}
             </div>
           </div>
