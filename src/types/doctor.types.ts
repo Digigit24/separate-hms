@@ -86,6 +86,9 @@ export interface DoctorCreateData {
 }
 
 export interface DoctorUpdateData {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
   medical_license_number?: string;
   license_issuing_authority?: string;
   license_issue_date?: string;
