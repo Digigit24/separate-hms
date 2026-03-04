@@ -1,6 +1,5 @@
 // src/components/diagnostics/InvestigationImportExport.tsx
 import React, { useRef, useState } from 'react';
-import * as XLSX from 'xlsx';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +14,6 @@ import { Progress } from '@/components/ui/progress';
 import { Upload, Download, FileText, CheckCircle2, AlertCircle, X, StopCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDiagnostics } from '@/hooks/useDiagnostics';
-import { diagnosticsService } from '@/services/diagnosticsService';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -89,6 +87,7 @@ interface ExportDialogProps {
 }
 
 const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose }) => {
+  const { exportInvestigations, getImportStatus, downloadExport } = useDiagnostics();
   const [format, setFormat] = useState<'xlsx' | 'csv'>('xlsx');
   const [category, setCategory] = useState('');
   const [isExporting, setIsExporting] = useState(false);
@@ -98,49 +97,33 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose }) => {
     setIsExporting(true);
     setProgress(0);
     try {
-      // Fetch all pages from the list API
-      const params: Record<string, any> = { page_size: 1000 };
+      const params: any = { file_format: format };
       if (category) params.category = category;
 
-      setProgress(20);
-      const data = await diagnosticsService.getInvestigations(params);
-      const rows = data.results || [];
-      setProgress(60);
+      const data = await exportInvestigations(params);
+      const taskId = data.task_id;
 
-      // Build worksheet rows
-      const sheetData = rows.map((inv: any) => ({
-        Code: inv.code,
-        Name: inv.name,
-        Category: inv.category,
-        'Base Charge': inv.base_charge,
-        'Specimen Type': inv.specimen_type || '',
-        'Reported By': inv.reported_by || '',
-        Description: inv.description || '',
-        Active: inv.is_active ? 'Yes' : 'No',
-      }));
-
-      const ws = XLSX.utils.json_to_sheet(sheetData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Investigations');
-
-      setProgress(90);
-
-      const filename = `investigations_export.${format}`;
-      if (format === 'xlsx') {
-        XLSX.writeFile(wb, filename);
-      } else {
-        const csv = XLSX.utils.sheet_to_csv(ws);
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
+      // Poll status
+      const deadline = Date.now() + IMPORT_POLL_TIMEOUT_MS;
+      while (true) {
+        const status = await getImportStatus(taskId);
+        setProgress(status.progress ?? 0);
+        if (status.status === 'completed') break;
+        if (status.status === 'failed') throw new Error(status.error || 'Export failed');
+        if (Date.now() > deadline) throw new Error('Export timed out. The task may still be running on the server.');
+        await new Promise((r) => setTimeout(r, IMPORT_POLL_INTERVAL_MS));
       }
 
-      setProgress(100);
-      toast.success(`Exported ${rows.length} investigations`);
+      // Download file
+      const blob = await downloadExport(taskId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `investigations_export.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast.success('Export downloaded successfully');
       onClose();
     } catch (err: any) {
       toast.error(err.message || 'Export failed');
