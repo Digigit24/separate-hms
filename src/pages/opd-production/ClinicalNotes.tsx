@@ -16,11 +16,10 @@ import {
 import { Loader2, Plus, Search, FileText, ClipboardList, User, Phone } from 'lucide-react';
 import { ClinicalNote, ClinicalNoteListParams } from '@/types/clinicalNote.types';
 import { format } from 'date-fns';
-import { toast } from 'sonner';
 import { ClinicalNoteFormDrawer } from '@/components/ClinicalNoteFormDrawer';
 
 export const ClinicalNotes: React.FC = () => {
-  const { useClinicalNotes, deleteNote } = useClinicalNote();
+  const { useClinicalNotes } = useClinicalNote();
   const { useOpdVisitById } = useOpdVisit();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,18 +48,6 @@ export const ClinicalNotes: React.FC = () => {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1);
-  };
-
-  const handleDelete = async (note: ClinicalNote) => {
-    if (window.confirm(`Delete clinical note for visit ${note.visit_number}?`)) {
-      try {
-        await deleteNote(note.id);
-        toast.success('Clinical note deleted');
-        mutate();
-      } catch (error: any) {
-        toast.error(error.message);
-      }
-    }
   };
 
   const handleRowClick = (note: ClinicalNote) => {
@@ -175,9 +162,6 @@ export const ClinicalNotes: React.FC = () => {
                 getRowId={(note) => note.id}
                 getRowLabel={(note) => note.visit_number || `Visit #${note.visit}`}
                 onRowClick={handleRowClick}
-                onView={(note) => { setDrawerMode('view'); setSelectedNoteId(note.id); setDrawerOpen(true); }}
-                onEdit={(note) => { setDrawerMode('edit'); setSelectedNoteId(note.id); setDrawerOpen(true); }}
-                onDelete={handleDelete}
                 emptyTitle="No follow-ups found"
                 emptySubtitle="Try adjusting your filters"
               />
