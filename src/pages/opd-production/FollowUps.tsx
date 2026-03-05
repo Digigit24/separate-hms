@@ -36,13 +36,12 @@ export const FollowUps: React.FC = () => {
   const [followUpDateInput, setFollowUpDateInput] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Fetch all visits with follow_up_required=true
+  // Fetch visits — use follow_up_required param if backend supports it,
+  // otherwise we filter client-side as a fallback
   const queryParams: OpdVisitListParams = {
     page: currentPage,
-    page_size: 50,
     search: searchTerm || undefined,
     follow_up_required: true,
-    ordering: 'follow_up_date',
   };
 
   const {
@@ -52,7 +51,9 @@ export const FollowUps: React.FC = () => {
     mutate: mutateVisits,
   } = useOpdVisits(queryParams);
 
-  const allVisits = visitsData?.results || [];
+  // Filter client-side to ensure only follow-up visits are shown
+  // (in case backend ignores the follow_up_required param)
+  const allVisits = (visitsData?.results || []).filter(v => v.follow_up_required);
   const totalCount = visitsData?.count || 0;
   const hasNext = !!visitsData?.next;
   const hasPrevious = !!visitsData?.previous;
@@ -175,31 +176,36 @@ export const FollowUps: React.FC = () => {
       header: 'Patient',
       key: 'patient',
       className: 'w-[22%]',
-      cell: (visit) => (
-        <div className="flex flex-col">
-          <span className="font-medium">{visit.patient_details?.full_name || 'N/A'}</span>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-            <span>{visit.patient_details?.patient_id || 'N/A'}</span>
-            {visit.patient_details?.mobile_primary && (
-              <a
-                href={`tel:${visit.patient_details.mobile_primary}`}
-                onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-0.5 text-blue-600 hover:underline"
-              >
-                <Phone className="h-3 w-3" />
-                {visit.patient_details.mobile_primary}
-              </a>
-            )}
+      cell: (visit) => {
+        const name = visit.patient_details?.full_name || visit.patient_name || 'N/A';
+        const pid = visit.patient_details?.patient_id || visit.patient_id || '';
+        const phone = visit.patient_details?.mobile_primary || '';
+        return (
+          <div className="flex flex-col">
+            <span className="font-medium">{name}</span>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+              {pid && <span>{pid}</span>}
+              {phone && (
+                <a
+                  href={`tel:${phone}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-0.5 text-blue-600 hover:underline"
+                >
+                  <Phone className="h-3 w-3" />
+                  {phone}
+                </a>
+              )}
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       header: 'Doctor',
       key: 'doctor',
       className: 'w-[15%]',
       cell: (visit) => (
-        <span className="text-sm">{visit.doctor_details?.full_name || 'N/A'}</span>
+        <span className="text-sm">{visit.doctor_details?.full_name || visit.doctor_name || 'N/A'}</span>
       ),
     },
     {
@@ -293,15 +299,21 @@ export const FollowUps: React.FC = () => {
   ];
 
   // Mobile card
-  const renderMobileCard = (visit: OpdVisit) => (
+  const renderMobileCard = (visit: OpdVisit) => {
+    const patientName = visit.patient_details?.full_name || visit.patient_name || 'N/A';
+    const phone = visit.patient_details?.mobile_primary || '';
+    const pid = visit.patient_details?.patient_id || visit.patient_id || '';
+    const doctorName = visit.doctor_details?.full_name || visit.doctor_name || 'N/A';
+
+    return (
     <>
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-semibold text-sm">{visit.patient_details?.full_name || 'N/A'}</h3>
+          <h3 className="font-semibold text-sm">{patientName}</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {visit.patient_details?.patient_id}
-            {visit.patient_details?.mobile_primary && (
-              <> &bull; <a href={`tel:${visit.patient_details.mobile_primary}`} className="text-blue-600">{visit.patient_details.mobile_primary}</a></>
+            {pid}
+            {phone && (
+              <> &bull; <a href={`tel:${phone}`} className="text-blue-600">{phone}</a></>
             )}
           </p>
         </div>
@@ -311,7 +323,7 @@ export const FollowUps: React.FC = () => {
       <div className="grid grid-cols-2 gap-2 text-xs mt-2">
         <div>
           <span className="text-muted-foreground">Doctor: </span>
-          <span className="font-medium">{visit.doctor_details?.full_name || 'N/A'}</span>
+          <span className="font-medium">{doctorName}</span>
         </div>
         <div>
           <span className="text-muted-foreground">Visit: </span>
@@ -330,9 +342,9 @@ export const FollowUps: React.FC = () => {
       )}
 
       <div className="flex gap-2 pt-2">
-        {visit.patient_details?.mobile_primary && (
+        {phone && (
           <a
-            href={`tel:${visit.patient_details.mobile_primary}`}
+            href={`tel:${phone}`}
             className="flex-1"
             onClick={(e) => e.stopPropagation()}
           >
@@ -367,6 +379,7 @@ export const FollowUps: React.FC = () => {
       </div>
     </>
   );
+  };
 
   const filterTabs: { value: FollowUpFilter; label: string; count?: number; icon: React.ReactNode }[] = [
     { value: 'all', label: 'All', count: stats.total, icon: <Calendar className="h-3 w-3" /> },
