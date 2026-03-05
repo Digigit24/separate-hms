@@ -85,6 +85,7 @@ const menuItems: MenuItem[] = [
     module: "opd",
     children: [
       { id: "opd-visits", label: "Visits", icon: ClipboardPlus, path: "/opd/visits" },
+      { id: "opd-follow-ups", label: "Follow-Ups", icon: Calendar, path: "/opd/follow-ups" },
       { id: "opd-bills", label: "OPD Bills", icon: FileText, path: "/opd/bills" },
       { id: "clinical-notes", label: "Clinical Notes", icon: ClipboardList, path: "/opd/clinical-notes" },
       { id: "visit-findings", label: "Visit Findings", icon: Activity, path: "/opd/findings" },

@@ -30,6 +30,7 @@ import ConsultationCanvas from "./pages/opd-production/ConsultationCanvas";
 import OPDBills from "./pages/opd-production/OPDBills";
 import ClinicalNotes from "./pages/opd-production/ClinicalNotes";
 import VisitFindings from "./pages/opd-production/VisitFindings";
+import FollowUps from "./pages/opd-production/FollowUps";
 import ProcedureMasters from "./pages/opd-production/ProcedureMasters";
 import ProcedurePackages from "./pages/opd-production/ProcedurePackages";
 import ProcedureBills from "./pages/opd-production/ProcedureBills";
@@ -104,6 +105,7 @@ const AppLayout = () => {
               <Route path="/opd/consultation/:visitId/canvas/:responseId" element={<ModuleProtectedRoute requiredModule="opd"><ConsultationCanvas /></ModuleProtectedRoute>} />
               <Route path="/opd/bills" element={<ModuleProtectedRoute requiredModule="opd"><OPDBills /></ModuleProtectedRoute>} />
               <Route path="/opd/clinical-notes" element={<ModuleProtectedRoute requiredModule="opd"><ClinicalNotes /></ModuleProtectedRoute>} />
+              <Route path="/opd/follow-ups" element={<ModuleProtectedRoute requiredModule="opd"><FollowUps /></ModuleProtectedRoute>} />
               <Route path="/opd/findings" element={<ModuleProtectedRoute requiredModule="opd"><VisitFindings /></ModuleProtectedRoute>} />
               <Route path="/opd/procedures" element={<ModuleProtectedRoute requiredModule="opd"><ProcedureMasters /></ModuleProtectedRoute>} />
               <Route path="/opd/packages" element={<ModuleProtectedRoute requiredModule="opd"><ProcedurePackages /></ModuleProtectedRoute>} />
