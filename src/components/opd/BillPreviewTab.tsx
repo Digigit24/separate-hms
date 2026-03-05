@@ -1,10 +1,10 @@
 // src/components/opd/BillPreviewTab.tsx
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useState } from 'react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Receipt, FileText } from 'lucide-react';
+import { Receipt, FileText, FileImage, FileX } from 'lucide-react';
 import { DataTable } from '../DataTable';
 import type { OpdVisit } from '@/types/opdVisit.types';
 import type { OPDBill } from '@/types/opdBill.types';
@@ -62,6 +62,8 @@ export const BillPreviewTab = forwardRef<HTMLDivElement, BillPreviewTabProps>(
     },
     printAreaRef
   ) => {
+    const [showLetterhead, setShowLetterhead] = useState(true);
+
     return (
       <div className="space-y-6">
         {/* Preview Card */}
@@ -78,22 +80,35 @@ export const BillPreviewTab = forwardRef<HTMLDivElement, BillPreviewTabProps>(
             }}
           >
             {/* Hospital Header */}
-            <div className="text-center border-b-2 pb-4" style={{ borderColor: '#374151' }}>
-              <h1 className="text-3xl font-bold mb-2" style={{ color: '#1f2937' }}>
-                {tenantData?.name || 'HOSPITAL'}
-              </h1>
-
-              {/* Address and Contact Info */}
-              <div className="text-sm mt-2 space-y-1">
-                <p style={{ color: '#6b7280' }}>
-                  {tenantSettings?.address || 'Address not available'}
-                </p>
-                <p style={{ color: '#6b7280' }}>
-                  mail id : {tenantSettings?.contact_email || 'N/A'} , Contact:{' '}
-                  {tenantSettings?.contact_phone || 'N/A'}
-                </p>
+            {showLetterhead && (
+            <div className="border-b-2 pb-4" style={{ borderColor: '#374151' }}>
+              <div className="flex items-start gap-4">
+                {tenantSettings?.logo && (
+                  <div className="flex-shrink-0">
+                    <img
+                      src={tenantSettings.logo}
+                      alt="Logo"
+                      className="h-16 w-16 object-contain"
+                    />
+                  </div>
+                )}
+                <div className="flex-1 text-center">
+                  <h1 className="text-3xl font-bold mb-2" style={{ color: '#1f2937' }}>
+                    {tenantData?.name || 'HOSPITAL'}
+                  </h1>
+                  <div className="text-sm mt-2 space-y-1">
+                    <p style={{ color: '#6b7280' }}>
+                      {tenantSettings?.address || 'Address not available'}
+                    </p>
+                    <p style={{ color: '#6b7280' }}>
+                      mail id : {tenantSettings?.contact_email || 'N/A'} , Contact:{' '}
+                      {tenantSettings?.contact_phone || 'N/A'}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
+            )}
 
             {/* Bill Title */}
             <div className="text-center">
@@ -326,15 +341,35 @@ export const BillPreviewTab = forwardRef<HTMLDivElement, BillPreviewTabProps>(
         {/* Print / Download Actions */}
         <Card className="no-print">
           <CardContent className="pt-6">
-            <div className="flex gap-3 justify-center">
-              <Button variant="outline" size="lg" onClick={onDownloadPDF}>
-                <FileText className="mr-2 h-4 w-4" />
-                Download PDF
-              </Button>
-              <Button variant="default" size="lg" onClick={onPrint}>
-                <Receipt className="mr-2 h-4 w-4" />
-                Print Bill
-              </Button>
+            <div className="flex flex-col gap-3 items-center">
+              <div className="flex gap-2">
+                <Button
+                  variant={showLetterhead ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowLetterhead(true)}
+                >
+                  <FileImage className="mr-2 h-4 w-4" />
+                  With Letterhead
+                </Button>
+                <Button
+                  variant={!showLetterhead ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowLetterhead(false)}
+                >
+                  <FileX className="mr-2 h-4 w-4" />
+                  Without Letterhead
+                </Button>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="outline" size="lg" onClick={onDownloadPDF}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Download PDF
+                </Button>
+                <Button variant="default" size="lg" onClick={onPrint}>
+                  <Receipt className="mr-2 h-4 w-4" />
+                  Print Bill
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

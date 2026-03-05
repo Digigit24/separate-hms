@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Save, Download, Printer, Building2, Stethoscope, CalendarPlus, X, MessageSquare, Send, Plus } from 'lucide-react';
+import { Loader2, Save, Download, Printer, Building2, Stethoscope, CalendarPlus, X, MessageSquare, Send, Plus, FileImage, FileX } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -117,6 +117,7 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
   const [savedFollowupDate, setSavedFollowupDate] = useState<Date | null>(null);
 
   const previewRef = useRef<HTMLDivElement>(null);
+  const [showLetterhead, setShowLetterhead] = useState(true);
 
   // Clinical note hook for follow-up date
   const { useClinicalNoteByVisit, updateNote, createNote } = useClinicalNote();
@@ -975,15 +976,35 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
             {/* Preview Tab */}
             {activeSubTab === 'preview' && selectedResponse && (
               <div className="space-y-4 pt-4">
-                <div className="flex justify-end items-center gap-2 print:hidden">
-                  <Button variant="outline" size="sm" onClick={handlePrint}>
-                    <Printer className="h-4 w-4 mr-2" />
-                    Print
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleDownload}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
-                  </Button>
+                <div className="flex justify-between items-center gap-2 print:hidden">
+                  <div className="flex gap-2">
+                    <Button
+                      variant={showLetterhead ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setShowLetterhead(true)}
+                    >
+                      <FileImage className="h-4 w-4 mr-2" />
+                      With Letterhead
+                    </Button>
+                    <Button
+                      variant={!showLetterhead ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setShowLetterhead(false)}
+                    >
+                      <FileX className="h-4 w-4 mr-2" />
+                      Without Letterhead
+                    </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={handlePrint}>
+                      <Printer className="h-4 w-4 mr-2" />
+                      Print
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleDownload}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download PDF
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="overflow-auto">
@@ -993,6 +1014,7 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
                     style={{ width: '210mm', minHeight: '297mm' }}
                   >
                     {/* Letterhead Header */}
+                    {showLetterhead && (
                     <div
                       className="border-b-4 py-8"
                       style={{
@@ -1035,6 +1057,7 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
                         </div>
                       </div>
                     </div>
+                    )}
 
                     {/* Patient & Visit Information */}
                     <div className="px-8 py-4 border-t border-b flex-shrink-0">
