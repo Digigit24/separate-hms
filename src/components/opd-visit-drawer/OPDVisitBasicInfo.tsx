@@ -182,6 +182,7 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
       setValue,
       reset,
       control,
+      getValues,
     } = useForm<any>({
       resolver: zodResolver(schema),
       defaultValues,
@@ -244,15 +245,22 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
       }
     }, [watchedDoctorId, watchedVisitType, doctors, isCreateMode, setValue]);
 
+    // Helper to convert form data to a clean numeric value or undefined
+    const toNum = (val: any): number | undefined => {
+      if (val === '' || val === null || val === undefined) return undefined;
+      const n = Number(val);
+      return isNaN(n) ? undefined : n;
+    };
+
     // Expose form validation and data collection to parent
     useImperativeHandle(ref, () => ({
       getFormValues: async (): Promise<OpdVisitCreateData | OpdVisitUpdateData | null> => {
-        return new Promise((resolve) => {
-          handleSubmit(
-            (data) => {
-              if (isCreateMode) {
+        if (isCreateMode) {
+          // Create mode: use handleSubmit for required field validation
+          return new Promise((resolve) => {
+            handleSubmit(
+              (data) => {
                 const payload: OpdVisitCreateData = {
-                  // Backend expects 'patient' and 'doctor', not 'patient_id' and 'doctor_id'
                   patient: Number(data.patient_id),
                   doctor: Number(data.doctor_id),
                   visit_date: data.visit_date,
@@ -263,57 +271,62 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
                   symptoms: data.symptoms,
                   notes: data.notes,
                   temperature: data.temperature,
-                  blood_pressure_systolic: data.blood_pressure_systolic ? Number(data.blood_pressure_systolic) : undefined,
-                  blood_pressure_diastolic: data.blood_pressure_diastolic ? Number(data.blood_pressure_diastolic) : undefined,
-                  heart_rate: data.heart_rate ? Number(data.heart_rate) : undefined,
-                  respiratory_rate: data.respiratory_rate ? Number(data.respiratory_rate) : undefined,
+                  blood_pressure_systolic: toNum(data.blood_pressure_systolic),
+                  blood_pressure_diastolic: toNum(data.blood_pressure_diastolic),
+                  heart_rate: toNum(data.heart_rate),
+                  respiratory_rate: toNum(data.respiratory_rate),
                   oxygen_saturation: data.oxygen_saturation,
                   weight: data.weight,
                   height: data.height,
-                  consultation_fee: data.consultation_fee ? Number(data.consultation_fee) : undefined,
-                  additional_charges: data.additional_charges ? Number(data.additional_charges) : undefined,
+                  consultation_fee: toNum(data.consultation_fee),
+                  additional_charges: toNum(data.additional_charges),
                   follow_up_required: data.follow_up_required,
                   follow_up_date: data.follow_up_date,
                   follow_up_notes: data.follow_up_notes,
                 };
                 resolve(payload);
-              } else {
-                const payload: OpdVisitUpdateData = {
-                  visit_date: data.visit_date,
-                  visit_time: data.visit_time,
-                  visit_type: data.visit_type,
-                  status: data.status,
-                  priority: data.priority,
-                  chief_complaint: data.chief_complaint,
-                  symptoms: data.symptoms,
-                  diagnosis: data.diagnosis,
-                  treatment_plan: data.treatment_plan,
-                  prescription: data.prescription,
-                  notes: data.notes,
-                  temperature: data.temperature,
-                  blood_pressure_systolic: data.blood_pressure_systolic ? Number(data.blood_pressure_systolic) : undefined,
-                  blood_pressure_diastolic: data.blood_pressure_diastolic ? Number(data.blood_pressure_diastolic) : undefined,
-                  heart_rate: data.heart_rate ? Number(data.heart_rate) : undefined,
-                  respiratory_rate: data.respiratory_rate ? Number(data.respiratory_rate) : undefined,
-                  oxygen_saturation: data.oxygen_saturation,
-                  weight: data.weight,
-                  height: data.height,
-                  consultation_fee: data.consultation_fee ? Number(data.consultation_fee) : undefined,
-                  additional_charges: data.additional_charges ? Number(data.additional_charges) : undefined,
-                  payment_status: data.payment_status,
-                  payment_method: data.payment_method,
-                  follow_up_required: data.follow_up_required,
-                  follow_up_date: data.follow_up_date,
-                  follow_up_notes: data.follow_up_notes,
-                  referred_to: data.referred_to,
-                  referral_reason: data.referral_reason,
-                };
-                resolve(payload);
+              },
+              (validationErrors) => {
+                console.error('Form validation errors:', validationErrors);
+                resolve(null);
               }
-            },
-            () => resolve(null)
-          )();
-        });
+            )();
+          });
+        } else {
+          // Edit mode: read values directly (all fields are optional, no validation needed)
+          const data = getValues();
+          const payload: OpdVisitUpdateData = {
+            visit_date: data.visit_date,
+            visit_time: data.visit_time,
+            visit_type: data.visit_type,
+            status: data.status,
+            priority: data.priority,
+            chief_complaint: data.chief_complaint,
+            symptoms: data.symptoms,
+            diagnosis: data.diagnosis,
+            treatment_plan: data.treatment_plan,
+            prescription: data.prescription,
+            notes: data.notes,
+            temperature: data.temperature,
+            blood_pressure_systolic: toNum(data.blood_pressure_systolic),
+            blood_pressure_diastolic: toNum(data.blood_pressure_diastolic),
+            heart_rate: toNum(data.heart_rate),
+            respiratory_rate: toNum(data.respiratory_rate),
+            oxygen_saturation: data.oxygen_saturation,
+            weight: data.weight,
+            height: data.height,
+            consultation_fee: toNum(data.consultation_fee),
+            additional_charges: toNum(data.additional_charges),
+            payment_status: data.payment_status,
+            payment_method: data.payment_method,
+            follow_up_required: data.follow_up_required === true,
+            follow_up_date: data.follow_up_date,
+            follow_up_notes: data.follow_up_notes,
+            referred_to: data.referred_to,
+            referral_reason: data.referral_reason,
+          };
+          return payload;
+        }
       },
     }));
 

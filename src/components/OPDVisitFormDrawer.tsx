@@ -42,7 +42,7 @@ export default function OPDVisitFormDrawer({
   const {
     useOpdVisitById,
     createOpdVisit,
-    patchOpdVisit,
+    updateOpdVisit,
     deleteOpdVisit,
     completeOpdVisit,
   } = useOpdVisit();
@@ -150,9 +150,16 @@ export default function OPDVisitFormDrawer({
           return;
         }
 
-        console.log('Updating OPD visit with values:', values);
+        // Include patient and doctor from the existing visit for PUT
+        const updatePayload: OpdVisitUpdateData = {
+          ...(values as OpdVisitUpdateData),
+          patient: visit?.patient ?? visit?.patient_details?.id,
+          doctor: visit?.doctor ?? visit?.doctor_details?.id,
+        };
 
-        await patchOpdVisit(visitId, values as OpdVisitUpdateData);
+        console.log('Updating OPD visit with values:', updatePayload);
+
+        await updateOpdVisit(visitId, updatePayload);
 
         toast.success('OPD visit updated successfully');
         handleSuccess();
@@ -168,7 +175,7 @@ export default function OPDVisitFormDrawer({
     } finally {
       setIsSaving(false);
     }
-  }, [currentMode, visitId, createOpdVisit, patchOpdVisit, handleSuccess, handleClose, handleSwitchToView]);
+  }, [currentMode, visitId, visit, createOpdVisit, updateOpdVisit, handleSuccess, handleClose, handleSwitchToView]);
 
   const drawerTitle =
     currentMode === 'create'

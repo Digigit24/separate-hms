@@ -156,6 +156,10 @@ export interface OpdVisitCreateData {
 
 // ==================== UPDATE DATA ====================
 export interface OpdVisitUpdateData {
+  // Patient & Doctor (required for PUT)
+  patient?: number;
+  doctor?: number;
+
   // Visit Details
   visit_date?: string;
   visit_time?: string;
