@@ -20,7 +20,7 @@ import {
   CalendarPlus,
 } from 'lucide-react';
 import { OpdVisit, OpdVisitListParams } from '@/types/opdVisit.types';
-import { DatePicker } from '@/components/ui/date-picker';
+import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { format, isToday, isBefore, startOfDay } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -112,7 +112,7 @@ export const FollowUps: React.FC = () => {
     try {
       await patchOpdVisit(visitId, {
         follow_up_required: true,
-        follow_up_date: format(followUpDateInput, 'yyyy-MM-dd'),
+        follow_up_date: format(followUpDateInput, "yyyy-MM-dd'T'HH:mm"),
       });
       toast.success('Follow-up date updated');
       setEditingVisitId(null);
@@ -223,11 +223,11 @@ export const FollowUps: React.FC = () => {
         if (editingVisitId === visit.id) {
           return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-              <DatePicker
+              <DateTimePicker
                 date={followUpDateInput}
-                onDateChange={setFollowUpDateInput}
-                placeholder="Pick date"
-                className="h-7 text-xs w-40"
+                onDateTimeChange={setFollowUpDateInput}
+                placeholder="Pick date & time"
+                className="h-7 text-xs w-48"
               />
               <Button
                 size="sm"
@@ -254,7 +254,7 @@ export const FollowUps: React.FC = () => {
             <div className="flex flex-col">
               {visit.follow_up_date ? (
                 <span className="text-sm font-medium">
-                  {format(new Date(visit.follow_up_date), 'dd MMM yyyy')}
+                  {format(new Date(visit.follow_up_date), 'dd MMM yyyy hh:mm a')}
                 </span>
               ) : (
                 <span className="text-xs text-muted-foreground italic">Not set</span>
@@ -329,7 +329,7 @@ export const FollowUps: React.FC = () => {
         <div>
           <span className="text-muted-foreground">Follow-up: </span>
           <span className="font-medium">
-            {visit.follow_up_date ? format(new Date(visit.follow_up_date), 'dd MMM yyyy') : 'Not set'}
+            {visit.follow_up_date ? format(new Date(visit.follow_up_date), 'dd MMM yyyy hh:mm a') : 'Not set'}
           </span>
         </div>
       </div>
