@@ -28,6 +28,17 @@ import { useDoctor } from '@/hooks/useDoctor';
 import { PatientSelect } from '@/components/form/PatientSelect';
 import { DoctorSelect } from '@/components/form/DoctorSelect';
 
+// Helper: coerce to number but treat empty strings as undefined
+const optionalNumber = z.preprocess(
+  (val) => (val === '' || val === null || val === undefined ? undefined : val),
+  z.coerce.number().optional()
+);
+
+const optionalNumberMin0 = z.preprocess(
+  (val) => (val === '' || val === null || val === undefined ? undefined : val),
+  z.coerce.number().min(0).optional()
+);
+
 // Validation schemas
 const createOpdVisitSchema = z.object({
   patient_id: z.coerce.number().min(1, 'Patient is required'),
@@ -40,15 +51,15 @@ const createOpdVisitSchema = z.object({
   symptoms: z.string().optional(),
   notes: z.string().optional(),
   temperature: z.string().optional(),
-  blood_pressure_systolic: z.coerce.number().optional(),
-  blood_pressure_diastolic: z.coerce.number().optional(),
-  heart_rate: z.coerce.number().optional(),
-  respiratory_rate: z.coerce.number().optional(),
+  blood_pressure_systolic: optionalNumber,
+  blood_pressure_diastolic: optionalNumber,
+  heart_rate: optionalNumber,
+  respiratory_rate: optionalNumber,
   oxygen_saturation: z.string().optional(),
   weight: z.string().optional(),
   height: z.string().optional(),
-  consultation_fee: z.coerce.number().min(0).optional(),
-  additional_charges: z.coerce.number().min(0).optional(),
+  consultation_fee: optionalNumberMin0,
+  additional_charges: optionalNumberMin0,
   follow_up_required: z.boolean().optional(),
   follow_up_date: z.string().optional(),
   follow_up_notes: z.string().optional(),
@@ -67,15 +78,15 @@ const updateOpdVisitSchema = z.object({
   prescription: z.string().optional(),
   notes: z.string().optional(),
   temperature: z.string().optional(),
-  blood_pressure_systolic: z.coerce.number().optional(),
-  blood_pressure_diastolic: z.coerce.number().optional(),
-  heart_rate: z.coerce.number().optional(),
-  respiratory_rate: z.coerce.number().optional(),
+  blood_pressure_systolic: optionalNumber,
+  blood_pressure_diastolic: optionalNumber,
+  heart_rate: optionalNumber,
+  respiratory_rate: optionalNumber,
   oxygen_saturation: z.string().optional(),
   weight: z.string().optional(),
   height: z.string().optional(),
-  consultation_fee: z.coerce.number().min(0).optional(),
-  additional_charges: z.coerce.number().min(0).optional(),
+  consultation_fee: optionalNumberMin0,
+  additional_charges: optionalNumberMin0,
   payment_status: z.enum(['pending', 'paid', 'partially_paid', 'refunded']).optional(),
   payment_method: z.string().optional(),
   follow_up_required: z.boolean().optional(),
