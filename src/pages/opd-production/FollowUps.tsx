@@ -36,12 +36,10 @@ export const FollowUps: React.FC = () => {
   const [followUpDateInput, setFollowUpDateInput] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Fetch visits — use follow_up_required param if backend supports it,
-  // otherwise we filter client-side as a fallback
   const queryParams: OpdVisitListParams = {
     page: currentPage,
     search: searchTerm || undefined,
-    follow_up_required: true,
+    visit_type: 'follow_up',
   };
 
   const {
@@ -51,9 +49,7 @@ export const FollowUps: React.FC = () => {
     mutate: mutateVisits,
   } = useOpdVisits(queryParams);
 
-  // Filter client-side to ensure only follow-up visits are shown
-  // (in case backend ignores the follow_up_required param)
-  const allVisits = (visitsData?.results || []).filter(v => v.follow_up_required);
+  const allVisits = visitsData?.results || [];
   const totalCount = visitsData?.count || 0;
   const hasNext = !!visitsData?.next;
   const hasPrevious = !!visitsData?.previous;
