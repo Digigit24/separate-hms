@@ -70,25 +70,22 @@ export const ClinicalNotes: React.FC = () => {
 
   const columns: DataTableColumn<ClinicalNote>[] = [
     {
-      header: 'Visit',
-      key: 'visit_number',
-      cell: (note) => (
-        <div className="flex flex-col">
-          <span className="font-medium font-mono text-sm">{note.visit_number || `Visit #${note.visit}`}</span>
-          <span className="text-xs text-muted-foreground">
-            {format(new Date(note.note_date), 'MMM dd, yyyy')}
-          </span>
-        </div>
-      ),
-    },
-    {
       header: 'Patient',
       key: 'patient_name',
       cell: (note) => (
         <div className="flex flex-col">
           <span className="font-medium">{note.patient_name || 'N/A'}</span>
-          <span className="text-xs text-muted-foreground">EHR: {note.ehr_number}</span>
+          <span className="text-xs text-muted-foreground">{note.ehr_number || '-'}</span>
         </div>
+      ),
+    },
+    {
+      header: 'Note Date',
+      key: 'note_date',
+      cell: (note) => (
+        <span className="text-sm text-muted-foreground">
+          {format(new Date(note.note_date), 'dd MMM yyyy')}
+        </span>
       ),
     },
     {
@@ -96,7 +93,7 @@ export const ClinicalNotes: React.FC = () => {
       key: 'present_complaints',
       cell: (note) => (
         <div className="max-w-xs">
-          <p className="text-sm truncate">{note.present_complaints || 'N/A'}</p>
+          <p className="text-sm truncate">{note.present_complaints || '-'}</p>
         </div>
       ),
     },
@@ -105,29 +102,20 @@ export const ClinicalNotes: React.FC = () => {
       key: 'diagnosis',
       cell: (note) => (
         <div className="max-w-xs">
-          <p className="text-sm truncate">{note.diagnosis || 'N/A'}</p>
+          <p className="text-sm truncate">{note.diagnosis || '-'}</p>
         </div>
       ),
     },
     {
-      header: 'Doctor',
-      key: 'referred_doctor_name',
-      cell: (note) => (
-        <span className="text-sm">{note.referred_doctor_name || 'N/A'}</span>
-      ),
-    },
-    {
-      header: 'Follow-up',
+      header: 'Follow-up Date',
       key: 'next_followup_date',
       cell: (note) => (
         <span className="text-sm">
-          {note.next_followup_date ? format(new Date(note.next_followup_date), 'MMM dd, yyyy') : 'N/A'}
+          {note.next_followup_date ? format(new Date(note.next_followup_date), 'dd MMM yyyy') : '-'}
         </span>
       ),
     },
   ];
-
-  const patient = visitData?.patient_details;
 
   return (
     <div className="p-4 md:p-5 w-full space-y-3">
