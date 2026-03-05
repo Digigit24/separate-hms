@@ -176,7 +176,7 @@ export const FollowUps: React.FC = () => {
       cell: (visit) => {
         const name = visit.patient_details?.full_name || visit.patient_name || 'N/A';
         const pid = visit.patient_details?.patient_id || visit.patient_id || '';
-        const phone = visit.patient_details?.mobile_primary || '';
+        const phone = visit.patient_details?.mobile || visit.patient_details?.mobile_primary || '';
         return (
           <div className="flex flex-col">
             <span className="font-medium">{name}</span>
@@ -298,7 +298,7 @@ export const FollowUps: React.FC = () => {
   // Mobile card
   const renderMobileCard = (visit: OpdVisit) => {
     const patientName = visit.patient_details?.full_name || visit.patient_name || 'N/A';
-    const phone = visit.patient_details?.mobile_primary || '';
+    const phone = visit.patient_details?.mobile || visit.patient_details?.mobile_primary || '';
     const pid = visit.patient_details?.patient_id || visit.patient_id || '';
     const doctorName = visit.doctor_details?.full_name || visit.doctor_name || 'N/A';
 

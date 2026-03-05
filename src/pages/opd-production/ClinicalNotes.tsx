@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
 import {
   Sheet,
@@ -14,7 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { Loader2, Plus, Search, FileText, ClipboardList, User, Phone, Calendar, Mail } from 'lucide-react';
+import { Loader2, Plus, Search, FileText, ClipboardList, User, Phone } from 'lucide-react';
 import { ClinicalNote, ClinicalNoteListParams } from '@/types/clinicalNote.types';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -239,120 +238,49 @@ export const ClinicalNotes: React.FC = () => {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : visitData ? (
-              <div className="space-y-6">
-                {/* Patient Info Card */}
-                <Card>
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <User className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">
-                          {patient?.full_name || 'N/A'}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {patient?.patient_id || 'No Patient ID'}
-                        </p>
-                      </div>
+              <Card>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="h-6 w-6 text-primary" />
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4 pt-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Age</Label>
-                        <p className="text-sm font-medium">{patient?.age ?? 'N/A'}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Gender</Label>
-                        <p className="text-sm font-medium capitalize">{patient?.gender || 'N/A'}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Blood Group</Label>
-                        <p className="text-sm font-medium">{patient?.blood_group || 'N/A'}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Phone</Label>
-                        {patient?.mobile_primary ? (
-                          <a href={`tel:${patient.mobile_primary}`} className="text-sm font-medium text-blue-600 hover:underline flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            {patient.mobile_primary}
-                          </a>
-                        ) : (
-                          <p className="text-sm font-medium">N/A</p>
-                        )}
-                      </div>
+                    <div>
+                      <h3 className="font-semibold text-lg">
+                        {visitData.patient_details?.full_name || visitData.patient_name || 'N/A'}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {visitData.patient_details?.patient_id || 'No Patient ID'}
+                      </p>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
 
-                {/* Visit Info Card */}
-                <Card>
-                  <CardContent className="pt-6 space-y-4">
-                    <h4 className="font-semibold text-sm flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      Visit Information
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Visit Number</Label>
-                        <p className="text-sm font-mono font-medium">{visitData.visit_number}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Visit Date</Label>
-                        <p className="text-sm font-medium">
-                          {format(new Date(visitData.visit_date), 'dd MMM yyyy')}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Visit Type</Label>
-                        <Badge variant="secondary" className="text-xs">
-                          {visitData.visit_type?.replace('_', ' ').toUpperCase()}
-                        </Badge>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Status</Label>
-                        <Badge
-                          variant={visitData.status === 'completed' ? 'default' : 'secondary'}
-                          className={`text-xs ${visitData.status === 'completed' ? 'bg-green-600' : ''}`}
-                        >
-                          {visitData.status?.replace('_', ' ').toUpperCase()}
-                        </Badge>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Doctor</Label>
-                        <p className="text-sm font-medium">
-                          {visitData.doctor_details?.full_name || visitData.doctor_name || 'N/A'}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Priority</Label>
-                        <Badge
-                          variant={visitData.priority === 'urgent' || visitData.priority === 'high' ? 'destructive' : 'secondary'}
-                          className="text-xs"
-                        >
-                          {visitData.priority?.toUpperCase()}
-                        </Badge>
-                      </div>
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Age</Label>
+                      <p className="text-sm font-medium">{visitData.patient_details?.age ?? 'N/A'}</p>
                     </div>
-
-                    {visitData.chief_complaint && (
-                      <div className="space-y-1 pt-2">
-                        <Label className="text-xs text-muted-foreground">Chief Complaint</Label>
-                        <p className="text-sm">{visitData.chief_complaint}</p>
-                      </div>
-                    )}
-
-                    {visitData.follow_up_date && (
-                      <div className="space-y-1 pt-2">
-                        <Label className="text-xs text-muted-foreground">Follow-up Date</Label>
-                        <p className="text-sm font-medium">
-                          {format(new Date(visitData.follow_up_date), 'dd MMM yyyy')}
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Gender</Label>
+                      <p className="text-sm font-medium capitalize">{visitData.patient_details?.gender || 'N/A'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Blood Group</Label>
+                      <p className="text-sm font-medium">{visitData.patient_details?.blood_group || 'N/A'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Phone</Label>
+                      {visitData.patient_details?.mobile ? (
+                        <a href={`tel:${visitData.patient_details.mobile}`} className="text-sm font-medium text-blue-600 hover:underline flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {visitData.patient_details.mobile}
+                        </a>
+                      ) : (
+                        <p className="text-sm font-medium">N/A</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ) : (
               <div className="flex items-center justify-center py-12">
                 <p className="text-sm text-muted-foreground">No visit data found</p>

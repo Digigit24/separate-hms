@@ -16,14 +16,15 @@ export interface PatientDetails {
   full_name: string;
   age: number;
   gender: string;
-  blood_group: string;
-  mobile_primary: string;
+  blood_group: string | null;
+  mobile: string;
+  mobile_primary?: string;
 }
 
 export interface DoctorDetails {
   id: number;
   full_name: string;
-  specialties: Array<{ id: number; name: string }>;
+  specialties: string[] | Array<{ id: number; name: string }>;
   consultation_fee: string;
   follow_up_fee: string;
 }
