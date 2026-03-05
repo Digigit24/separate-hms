@@ -1,11 +1,20 @@
 // src/pages/opd-production/ClinicalNotes.tsx
 import React, { useState } from 'react';
 import { useClinicalNote } from '@/hooks/useClinicalNote';
+import { useOpdVisit } from '@/hooks/useOpdVisit';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
-import { Loader2, Plus, Search, FileText, ClipboardList } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { Loader2, Plus, Search, FileText, ClipboardList, User, Phone, Calendar, Mail } from 'lucide-react';
 import { ClinicalNote, ClinicalNoteListParams } from '@/types/clinicalNote.types';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -13,6 +22,7 @@ import { ClinicalNoteFormDrawer } from '@/components/ClinicalNoteFormDrawer';
 
 export const ClinicalNotes: React.FC = () => {
   const { useClinicalNotes, deleteNote } = useClinicalNote();
+  const { useOpdVisitById } = useOpdVisit();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -20,12 +30,17 @@ export const ClinicalNotes: React.FC = () => {
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view'>('create');
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
 
+  // Patient details drawer state
+  const [patientDrawerOpen, setPatientDrawerOpen] = useState(false);
+  const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
+
   const queryParams: ClinicalNoteListParams = {
     page: currentPage,
     search: searchTerm || undefined,
   };
 
   const { data: notesData, error, isLoading, mutate } = useClinicalNotes(queryParams);
+  const { data: visitData, isLoading: visitLoading } = useOpdVisitById(selectedVisitId);
 
   const notes = notesData?.results || [];
   const totalCount = notesData?.count || 0;
@@ -47,6 +62,11 @@ export const ClinicalNotes: React.FC = () => {
         toast.error(error.message);
       }
     }
+  };
+
+  const handleRowClick = (note: ClinicalNote) => {
+    setSelectedVisitId(note.visit);
+    setPatientDrawerOpen(true);
   };
 
   const columns: DataTableColumn<ClinicalNote>[] = [
@@ -108,18 +128,20 @@ export const ClinicalNotes: React.FC = () => {
     },
   ];
 
+  const patient = visitData?.patient_details;
+
   return (
     <div className="p-4 md:p-5 w-full space-y-3">
       {/* Row 1: Title + inline stats + action */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4 flex-wrap">
-          <h1 className="text-lg font-bold leading-none">Clinical Notes</h1>
+          <h1 className="text-lg font-bold leading-none">Follow-ups</h1>
           <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
             <span className="flex items-center gap-1"><FileText className="h-3 w-3" /> <span className="font-semibold text-foreground">{totalCount}</span> Total</span>
             <span className="text-border">|</span>
             <span className="flex items-center gap-1"><ClipboardList className="h-3 w-3" /> <span className="font-semibold text-foreground">{notes.length}</span> This Month</span>
             <span className="text-border">|</span>
-            <span className="flex items-center gap-1"><FileText className="h-3 w-3" /> <span className="font-semibold text-foreground">{notes.filter(n => n.next_followup_date).length}</span> Follow-ups</span>
+            <span className="flex items-center gap-1"><FileText className="h-3 w-3" /> <span className="font-semibold text-foreground">{notes.filter(n => n.next_followup_date).length}</span> With Follow-up Date</span>
           </div>
         </div>
         <Button onClick={() => { setDrawerMode('create'); setSelectedNoteId(null); setDrawerOpen(true); }} size="sm" className="w-full sm:w-auto h-7 text-[12px]">
@@ -134,7 +156,7 @@ export const ClinicalNotes: React.FC = () => {
         <span className="text-border">|</span>
         <span><span className="font-semibold text-foreground">{notes.length}</span> This Month</span>
         <span className="text-border">|</span>
-        <span><span className="font-semibold text-foreground">{notes.filter(n => n.next_followup_date).length}</span> Follow-ups</span>
+        <span><span className="font-semibold text-foreground">{notes.filter(n => n.next_followup_date).length}</span> With Follow-up Date</span>
       </div>
 
       {/* Row 2: Search */}
@@ -165,10 +187,11 @@ export const ClinicalNotes: React.FC = () => {
                 columns={columns}
                 getRowId={(note) => note.id}
                 getRowLabel={(note) => note.visit_number || `Visit #${note.visit}`}
+                onRowClick={handleRowClick}
                 onView={(note) => { setDrawerMode('view'); setSelectedNoteId(note.id); setDrawerOpen(true); }}
                 onEdit={(note) => { setDrawerMode('edit'); setSelectedNoteId(note.id); setDrawerOpen(true); }}
                 onDelete={handleDelete}
-                emptyTitle="No clinical notes found"
+                emptyTitle="No follow-ups found"
                 emptySubtitle="Try adjusting your filters"
               />
 
@@ -199,6 +222,145 @@ export const ClinicalNotes: React.FC = () => {
         noteId={selectedNoteId}
         onSuccess={mutate}
       />
+
+      {/* Patient Details Side Drawer */}
+      <Sheet open={patientDrawerOpen} onOpenChange={setPatientDrawerOpen}>
+        <SheetContent className="w-[400px] sm:w-[450px] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Patient Details
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="mt-6">
+            {visitLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : visitData ? (
+              <div className="space-y-6">
+                {/* Patient Info Card */}
+                <Card>
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <User className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg">
+                          {patient?.full_name || 'N/A'}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {patient?.patient_id || 'No Patient ID'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Age</Label>
+                        <p className="text-sm font-medium">{patient?.age ?? 'N/A'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Gender</Label>
+                        <p className="text-sm font-medium capitalize">{patient?.gender || 'N/A'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Blood Group</Label>
+                        <p className="text-sm font-medium">{patient?.blood_group || 'N/A'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Phone</Label>
+                        {patient?.mobile_primary ? (
+                          <a href={`tel:${patient.mobile_primary}`} className="text-sm font-medium text-blue-600 hover:underline flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            {patient.mobile_primary}
+                          </a>
+                        ) : (
+                          <p className="text-sm font-medium">N/A</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Visit Info Card */}
+                <Card>
+                  <CardContent className="pt-6 space-y-4">
+                    <h4 className="font-semibold text-sm flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Visit Information
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Visit Number</Label>
+                        <p className="text-sm font-mono font-medium">{visitData.visit_number}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Visit Date</Label>
+                        <p className="text-sm font-medium">
+                          {format(new Date(visitData.visit_date), 'dd MMM yyyy')}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Visit Type</Label>
+                        <Badge variant="secondary" className="text-xs">
+                          {visitData.visit_type?.replace('_', ' ').toUpperCase()}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Status</Label>
+                        <Badge
+                          variant={visitData.status === 'completed' ? 'default' : 'secondary'}
+                          className={`text-xs ${visitData.status === 'completed' ? 'bg-green-600' : ''}`}
+                        >
+                          {visitData.status?.replace('_', ' ').toUpperCase()}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Doctor</Label>
+                        <p className="text-sm font-medium">
+                          {visitData.doctor_details?.full_name || visitData.doctor_name || 'N/A'}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Priority</Label>
+                        <Badge
+                          variant={visitData.priority === 'urgent' || visitData.priority === 'high' ? 'destructive' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {visitData.priority?.toUpperCase()}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {visitData.chief_complaint && (
+                      <div className="space-y-1 pt-2">
+                        <Label className="text-xs text-muted-foreground">Chief Complaint</Label>
+                        <p className="text-sm">{visitData.chief_complaint}</p>
+                      </div>
+                    )}
+
+                    {visitData.follow_up_date && (
+                      <div className="space-y-1 pt-2">
+                        <Label className="text-xs text-muted-foreground">Follow-up Date</Label>
+                        <p className="text-sm font-medium">
+                          {format(new Date(visitData.follow_up_date), 'dd MMM yyyy')}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-12">
+                <p className="text-sm text-muted-foreground">No visit data found</p>
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
