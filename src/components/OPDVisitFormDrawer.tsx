@@ -42,7 +42,7 @@ export default function OPDVisitFormDrawer({
   const {
     useOpdVisitById,
     createOpdVisit,
-    updateOpdVisit,
+    patchOpdVisit,
     deleteOpdVisit,
     completeOpdVisit,
   } = useOpdVisit();
@@ -152,7 +152,7 @@ export default function OPDVisitFormDrawer({
 
         console.log('Updating OPD visit with values:', values);
 
-        await updateOpdVisit(visitId, values as OpdVisitUpdateData);
+        await patchOpdVisit(visitId, values as OpdVisitUpdateData);
 
         toast.success('OPD visit updated successfully');
         handleSuccess();
@@ -168,7 +168,7 @@ export default function OPDVisitFormDrawer({
     } finally {
       setIsSaving(false);
     }
-  }, [currentMode, visitId, createOpdVisit, updateOpdVisit, handleSuccess, handleClose, handleSwitchToView]);
+  }, [currentMode, visitId, createOpdVisit, patchOpdVisit, handleSuccess, handleClose, handleSwitchToView]);
 
   const drawerTitle =
     currentMode === 'create'
