@@ -20,6 +20,7 @@ import {
   CalendarPlus,
 } from 'lucide-react';
 import { OpdVisit, OpdVisitListParams } from '@/types/opdVisit.types';
+import { DatePicker } from '@/components/ui/date-picker';
 import { format, isToday, isBefore, startOfDay } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -33,7 +34,7 @@ export const FollowUps: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<FollowUpFilter>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [editingVisitId, setEditingVisitId] = useState<number | null>(null);
-  const [followUpDateInput, setFollowUpDateInput] = useState('');
+  const [followUpDateInput, setFollowUpDateInput] = useState<Date | undefined>(undefined);
   const [saving, setSaving] = useState(false);
 
   const queryParams: OpdVisitListParams = {
@@ -111,11 +112,11 @@ export const FollowUps: React.FC = () => {
     try {
       await patchOpdVisit(visitId, {
         follow_up_required: true,
-        follow_up_date: followUpDateInput,
+        follow_up_date: format(followUpDateInput, 'yyyy-MM-dd'),
       });
       toast.success('Follow-up date updated');
       setEditingVisitId(null);
-      setFollowUpDateInput('');
+      setFollowUpDateInput(undefined);
       mutateVisits();
     } catch {
       toast.error('Failed to update follow-up date');
@@ -222,11 +223,11 @@ export const FollowUps: React.FC = () => {
         if (editingVisitId === visit.id) {
           return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-              <Input
-                type="datetime-local"
-                value={followUpDateInput}
-                onChange={(e) => setFollowUpDateInput(e.target.value)}
-                className="h-7 text-xs w-44"
+              <DatePicker
+                date={followUpDateInput}
+                onDateChange={setFollowUpDateInput}
+                placeholder="Pick date"
+                className="h-7 text-xs w-40"
               />
               <Button
                 size="sm"
@@ -234,13 +235,13 @@ export const FollowUps: React.FC = () => {
                 onClick={(e) => { e.stopPropagation(); handleSetFollowUp(visit.id); }}
                 disabled={saving}
               >
-                {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Set'}
+                {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
                 className="h-7 text-xs px-1"
-                onClick={(e) => { e.stopPropagation(); setEditingVisitId(null); }}
+                onClick={(e) => { e.stopPropagation(); setEditingVisitId(null); setFollowUpDateInput(undefined); }}
               >
                 X
               </Button>
@@ -267,7 +268,7 @@ export const FollowUps: React.FC = () => {
               onClick={(e) => {
                 e.stopPropagation();
                 setEditingVisitId(visit.id);
-                setFollowUpDateInput(visit.follow_up_date || '');
+                setFollowUpDateInput(visit.follow_up_date ? new Date(visit.follow_up_date) : undefined);
               }}
             >
               <CalendarPlus className="h-3.5 w-3.5" />
@@ -366,7 +367,7 @@ export const FollowUps: React.FC = () => {
           onClick={(e) => {
             e.stopPropagation();
             setEditingVisitId(visit.id);
-            setFollowUpDateInput(visit.follow_up_date || '');
+            setFollowUpDateInput(visit.follow_up_date ? new Date(visit.follow_up_date) : undefined);
           }}
         >
           <CalendarPlus className="h-3.5 w-3.5 mr-1.5" />
