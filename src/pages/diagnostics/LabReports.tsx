@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Search, FileText, CheckCircle2, Download, Upload, Clock, Phone, Send, Loader2 } from 'lucide-react';
+import { Plus, Search, FileText, CheckCircle2, Download, Upload, Clock, Phone, Send, Loader2, Check, CheckCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -52,10 +52,24 @@ export const LabReports: React.FC = () => {
 
   // Fetch data
   const { data, isLoading, mutate } = useLabReports();
-  const { data: ordersData } = useDiagnosticOrders();
+  const { data: ordersData, mutate: mutateOrders } = useDiagnosticOrders();
 
   const reports = data?.results || [];
   const orders = ordersData?.results || [];
+
+  // Build lookup map: order ID -> WhatsApp status from orders
+  const orderWhatsappMap = useMemo(() => {
+    const map: Record<number, { whatsapp_message_log_id: string | null; whatsapp_delivered: boolean; whatsapp_read: boolean; whatsapp_failed: boolean }> = {};
+    orders.forEach((order) => {
+      map[order.id] = {
+        whatsapp_message_log_id: order.whatsapp_message_log_id,
+        whatsapp_delivered: order.whatsapp_delivered,
+        whatsapp_read: order.whatsapp_read,
+        whatsapp_failed: order.whatsapp_failed,
+      };
+    });
+    return map;
+  }, [orders]);
 
   // Filtered reports
   const filteredReports = useMemo(() => {
@@ -171,25 +185,57 @@ export const LabReports: React.FC = () => {
       header: 'WhatsApp',
       key: 'send_whatsapp',
       accessor: () => '',
-      cell: (row) => (
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 text-[11px]"
-          disabled={sendingReportId === row.id || !row.patient_mobile || (!row.attachment && !row.attachment_url)}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleSendWhatsApp(row);
-          }}
-        >
-          {sendingReportId === row.id ? (
-            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-          ) : (
-            <Send className="h-3 w-3 mr-1" />
-          )}
-          Send Report
-        </Button>
-      ),
+      cell: (row) => {
+        const waStatus = orderWhatsappMap[row.diagnostic_order];
+        const wasSent = !!waStatus?.whatsapp_message_log_id;
+
+        if (wasSent) {
+          return (
+            <div className="flex items-center gap-1.5">
+              {waStatus.whatsapp_failed ? (
+                <Badge variant="destructive" className="text-[11px] h-5 px-1.5">
+                  Failed
+                </Badge>
+              ) : waStatus.whatsapp_read ? (
+                <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-[11px] h-5 px-1.5">
+                  <CheckCheck className="h-3 w-3 mr-1" />
+                  Read
+                </Badge>
+              ) : waStatus.whatsapp_delivered ? (
+                <Badge className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-[11px] h-5 px-1.5">
+                  <Check className="h-3 w-3 mr-1" />
+                  Sent
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="text-[11px] h-5 px-1.5">
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  Sending
+                </Badge>
+              )}
+            </div>
+          );
+        }
+
+        return (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-[11px]"
+            disabled={sendingReportId === row.id || !row.patient_mobile || (!row.attachment && !row.attachment_url)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSendWhatsApp(row);
+            }}
+          >
+            {sendingReportId === row.id ? (
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+            ) : (
+              <Send className="h-3 w-3 mr-1" />
+            )}
+            Send Report
+          </Button>
+        );
+      },
     },
   ];
 
@@ -311,21 +357,23 @@ export const LabReports: React.FC = () => {
     const checkStatus = async (attemptIndex: number) => {
       try {
         const messageData = await externalWhatsappService.getMessage(logUid);
-        const status = messageData?.status || messageData?.data?.status;
+        const status = messageData?.status;
 
-        if (status === 'delivered' || status === 'read' || status === 'failed') {
+        // sent, delivered, read, failed are all terminal states
+        if (status === 'sent' || status === 'delivered' || status === 'read' || status === 'failed') {
           await updateDiagnosticOrder(orderId, {
-            whatsapp_delivered: status === 'delivered' || status === 'read',
+            whatsapp_delivered: status === 'sent' || status === 'delivered' || status === 'read',
             whatsapp_read: status === 'read',
             whatsapp_failed: status === 'failed',
           } as any);
 
+          // Refresh orders data so UI updates
+          mutateOrders();
+
           if (status === 'failed') {
             toast.error(`WhatsApp message delivery failed for Order #${orderId}`);
-          } else if (status === 'read') {
-            toast.success(`WhatsApp report read by patient (Order #${orderId})`);
           } else {
-            toast.success(`WhatsApp report delivered (Order #${orderId})`);
+            toast.success(`WhatsApp report sent successfully (Order #${orderId})`);
           }
           return; // Stop polling
         }
@@ -337,7 +385,6 @@ export const LabReports: React.FC = () => {
         }
       } catch (error) {
         console.error('Failed to poll WhatsApp delivery status:', error);
-        // Schedule next poll on error too
         if (attemptIndex + 1 < pollDelays.length) {
           const timer = setTimeout(() => checkStatus(attemptIndex + 1), pollDelays[attemptIndex + 1]);
           pollTimersRef.current.push(timer);
@@ -398,6 +445,9 @@ export const LabReports: React.FC = () => {
           whatsapp_read: false,
           whatsapp_failed: false,
         } as any);
+
+        // Refresh orders so UI shows "Sending" status
+        mutateOrders();
 
         // Start polling for delivery status
         pollDeliveryStatus(logUid, report.diagnostic_order);
