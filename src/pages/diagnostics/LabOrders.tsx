@@ -15,10 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Microscope, Clock, CheckCircle2, XCircle, Activity, FileText, Plus } from 'lucide-react';
+import { Search, Microscope, Clock, CheckCircle2, XCircle, Activity, FileText, Eye, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import type { DiagnosticOrder, Requisition, CreateLabReportPayload } from '@/types/diagnostics.types';
+import type { DiagnosticOrder, Requisition, CreateLabReportPayload, LabReport } from '@/types/diagnostics.types';
 
 type DiagnosticOrderStatus = 'pending' | 'sample_collected' | 'processing' | 'completed' | 'cancelled';
 
@@ -50,6 +50,7 @@ export const LabOrders: React.FC = () => {
     useRequisitions,
     createLabReport,
     useDiagnosticOrders,
+    useLabReports,
   } = useDiagnostics();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,8 +58,10 @@ export const LabOrders: React.FC = () => {
 
   // Lab report drawer state
   const [reportDrawerOpen, setReportDrawerOpen] = useState(false);
+  const [drawerMode, setDrawerMode] = useState<'create' | 'view'>('create');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [selectedReport, setSelectedReport] = useState<LabReport | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [formData, setFormData] = useState<Partial<CreateLabReportPayload>>({ result_data: {} });
   const [resultKey, setResultKey] = useState('');
@@ -67,8 +70,19 @@ export const LabOrders: React.FC = () => {
   // Fetch requisitions filtered by type=investigation
   const { data, isLoading } = useRequisitions({ requisition_type: 'investigation' });
   const { data: ordersData } = useDiagnosticOrders();
+  const { data: labReportsData } = useLabReports();
   const requisitions: Requisition[] = data?.results || [];
   const orders = ordersData?.results || [];
+  const labReports: LabReport[] = labReportsData?.results || [];
+
+  // Map diagnostic_order ID to lab report
+  const reportByOrderId = useMemo(() => {
+    const map = new Map<number, LabReport>();
+    labReports.forEach((report) => {
+      map.set(report.diagnostic_order, report);
+    });
+    return map;
+  }, [labReports]);
 
   // Flatten investigation_orders from all requisitions
   const flattenedOrders: FlattenedLabOrder[] = useMemo(() => {
@@ -169,30 +183,64 @@ export const LabOrders: React.FC = () => {
       header: '',
       key: 'actions',
       accessor: (row) => row.id,
-      cell: (row) => (
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 text-[12px]"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleOpenCreateReport(row.id);
-          }}
-        >
-          <FileText className="h-3 w-3 mr-1" />
-          Create Report
-        </Button>
-      ),
+      cell: (row) => {
+        const report = reportByOrderId.get(row.id);
+        if (row.status === 'completed' && report) {
+          return (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-[12px]"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleViewReport(report);
+              }}
+            >
+              <Eye className="h-3 w-3 mr-1" />
+              View Report
+            </Button>
+          );
+        }
+        return (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-[12px]"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleOpenCreateReport(row.id);
+            }}
+          >
+            <FileText className="h-3 w-3 mr-1" />
+            Create Report
+          </Button>
+        );
+      },
     },
   ];
 
-  // Create Lab Report handlers
+  // Lab Report handlers
   const handleOpenCreateReport = (orderId: number) => {
     setSelectedOrderId(orderId);
+    setSelectedReport(null);
+    setDrawerMode('create');
     setFormData({ diagnostic_order: orderId, result_data: {} });
     setSelectedFile(null);
     setResultKey('');
     setResultValue('');
+    setReportDrawerOpen(true);
+  };
+
+  const handleViewReport = (report: LabReport) => {
+    setSelectedReport(report);
+    setSelectedOrderId(report.diagnostic_order);
+    setDrawerMode('view');
+    setFormData({
+      diagnostic_order: report.diagnostic_order,
+      result_data: report.result_data,
+      technician_id: report.technician_id || undefined,
+      verified_by: report.verified_by || undefined,
+    });
     setReportDrawerOpen(true);
   };
 
@@ -249,22 +297,25 @@ export const LabOrders: React.FC = () => {
     setFormData({ result_data: {} });
     setSelectedFile(null);
     setSelectedOrderId(null);
+    setSelectedReport(null);
   };
 
-  const reportDrawerButtons: DrawerActionButton[] = [
-    {
-      label: 'Cancel',
-      onClick: handleReportDrawerClose,
-      variant: 'outline',
-    },
-    {
-      label: 'Create Report',
-      onClick: handleSubmitReport,
-      variant: 'default',
-      loading: isSubmitting,
-      disabled: isSubmitting,
-    },
-  ];
+  const reportDrawerButtons: DrawerActionButton[] = drawerMode === 'view'
+    ? []
+    : [
+        {
+          label: 'Cancel',
+          onClick: handleReportDrawerClose,
+          variant: 'outline',
+        },
+        {
+          label: 'Create Report',
+          onClick: handleSubmitReport,
+          variant: 'default',
+          loading: isSubmitting,
+          disabled: isSubmitting,
+        },
+      ];
 
   // Stats
   const stats = useMemo(() => {
@@ -362,18 +413,33 @@ export const LabOrders: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground font-mono">{row.requisition_number}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-[12px]"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenCreateReport(row.id);
-                    }}
-                  >
-                    <FileText className="h-3 w-3 mr-1" />
-                    Create Report
-                  </Button>
+                  {row.status === 'completed' && reportByOrderId.get(row.id) ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-[12px]"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewReport(reportByOrderId.get(row.id)!);
+                      }}
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      View Report
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-[12px]"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenCreateReport(row.id);
+                      }}
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      Create Report
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
@@ -381,57 +447,66 @@ export const LabOrders: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Create Lab Report Drawer */}
+      {/* Lab Report Drawer */}
       <SideDrawer
         open={reportDrawerOpen}
         onOpenChange={setReportDrawerOpen}
         onClose={handleReportDrawerClose}
-        title="Create Lab Report"
-        mode="create"
+        title={drawerMode === 'view' ? 'Lab Report Details' : 'Create Lab Report'}
+        mode={drawerMode === 'view' ? 'view' : 'create'}
         footerButtons={reportDrawerButtons}
         size="lg"
       >
         <div className="space-y-6">
-          {/* Diagnostic Order - preselected */}
+          {/* Diagnostic Order */}
           <div className="space-y-2">
             <Label htmlFor="diagnostic_order">
-              Diagnostic Order <span className="text-destructive">*</span>
+              Diagnostic Order {drawerMode === 'create' && <span className="text-destructive">*</span>}
             </Label>
-            <select
-              id="diagnostic_order"
-              className="w-full h-10 px-3 py-2 text-sm border border-input bg-background rounded-md"
-              value={formData.diagnostic_order || ''}
-              onChange={(e) =>
-                setFormData({ ...formData, diagnostic_order: parseInt(e.target.value) })
-              }
-            >
-              <option value="">Select order</option>
-              {orders.map((order) => (
-                <option key={order.id} value={order.id}>
-                  Order #{order.id} - {order.investigation_name}
-                </option>
-              ))}
-            </select>
+            {drawerMode === 'create' ? (
+              <select
+                id="diagnostic_order"
+                className="w-full h-10 px-3 py-2 text-sm border border-input bg-background rounded-md"
+                value={formData.diagnostic_order || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, diagnostic_order: parseInt(e.target.value) })
+                }
+              >
+                <option value="">Select order</option>
+                {orders.map((order) => (
+                  <option key={order.id} value={order.id}>
+                    Order #{order.id} - {order.investigation_name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                value={`Order #${formData.diagnostic_order}`}
+                disabled
+              />
+            )}
           </div>
 
           {/* Result Data */}
           <div className="space-y-2">
             <Label>Test Results</Label>
-            <div className="flex gap-2 mb-2">
-              <Input
-                placeholder="Parameter name"
-                value={resultKey}
-                onChange={(e) => setResultKey(e.target.value)}
-              />
-              <Input
-                placeholder="Value"
-                value={resultValue}
-                onChange={(e) => setResultValue(e.target.value)}
-              />
-              <Button onClick={handleAddResultField} variant="outline" size="sm">
-                Add
-              </Button>
-            </div>
+            {drawerMode === 'create' && (
+              <div className="flex gap-2 mb-2">
+                <Input
+                  placeholder="Parameter name"
+                  value={resultKey}
+                  onChange={(e) => setResultKey(e.target.value)}
+                />
+                <Input
+                  placeholder="Value"
+                  value={resultValue}
+                  onChange={(e) => setResultValue(e.target.value)}
+                />
+                <Button onClick={handleAddResultField} variant="outline" size="sm">
+                  Add
+                </Button>
+              </div>
+            )}
             <Card className="p-4">
               {Object.entries(formData.result_data || {}).length > 0 ? (
                 <div className="space-y-2">
@@ -440,13 +515,15 @@ export const LabOrders: React.FC = () => {
                       <span className="font-medium">{key}:</span>
                       <div className="flex items-center gap-2">
                         <span>{String(value)}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveResultField(key)}
-                        >
-                          ×
-                        </Button>
+                        {drawerMode === 'create' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveResultField(key)}
+                          >
+                            ×
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -462,16 +539,30 @@ export const LabOrders: React.FC = () => {
           {/* Attachment */}
           <div className="space-y-2">
             <Label htmlFor="attachment">Attachment</Label>
-            <Input
-              id="attachment"
-              type="file"
-              onChange={handleFileChange}
-              accept=".pdf,.jpg,.jpeg,.png"
-            />
-            {selectedFile && (
-              <div className="text-sm text-muted-foreground">
-                Selected: {selectedFile.name}
-              </div>
+            {drawerMode === 'create' ? (
+              <>
+                <Input
+                  id="attachment"
+                  type="file"
+                  onChange={handleFileChange}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                />
+                {selectedFile && (
+                  <div className="text-sm text-muted-foreground">
+                    Selected: {selectedFile.name}
+                  </div>
+                )}
+              </>
+            ) : selectedReport?.attachment ? (
+              <Button
+                variant="outline"
+                onClick={() => window.open(selectedReport.attachment!, '_blank')}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download Attachment
+              </Button>
+            ) : (
+              <div className="text-sm text-muted-foreground">No attachment</div>
             )}
           </div>
 
@@ -483,6 +574,7 @@ export const LabOrders: React.FC = () => {
               placeholder="Enter technician UUID"
               value={formData.technician_id || ''}
               onChange={(e) => setFormData({ ...formData, technician_id: e.target.value })}
+              disabled={drawerMode === 'view'}
             />
           </div>
 
@@ -494,8 +586,31 @@ export const LabOrders: React.FC = () => {
               placeholder="Enter verifier UUID"
               value={formData.verified_by || ''}
               onChange={(e) => setFormData({ ...formData, verified_by: e.target.value })}
+              disabled={drawerMode === 'view'}
             />
           </div>
+
+          {/* Verified At - view only */}
+          {drawerMode === 'view' && selectedReport?.verified_at && (
+            <div className="space-y-2">
+              <Label>Verified At</Label>
+              <Input
+                value={format(new Date(selectedReport.verified_at), 'MMM dd, yyyy HH:mm')}
+                disabled
+              />
+            </div>
+          )}
+
+          {/* Created At - view only */}
+          {drawerMode === 'view' && selectedReport?.created_at && (
+            <div className="space-y-2">
+              <Label>Created At</Label>
+              <Input
+                value={format(new Date(selectedReport.created_at), 'MMM dd, yyyy HH:mm')}
+                disabled
+              />
+            </div>
+          )}
         </div>
       </SideDrawer>
     </div>
