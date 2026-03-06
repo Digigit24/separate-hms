@@ -37,7 +37,7 @@ export const PharmacyOrders: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Fetch requisitions filtered by type=medicine
-  const { data, isLoading } = useRequisitions({ requisition_type: 'medicine' });
+  const { data, isLoading } = useRequisitions({ requisition_type: 'medicines' });
   const requisitions: Requisition[] = data?.results || [];
 
   // Flatten medicine_orders from all requisitions
