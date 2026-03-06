@@ -426,11 +426,16 @@ export const LabReports: React.FC = () => {
       }
 
       const documentUrl = report.attachment_url || report.attachment || '';
+      const nameParts = (report.patient_name || 'Patient').trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
 
       const sendResponse = await externalWhatsappService.sendTemplateMessage({
         phone_number: report.patient_mobile,
         template_name: templateName,
         template_language: 'en',
+        first_name: firstName,
+        last_name: lastName,
         header_document: documentUrl,
         header_document_name: `Report_${report.id}.pdf`,
         field_1: report.patient_name || 'Patient',

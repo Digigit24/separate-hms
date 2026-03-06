@@ -220,6 +220,9 @@ export interface SendTemplateMessagePayload {
   phone_number: string;
   template_name: string;
   template_language: string;
+  first_name?: string;
+  last_name?: string;
+  language_code?: string;
   header_image?: string;
   header_video?: string;
   header_document?: string;
