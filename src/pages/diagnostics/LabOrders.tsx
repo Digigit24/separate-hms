@@ -15,7 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Microscope, Clock, CheckCircle2, XCircle, Activity, FileText, Eye, Download } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Microscope, Clock, CheckCircle2, XCircle, Activity, FileText, Eye, Download, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { DiagnosticOrder, Requisition, CreateLabReportPayload, LabReport } from '@/types/diagnostics.types';
@@ -39,13 +40,13 @@ const STATUS_COLORS: Record<DiagnosticOrderStatus, string> = {
 };
 
 interface FlattenedLabOrder extends DiagnosticOrder {
-  patient_name: string;
   requisition_number: string;
   order_date: string;
   priority: string;
 }
 
 export const LabOrders: React.FC = () => {
+  const navigate = useNavigate();
   const {
     useRequisitions,
     createLabReport,
@@ -89,7 +90,6 @@ export const LabOrders: React.FC = () => {
     return requisitions.flatMap((req) =>
       (req.investigation_orders || []).map((order) => ({
         ...order,
-        patient_name: req.patient_name,
         requisition_number: req.requisition_number,
         order_date: req.order_date,
         priority: req.priority,
@@ -103,6 +103,7 @@ export const LabOrders: React.FC = () => {
       const matchesSearch =
         order.investigation_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.patient_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.patient_mobile?.includes(searchTerm) ||
         order.requisition_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.sample_id?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
@@ -136,7 +137,25 @@ export const LabOrders: React.FC = () => {
       header: 'Patient',
       key: 'patient_name',
       accessor: (row) => row.patient_name,
-      cell: (row) => <span className="text-sm">{row.patient_name}</span>,
+      cell: (row) => (
+        <div className="flex flex-col gap-0.5">
+          <span
+            className="text-sm font-medium cursor-pointer hover:underline text-foreground"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/patients/${row.patient}`);
+            }}
+          >
+            {row.patient_name}
+          </span>
+          {row.patient_mobile && (
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Phone className="h-3 w-3" />
+              {row.patient_mobile}
+            </span>
+          )}
+        </div>
+      ),
       sortable: true,
       filterable: true,
     },
@@ -399,7 +418,18 @@ export const LabOrders: React.FC = () => {
                       <Microscope className="h-3.5 w-3.5 text-muted-foreground" />
                       {row.investigation_name}
                     </div>
-                    <div className="text-sm text-muted-foreground mt-0.5">{row.patient_name}</div>
+                    <span
+                      className="text-sm text-muted-foreground mt-0.5 hover:underline cursor-pointer"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/patients/${row.patient}`); }}
+                    >
+                      {row.patient_name}
+                    </span>
+                    {row.patient_mobile && (
+                      <span className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <Phone className="h-3 w-3" />
+                        {row.patient_mobile}
+                      </span>
+                    )}
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <Badge className={STATUS_COLORS[row.status]}>

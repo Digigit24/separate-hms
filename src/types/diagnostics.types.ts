@@ -89,9 +89,15 @@ export interface DiagnosticOrder {
   requisition: number;
   investigation: number;
   investigation_name: string;
+  patient: number;
+  patient_name: string;
+  patient_mobile: string | null;
+  patient_email: string | null;
   status: DiagnosticOrderStatus;
   sample_id: string;
   price: string;
+  bill_item_object_id: number | null;
+  bill_item_content_type: number | null;
   created_at: string;
   updated_at: string;
 }
