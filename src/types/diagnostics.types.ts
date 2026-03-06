@@ -98,6 +98,10 @@ export interface DiagnosticOrder {
   price: string;
   bill_item_object_id: number | null;
   bill_item_content_type: number | null;
+  whatsapp_message_log_id: string | null;
+  whatsapp_read: boolean;
+  whatsapp_failed: boolean;
+  whatsapp_delivered: boolean;
   created_at: string;
   updated_at: string;
 }

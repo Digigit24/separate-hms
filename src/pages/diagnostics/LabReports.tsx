@@ -1,5 +1,5 @@
 // src/pages/diagnostics/LabReports.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useDiagnostics } from '@/hooks/useDiagnostics';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
 import { SideDrawer, DrawerActionButton } from '@/components/SideDrawer';
@@ -26,6 +26,7 @@ export const LabReports: React.FC = () => {
     updateLabReport,
     deleteLabReport,
     useDiagnosticOrders,
+    updateDiagnosticOrder,
   } = useDiagnostics();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -35,6 +36,14 @@ export const LabReports: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [sendingReportId, setSendingReportId] = useState<number | null>(null);
+  const pollTimersRef = useRef<NodeJS.Timeout[]>([]);
+
+  // Cleanup polling timers on unmount
+  useEffect(() => {
+    return () => {
+      pollTimersRef.current.forEach(clearTimeout);
+    };
+  }, []);
 
   // Form state
   const [formData, setFormData] = useState<Partial<CreateLabReportPayload>>({
@@ -295,6 +304,52 @@ export const LabReports: React.FC = () => {
     setFormData({ ...formData, result_data: newResultData });
   };
 
+  // Poll WhatsApp delivery status using log_uid
+  const pollDeliveryStatus = (logUid: string, orderId: number) => {
+    const pollDelays = [30000, 120000, 300000]; // 30s, 2min, 5min
+
+    const checkStatus = async (attemptIndex: number) => {
+      try {
+        const messageData = await externalWhatsappService.getMessage(logUid);
+        const status = messageData?.status || messageData?.data?.status;
+
+        if (status === 'delivered' || status === 'read' || status === 'failed') {
+          await updateDiagnosticOrder(orderId, {
+            whatsapp_delivered: status === 'delivered' || status === 'read',
+            whatsapp_read: status === 'read',
+            whatsapp_failed: status === 'failed',
+          } as any);
+
+          if (status === 'failed') {
+            toast.error(`WhatsApp message delivery failed for Order #${orderId}`);
+          } else if (status === 'read') {
+            toast.success(`WhatsApp report read by patient (Order #${orderId})`);
+          } else {
+            toast.success(`WhatsApp report delivered (Order #${orderId})`);
+          }
+          return; // Stop polling
+        }
+
+        // Schedule next poll if we haven't exhausted attempts
+        if (attemptIndex + 1 < pollDelays.length) {
+          const timer = setTimeout(() => checkStatus(attemptIndex + 1), pollDelays[attemptIndex + 1]);
+          pollTimersRef.current.push(timer);
+        }
+      } catch (error) {
+        console.error('Failed to poll WhatsApp delivery status:', error);
+        // Schedule next poll on error too
+        if (attemptIndex + 1 < pollDelays.length) {
+          const timer = setTimeout(() => checkStatus(attemptIndex + 1), pollDelays[attemptIndex + 1]);
+          pollTimersRef.current.push(timer);
+        }
+      }
+    };
+
+    // Start first poll after 30s
+    const timer = setTimeout(() => checkStatus(0), pollDelays[0]);
+    pollTimersRef.current.push(timer);
+  };
+
   // Send report on WhatsApp
   const handleSendWhatsApp = async (report: LabReport) => {
     if (!report.patient_mobile) {
@@ -314,7 +369,6 @@ export const LabReports: React.FC = () => {
 
       let templateName = 'sendreport'; // fallback default
       if (reportTemplateId) {
-        // Fetch templates to find the name by ID
         const response = await templatesService.getTemplates({ limit: 100 });
         const template = response.items?.find(
           (t) => String(t.id) === String(reportTemplateId)
@@ -326,7 +380,7 @@ export const LabReports: React.FC = () => {
 
       const documentUrl = report.attachment_url || report.attachment || '';
 
-      await externalWhatsappService.sendTemplateMessage({
+      const sendResponse = await externalWhatsappService.sendTemplateMessage({
         phone_number: report.patient_mobile,
         template_name: templateName,
         template_language: 'en',
@@ -334,6 +388,20 @@ export const LabReports: React.FC = () => {
         header_document_name: `Report_${report.id}.pdf`,
         field_1: report.patient_name || 'Patient',
       });
+
+      // Save log_uid to the diagnostic order
+      const logUid = sendResponse?.log_uid;
+      if (logUid) {
+        await updateDiagnosticOrder(report.diagnostic_order, {
+          whatsapp_message_log_id: logUid,
+          whatsapp_delivered: false,
+          whatsapp_read: false,
+          whatsapp_failed: false,
+        } as any);
+
+        // Start polling for delivery status
+        pollDeliveryStatus(logUid, report.diagnostic_order);
+      }
 
       toast.success('Report sent on WhatsApp successfully');
     } catch (error: any) {
