@@ -56,6 +56,8 @@ import Diagnostics from "./pages/Diagnostics";
 import { Requisitions } from "./pages/diagnostics/Requisitions";
 import { Investigations } from "./pages/diagnostics/Investigations";
 import { LabReports } from "./pages/diagnostics/LabReports";
+import { LabOrders } from "./pages/diagnostics/LabOrders";
+import { PharmacyOrders } from "./pages/pharmacy/PharmacyOrders";
 
 import { WebSocketProvider } from "./context/WebSocketProvider";
 
@@ -124,6 +126,7 @@ const AppLayout = () => {
               {/* Diagnostics Routes */}
               <Route path="/diagnostics" element={<ModuleProtectedRoute requiredModule="diagnostics"><Diagnostics /></ModuleProtectedRoute>} />
               <Route path="/diagnostics/requisitions" element={<ModuleProtectedRoute requiredModule="diagnostics"><Requisitions /></ModuleProtectedRoute>} />
+              <Route path="/diagnostics/lab-orders" element={<ModuleProtectedRoute requiredModule="diagnostics"><LabOrders /></ModuleProtectedRoute>} />
               <Route path="/diagnostics/investigations" element={<ModuleProtectedRoute requiredModule="diagnostics"><Investigations /></ModuleProtectedRoute>} />
               <Route path="/diagnostics/lab-reports" element={<ModuleProtectedRoute requiredModule="diagnostics"><LabReports /></ModuleProtectedRoute>} />
 
@@ -134,6 +137,7 @@ const AppLayout = () => {
 
               {/* Pharmacy Routes */}
               <Route path="/pharmacy/products" element={<ModuleProtectedRoute requiredModule="pharmacy"><ProductsPage /></ModuleProtectedRoute>} />
+              <Route path="/pharmacy/orders" element={<ModuleProtectedRoute requiredModule="pharmacy"><PharmacyOrders /></ModuleProtectedRoute>} />
               <Route path="/pharmacy/pos" element={<ModuleProtectedRoute requiredModule="pharmacy"><POSPage /></ModuleProtectedRoute>} />
               <Route path="/pharmacy/statistics" element={<ModuleProtectedRoute requiredModule="pharmacy"><PharmacyStatisticsPage /></ModuleProtectedRoute>} />
               <Route path="/cart" element={<ModuleProtectedRoute requiredModule="pharmacy"><CartListPage /></ModuleProtectedRoute>} />
