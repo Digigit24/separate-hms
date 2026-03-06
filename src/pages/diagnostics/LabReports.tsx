@@ -9,12 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Search, FileText, CheckCircle2, Download, Upload, Clock } from 'lucide-react';
+import { Plus, Search, FileText, CheckCircle2, Download, Upload, Clock, Phone } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { LabReport, CreateLabReportPayload } from '@/types/diagnostics.types';
 
 export const LabReports: React.FC = () => {
+  const navigate = useNavigate();
   const {
     useLabReports,
     createLabReport,
@@ -45,7 +47,12 @@ export const LabReports: React.FC = () => {
   // Filtered reports
   const filteredReports = useMemo(() => {
     return reports.filter((report) => {
-      const matchesSearch = report.id.toString().includes(searchTerm);
+      const term = searchTerm.toLowerCase();
+      const matchesSearch =
+        report.id.toString().includes(searchTerm) ||
+        report.patient_name?.toLowerCase().includes(term) ||
+        report.patient_mobile?.includes(searchTerm) ||
+        report.investigation_name?.toLowerCase().includes(term);
       return matchesSearch;
     });
   }, [reports, searchTerm]);
@@ -57,6 +64,40 @@ export const LabReports: React.FC = () => {
       key: 'id',
       accessor: (row) => row.id,
       cell: (row) => <span className="font-mono font-semibold text-sm">#{row.id}</span>,
+      sortable: true,
+    },
+    {
+      header: 'Patient',
+      key: 'patient_name',
+      accessor: (row) => row.patient_name,
+      cell: (row) => (
+        <div className="flex flex-col gap-0.5">
+          <span
+            className="text-sm font-medium cursor-pointer hover:underline text-foreground"
+            onClick={(e) => {
+              e.stopPropagation();
+              // Navigate using diagnostic_order as a fallback; patient ID not in response
+              navigate(`/patients`);
+            }}
+          >
+            {row.patient_name}
+          </span>
+          {row.patient_mobile && (
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Phone className="h-3 w-3" />
+              {row.patient_mobile}
+            </span>
+          )}
+        </div>
+      ),
+      sortable: true,
+      filterable: true,
+    },
+    {
+      header: 'Investigation',
+      key: 'investigation_name',
+      accessor: (row) => row.investigation_name,
+      cell: (row) => <span className="text-sm">{row.investigation_name}</span>,
       sortable: true,
     },
     {
@@ -321,8 +362,20 @@ export const LabReports: React.FC = () => {
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="font-mono font-semibold text-sm text-primary">Report #{row.id}</div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      Order #{row.diagnostic_order}
+                    <span
+                      className="text-sm font-medium mt-1 hover:underline cursor-pointer block"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/patients`); }}
+                    >
+                      {row.patient_name}
+                    </span>
+                    {row.patient_mobile && (
+                      <span className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <Phone className="h-3 w-3" />
+                        {row.patient_mobile}
+                      </span>
+                    )}
+                    <div className="text-sm text-muted-foreground mt-0.5">
+                      {row.investigation_name} &middot; Order #{row.diagnostic_order}
                     </div>
                   </div>
                   {row.verified_by ? (

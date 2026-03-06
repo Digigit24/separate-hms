@@ -171,6 +171,11 @@ export interface LabReport {
   id: number;
   tenant_id: string;
   diagnostic_order: number;
+  patient_name: string;
+  patient_mobile: string | null;
+  investigation_id: number;
+  investigation_name: string;
+  attachment_url: string | null;
   result_data: Record<string, any>;
   attachment: string | null;
   technician_id: string | null;
