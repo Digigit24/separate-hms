@@ -9,11 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Search, FileText, CheckCircle2, Download, Upload, Clock, Phone } from 'lucide-react';
+import { Plus, Search, FileText, CheckCircle2, Download, Upload, Clock, Phone, Send, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { LabReport, CreateLabReportPayload } from '@/types/diagnostics.types';
+import { externalWhatsappService } from '@/services/externalWhatsappService';
+import { templatesService } from '@/services/whatsapp/templatesService';
+import { authService } from '@/services/authService';
 
 export const LabReports: React.FC = () => {
   const navigate = useNavigate();
@@ -31,6 +34,7 @@ export const LabReports: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [sendingReportId, setSendingReportId] = useState<number | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<Partial<CreateLabReportPayload>>({
@@ -154,6 +158,30 @@ export const LabReports: React.FC = () => {
         return <span className="text-muted-foreground text-sm">No attachment</span>;
       },
     },
+    {
+      header: 'WhatsApp',
+      key: 'send_whatsapp',
+      accessor: () => '',
+      cell: (row) => (
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-[11px]"
+          disabled={sendingReportId === row.id || !row.patient_mobile || (!row.attachment && !row.attachment_url)}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSendWhatsApp(row);
+          }}
+        >
+          {sendingReportId === row.id ? (
+            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+          ) : (
+            <Send className="h-3 w-3 mr-1" />
+          )}
+          Send Report
+        </Button>
+      ),
+    },
   ];
 
   // Handlers
@@ -265,6 +293,54 @@ export const LabReports: React.FC = () => {
     const newResultData = { ...formData.result_data };
     delete newResultData[key];
     setFormData({ ...formData, result_data: newResultData });
+  };
+
+  // Send report on WhatsApp
+  const handleSendWhatsApp = async (report: LabReport) => {
+    if (!report.patient_mobile) {
+      toast.error('Patient mobile number is not available');
+      return;
+    }
+    if (!report.attachment && !report.attachment_url) {
+      toast.error('No report attachment available to send');
+      return;
+    }
+
+    setSendingReportId(report.id);
+    try {
+      // Get template name from user preferences
+      const preferences = authService.getUserPreferences();
+      const reportTemplateId = preferences?.whatsappDefaults?.reports;
+
+      let templateName = 'sendreport'; // fallback default
+      if (reportTemplateId) {
+        // Fetch templates to find the name by ID
+        const response = await templatesService.getTemplates({ limit: 100 });
+        const template = response.items?.find(
+          (t) => String(t.id) === String(reportTemplateId)
+        );
+        if (template?.name) {
+          templateName = template.name;
+        }
+      }
+
+      const documentUrl = report.attachment_url || report.attachment || '';
+
+      await externalWhatsappService.sendTemplateMessage({
+        phone_number: report.patient_mobile,
+        template_name: templateName,
+        template_language: 'en',
+        header_document: documentUrl,
+        header_document_name: `Report_${report.id}.pdf`,
+        field_1: report.patient_name || 'Patient',
+      });
+
+      toast.success('Report sent on WhatsApp successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send report on WhatsApp');
+    } finally {
+      setSendingReportId(null);
+    }
   };
 
   // Drawer action buttons
