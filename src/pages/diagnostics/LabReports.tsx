@@ -1,5 +1,5 @@
 // src/pages/diagnostics/LabReports.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useDiagnostics } from '@/hooks/useDiagnostics';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
 import { SideDrawer, DrawerActionButton } from '@/components/SideDrawer';
@@ -9,18 +9,24 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Search, FileText, CheckCircle2, Download, Upload, Clock } from 'lucide-react';
+import { Plus, Search, FileText, CheckCircle2, Download, Upload, Clock, Phone, Send, Loader2, Check, CheckCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { LabReport, CreateLabReportPayload } from '@/types/diagnostics.types';
+import { externalWhatsappService } from '@/services/externalWhatsappService';
+import { templatesService } from '@/services/whatsapp/templatesService';
+import { authService } from '@/services/authService';
 
 export const LabReports: React.FC = () => {
+  const navigate = useNavigate();
   const {
     useLabReports,
     createLabReport,
     updateLabReport,
     deleteLabReport,
     useDiagnosticOrders,
+    updateDiagnosticOrder,
   } = useDiagnostics();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -29,6 +35,15 @@ export const LabReports: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [sendingReportId, setSendingReportId] = useState<number | null>(null);
+  const pollTimersRef = useRef<NodeJS.Timeout[]>([]);
+
+  // Cleanup polling timers on unmount
+  useEffect(() => {
+    return () => {
+      pollTimersRef.current.forEach(clearTimeout);
+    };
+  }, []);
 
   // Form state
   const [formData, setFormData] = useState<Partial<CreateLabReportPayload>>({
@@ -37,15 +52,34 @@ export const LabReports: React.FC = () => {
 
   // Fetch data
   const { data, isLoading, mutate } = useLabReports();
-  const { data: ordersData } = useDiagnosticOrders();
+  const { data: ordersData, mutate: mutateOrders } = useDiagnosticOrders();
 
   const reports = data?.results || [];
   const orders = ordersData?.results || [];
 
+  // Build lookup map: order ID -> WhatsApp status from orders
+  const orderWhatsappMap = useMemo(() => {
+    const map: Record<number, { whatsapp_message_log_id: string | null; whatsapp_delivered: boolean; whatsapp_read: boolean; whatsapp_failed: boolean }> = {};
+    orders.forEach((order) => {
+      map[order.id] = {
+        whatsapp_message_log_id: order.whatsapp_message_log_id,
+        whatsapp_delivered: order.whatsapp_delivered,
+        whatsapp_read: order.whatsapp_read,
+        whatsapp_failed: order.whatsapp_failed,
+      };
+    });
+    return map;
+  }, [orders]);
+
   // Filtered reports
   const filteredReports = useMemo(() => {
     return reports.filter((report) => {
-      const matchesSearch = report.id.toString().includes(searchTerm);
+      const term = searchTerm.toLowerCase();
+      const matchesSearch =
+        report.id.toString().includes(searchTerm) ||
+        report.patient_name?.toLowerCase().includes(term) ||
+        report.patient_mobile?.includes(searchTerm) ||
+        report.investigation_name?.toLowerCase().includes(term);
       return matchesSearch;
     });
   }, [reports, searchTerm]);
@@ -57,6 +91,40 @@ export const LabReports: React.FC = () => {
       key: 'id',
       accessor: (row) => row.id,
       cell: (row) => <span className="font-mono font-semibold text-sm">#{row.id}</span>,
+      sortable: true,
+    },
+    {
+      header: 'Patient',
+      key: 'patient_name',
+      accessor: (row) => row.patient_name,
+      cell: (row) => (
+        <div className="flex flex-col gap-0.5">
+          <span
+            className="text-sm font-medium cursor-pointer hover:underline text-foreground"
+            onClick={(e) => {
+              e.stopPropagation();
+              // Navigate using diagnostic_order as a fallback; patient ID not in response
+              navigate(`/patients`);
+            }}
+          >
+            {row.patient_name}
+          </span>
+          {row.patient_mobile && (
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Phone className="h-3 w-3" />
+              {row.patient_mobile}
+            </span>
+          )}
+        </div>
+      ),
+      sortable: true,
+      filterable: true,
+    },
+    {
+      header: 'Investigation',
+      key: 'investigation_name',
+      accessor: (row) => row.investigation_name,
+      cell: (row) => <span className="text-sm">{row.investigation_name}</span>,
       sortable: true,
     },
     {
@@ -111,6 +179,62 @@ export const LabReports: React.FC = () => {
           );
         }
         return <span className="text-muted-foreground text-sm">No attachment</span>;
+      },
+    },
+    {
+      header: 'WhatsApp',
+      key: 'send_whatsapp',
+      accessor: () => '',
+      cell: (row) => {
+        const waStatus = orderWhatsappMap[row.diagnostic_order];
+        const wasSent = !!waStatus?.whatsapp_message_log_id;
+
+        if (wasSent) {
+          return (
+            <div className="flex items-center gap-1.5">
+              {waStatus.whatsapp_failed ? (
+                <Badge variant="destructive" className="text-[11px] h-5 px-1.5">
+                  Failed
+                </Badge>
+              ) : waStatus.whatsapp_read ? (
+                <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-[11px] h-5 px-1.5">
+                  <CheckCheck className="h-3 w-3 mr-1" />
+                  Read
+                </Badge>
+              ) : waStatus.whatsapp_delivered ? (
+                <Badge className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-[11px] h-5 px-1.5">
+                  <Check className="h-3 w-3 mr-1" />
+                  Sent
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="text-[11px] h-5 px-1.5">
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  Sending
+                </Badge>
+              )}
+            </div>
+          );
+        }
+
+        return (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-[11px]"
+            disabled={sendingReportId === row.id || !row.patient_mobile || (!row.attachment && !row.attachment_url)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSendWhatsApp(row);
+            }}
+          >
+            {sendingReportId === row.id ? (
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+            ) : (
+              <Send className="h-3 w-3 mr-1" />
+            )}
+            Send Report
+          </Button>
+        );
       },
     },
   ];
@@ -226,6 +350,122 @@ export const LabReports: React.FC = () => {
     setFormData({ ...formData, result_data: newResultData });
   };
 
+  // Poll WhatsApp delivery status using log_uid
+  const pollDeliveryStatus = (logUid: string, orderId: number) => {
+    const pollDelays = [30000, 120000, 300000]; // 30s, 2min, 5min
+
+    const checkStatus = async (attemptIndex: number) => {
+      try {
+        const messageData = await externalWhatsappService.getMessage(logUid);
+        const status = messageData?.status;
+
+        // sent, delivered, read, failed are all terminal states
+        if (status === 'sent' || status === 'delivered' || status === 'read' || status === 'failed') {
+          await updateDiagnosticOrder(orderId, {
+            whatsapp_delivered: status === 'sent' || status === 'delivered' || status === 'read',
+            whatsapp_read: status === 'read',
+            whatsapp_failed: status === 'failed',
+          } as any);
+
+          // Refresh orders data so UI updates
+          mutateOrders();
+
+          if (status === 'failed') {
+            toast.error(`WhatsApp message delivery failed for Order #${orderId}`);
+          } else {
+            toast.success(`WhatsApp report sent successfully (Order #${orderId})`);
+          }
+          return; // Stop polling
+        }
+
+        // Schedule next poll if we haven't exhausted attempts
+        if (attemptIndex + 1 < pollDelays.length) {
+          const timer = setTimeout(() => checkStatus(attemptIndex + 1), pollDelays[attemptIndex + 1]);
+          pollTimersRef.current.push(timer);
+        }
+      } catch (error) {
+        console.error('Failed to poll WhatsApp delivery status:', error);
+        if (attemptIndex + 1 < pollDelays.length) {
+          const timer = setTimeout(() => checkStatus(attemptIndex + 1), pollDelays[attemptIndex + 1]);
+          pollTimersRef.current.push(timer);
+        }
+      }
+    };
+
+    // Start first poll after 30s
+    const timer = setTimeout(() => checkStatus(0), pollDelays[0]);
+    pollTimersRef.current.push(timer);
+  };
+
+  // Send report on WhatsApp
+  const handleSendWhatsApp = async (report: LabReport) => {
+    if (!report.patient_mobile) {
+      toast.error('Patient mobile number is not available');
+      return;
+    }
+    if (!report.attachment && !report.attachment_url) {
+      toast.error('No report attachment available to send');
+      return;
+    }
+
+    setSendingReportId(report.id);
+    try {
+      // Get template name from user preferences
+      const preferences = authService.getUserPreferences();
+      const reportTemplateId = preferences?.whatsappDefaults?.reports;
+
+      let templateName = 'sendreport'; // fallback default
+      if (reportTemplateId) {
+        const response = await templatesService.getTemplates({ limit: 100 });
+        const template = response.items?.find(
+          (t) => String(t.id) === String(reportTemplateId)
+        );
+        if (template?.name) {
+          templateName = template.name;
+        }
+      }
+
+      const documentUrl = report.attachment_url || report.attachment || '';
+      const nameParts = (report.patient_name || 'Patient').trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      const sendResponse = await externalWhatsappService.sendTemplateMessage({
+        phone_number: report.patient_mobile,
+        template_name: templateName,
+        template_language: 'en',
+        first_name: firstName,
+        last_name: lastName,
+        header_document: documentUrl,
+        header_document_name: `Report_${report.id}.pdf`,
+        field_1: report.patient_name || 'Patient',
+      });
+
+      // Save log_uid to the diagnostic order
+      const logUid = sendResponse?.log_uid;
+      if (logUid) {
+        await updateDiagnosticOrder(report.diagnostic_order, {
+          whatsapp_message_log_id: logUid,
+          whatsapp_delivered: false,
+          whatsapp_read: false,
+          whatsapp_failed: false,
+        } as any);
+
+        // Refresh orders so UI shows "Sending" status
+        mutateOrders();
+
+        // Start polling for delivery status
+        pollDeliveryStatus(logUid, report.diagnostic_order);
+      }
+
+      toast.success('Report sent on WhatsApp successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send report on WhatsApp');
+    } finally {
+      setSendingReportId(null);
+    }
+  };
+
   // Drawer action buttons
   const drawerButtons: DrawerActionButton[] = drawerMode === 'view'
     ? [
@@ -321,8 +561,20 @@ export const LabReports: React.FC = () => {
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="font-mono font-semibold text-sm text-primary">Report #{row.id}</div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      Order #{row.diagnostic_order}
+                    <span
+                      className="text-sm font-medium mt-1 hover:underline cursor-pointer block"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/patients`); }}
+                    >
+                      {row.patient_name}
+                    </span>
+                    {row.patient_mobile && (
+                      <span className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <Phone className="h-3 w-3" />
+                        {row.patient_mobile}
+                      </span>
+                    )}
+                    <div className="text-sm text-muted-foreground mt-0.5">
+                      {row.investigation_name} &middot; Order #{row.diagnostic_order}
                     </div>
                   </div>
                   {row.verified_by ? (

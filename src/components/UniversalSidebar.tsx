@@ -76,6 +76,7 @@ const menuItems: MenuItem[] = [
       { id: "hms-specialties", label: "Specialties", icon: Award, path: "/hms/specialties" },
       { id: "hms-patients", label: "Patients", icon: User, path: "/patients" },
       { id: "hms-appointments", label: "Appointments", icon: Calendar, path: "/appointments" },
+      { id: "hms-requisitions", label: "Requisitions", icon: ClipboardList, path: "/diagnostics/requisitions" },
     ],
   },
   {
@@ -112,7 +113,7 @@ const menuItems: MenuItem[] = [
     icon: FlaskConical,
     module: "diagnostics",
     children: [
-      { id: "diagnostics-requisitions", label: "Requisitions", icon: ClipboardList, path: "/diagnostics/requisitions" },
+      { id: "diagnostics-lab-orders", label: "Lab Orders", icon: ClipboardList, path: "/diagnostics/lab-orders" },
       { id: "diagnostics-investigations", label: "Investigations", icon: Microscope, path: "/diagnostics/investigations" },
       { id: "diagnostics-lab-reports", label: "Lab Reports", icon: FileText, path: "/diagnostics/lab-reports" },
     ],
@@ -135,6 +136,7 @@ const menuItems: MenuItem[] = [
     module: "pharmacy",
     children: [
       { id: "pharmacy-products", label: "Products", icon: Package, path: "/pharmacy/products" },
+      { id: "pharmacy-orders", label: "Orders", icon: ClipboardList, path: "/pharmacy/orders" },
       { id: "pharmacy-pos", label: "POS", icon: ShoppingCart, path: "/pharmacy/pos" },
       { id: "pharmacy-statistics", label: "Statistics", icon: BarChart3, path: "/pharmacy/statistics" },
       { id: "pharmacy-cart", label: "Cart", icon: Receipt, path: "/cart" },

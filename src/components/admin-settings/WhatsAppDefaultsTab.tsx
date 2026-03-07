@@ -28,6 +28,7 @@ const TEMPLATE_PURPOSES = [
   { key: 'leadNotification', label: 'Lead Notification', description: 'Default template for new lead notifications' },
   { key: 'appointmentReminder', label: 'Appointment Reminder', description: 'Default template for appointment reminders' },
   { key: 'welcomeMessage', label: 'Welcome Message', description: 'Default template for welcoming new contacts' },
+  { key: 'reports', label: 'Reports', description: 'Default template for sending diagnostic reports' },
 ] as const;
 
 // Field sources for variable mapping

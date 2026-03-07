@@ -89,9 +89,19 @@ export interface DiagnosticOrder {
   requisition: number;
   investigation: number;
   investigation_name: string;
+  patient: number;
+  patient_name: string;
+  patient_mobile: string | null;
+  patient_email: string | null;
   status: DiagnosticOrderStatus;
   sample_id: string;
   price: string;
+  bill_item_object_id: number | null;
+  bill_item_content_type: number | null;
+  whatsapp_message_log_id: string | null;
+  whatsapp_read: boolean;
+  whatsapp_failed: boolean;
+  whatsapp_delivered: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -165,6 +175,11 @@ export interface LabReport {
   id: number;
   tenant_id: string;
   diagnostic_order: number;
+  patient_name: string;
+  patient_mobile: string | null;
+  investigation_id: number;
+  investigation_name: string;
+  attachment_url: string | null;
   result_data: Record<string, any>;
   attachment: string | null;
   technician_id: string | null;

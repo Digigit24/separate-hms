@@ -53,6 +53,7 @@ export interface WhatsAppDefaults {
   leadNotification?: number | string;   // Template ID for lead notifications
   appointmentReminder?: number | string; // Template ID for appointment reminders
   welcomeMessage?: number | string;     // Template ID for welcome messages
+  reports?: number | string;            // Template ID for sending diagnostic reports
   followupVariableMapping?: TemplateVariableMapping[]; // Variable mappings for followup template
 }
 
