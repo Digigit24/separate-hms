@@ -60,53 +60,54 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    icon: Home,
-    path: "/",
-  },
-  {
-    id: "hms",
-    label: "HMS",
-    icon: Stethoscope,
-    module: "hms",
-    children: [
-      { id: "hms-doctors", label: "Doctors", icon: UserCheck, path: "/hms/doctors" },
-      { id: "hms-specialties", label: "Specialties", icon: Award, path: "/hms/specialties" },
-      { id: "hms-patients", label: "Patients", icon: User, path: "/patients" },
-      { id: "hms-appointments", label: "Appointments", icon: Calendar, path: "/appointments" },
-      { id: "hms-requisitions", label: "Requisitions", icon: ClipboardList, path: "/diagnostics/requisitions" },
-    ],
-  },
-  {
-    id: "opd",
-    label: "OPD",
-    icon: ClipboardPlus,
-    module: "opd",
-    children: [
-      { id: "opd-visits", label: "Visits", icon: ClipboardPlus, path: "/opd/visits" },
-      { id: "opd-bills", label: "OPD Bills", icon: FileText, path: "/opd/bills" },
-      { id: "clinical-notes", label: "Follow-ups", icon: Calendar, path: "/opd/clinical-notes" },
-      { id: "visit-findings", label: "Visit Findings", icon: Activity, path: "/opd/findings" },
-      { id: "procedure-masters", label: "Procedures", icon: Microscope, path: "/opd/procedures" },
-      { id: "procedure-packages", label: "Packages", icon: Package, path: "/opd/packages" },
-      { id: "procedure-bills", label: "Procedure Bills", icon: Receipt, path: "/opd/procedure-bills" },
-      { id: "opd-settings", label: "Settings", icon: Settings2, path: "/opd/settings" },
-    ],
-  },
-  {
-    id: "ipd",
-    label: "IPD",
-    icon: Bed,
-    module: "ipd",
-    children: [
-      { id: "ipd-admissions", label: "Admissions", icon: UserRoundCheck, path: "/ipd/admissions" },
-      { id: "ipd-wards", label: "Wards", icon: Building, path: "/ipd/wards" },
-      { id: "ipd-beds", label: "Beds", icon: Bed, path: "/ipd/beds" },
-      { id: "ipd-billing", label: "IPD Billing", icon: Receipt, path: "/ipd/billing" },
-    ],
-  },
+  // TEMPORARILY COMMENTED OUT — only diagnostics routes visible
+  // {
+  //   id: "dashboard",
+  //   label: "Dashboard",
+  //   icon: Home,
+  //   path: "/",
+  // },
+  // {
+  //   id: "hms",
+  //   label: "HMS",
+  //   icon: Stethoscope,
+  //   module: "hms",
+  //   children: [
+  //     { id: "hms-doctors", label: "Doctors", icon: UserCheck, path: "/hms/doctors" },
+  //     { id: "hms-specialties", label: "Specialties", icon: Award, path: "/hms/specialties" },
+  //     { id: "hms-patients", label: "Patients", icon: User, path: "/patients" },
+  //     { id: "hms-appointments", label: "Appointments", icon: Calendar, path: "/appointments" },
+  //     { id: "hms-requisitions", label: "Requisitions", icon: ClipboardList, path: "/diagnostics/requisitions" },
+  //   ],
+  // },
+  // {
+  //   id: "opd",
+  //   label: "OPD",
+  //   icon: ClipboardPlus,
+  //   module: "opd",
+  //   children: [
+  //     { id: "opd-visits", label: "Visits", icon: ClipboardPlus, path: "/opd/visits" },
+  //     { id: "opd-bills", label: "OPD Bills", icon: FileText, path: "/opd/bills" },
+  //     { id: "clinical-notes", label: "Follow-ups", icon: Calendar, path: "/opd/clinical-notes" },
+  //     { id: "visit-findings", label: "Visit Findings", icon: Activity, path: "/opd/findings" },
+  //     { id: "procedure-masters", label: "Procedures", icon: Microscope, path: "/opd/procedures" },
+  //     { id: "procedure-packages", label: "Packages", icon: Package, path: "/opd/packages" },
+  //     { id: "procedure-bills", label: "Procedure Bills", icon: Receipt, path: "/opd/procedure-bills" },
+  //     { id: "opd-settings", label: "Settings", icon: Settings2, path: "/opd/settings" },
+  //   ],
+  // },
+  // {
+  //   id: "ipd",
+  //   label: "IPD",
+  //   icon: Bed,
+  //   module: "ipd",
+  //   children: [
+  //     { id: "ipd-admissions", label: "Admissions", icon: UserRoundCheck, path: "/ipd/admissions" },
+  //     { id: "ipd-wards", label: "Wards", icon: Building, path: "/ipd/wards" },
+  //     { id: "ipd-beds", label: "Beds", icon: Bed, path: "/ipd/beds" },
+  //     { id: "ipd-billing", label: "IPD Billing", icon: Receipt, path: "/ipd/billing" },
+  //   ],
+  // },
   {
     id: "diagnostics",
     label: "Diagnostics",
@@ -118,42 +119,43 @@ const menuItems: MenuItem[] = [
       { id: "diagnostics-lab-reports", label: "Lab Reports", icon: FileText, path: "/diagnostics/lab-reports" },
     ],
   },
-  {
-    id: "payments",
-    label: "Payments",
-    icon: IndianRupee,
-    module: "payments",
-    children: [
-      { id: "payment-transactions", label: "Transactions", icon: CreditCard, path: "/payments/transactions" },
-      { id: "payment-categories", label: "Categories", icon: Package, path: "/payments/categories" },
-      { id: "accounting-periods", label: "Accounting Periods", icon: TrendingUp, path: "/payments/periods" },
-    ],
-  },
-  {
-    id: "pharmacy",
-    label: "Pharmacy",
-    icon: Pill,
-    module: "pharmacy",
-    children: [
-      { id: "pharmacy-products", label: "Products", icon: Package, path: "/pharmacy/products" },
-      { id: "pharmacy-orders", label: "Orders", icon: ClipboardList, path: "/pharmacy/orders" },
-      { id: "pharmacy-pos", label: "POS", icon: ShoppingCart, path: "/pharmacy/pos" },
-      { id: "pharmacy-statistics", label: "Statistics", icon: BarChart3, path: "/pharmacy/statistics" },
-      { id: "pharmacy-cart", label: "Cart", icon: Receipt, path: "/cart" },
-    ],
-  },
-  {
-    id: "admin",
-    label: "Admin",
-    icon: Shield,
-    module: "admin",
-    children: [
-      { id: "admin-users", label: "Users", icon: UserCog, path: "/admin/users" },
-      { id: "admin-roles", label: "Roles", icon: ShieldCheck, path: "/admin/roles" },
-      { id: "admin-settings", label: "Settings", icon: Settings2, path: "/admin/settings" },
-      { id: "admin-debug", label: "Debug", icon: Bug, path: "/admin/debug" },
-    ],
-  },
+  // {
+  //   id: "payments",
+  //   label: "Payments",
+  //   icon: IndianRupee,
+  //   module: "payments",
+  //   children: [
+  //     { id: "payment-transactions", label: "Transactions", icon: CreditCard, path: "/payments/transactions" },
+  //     { id: "payment-categories", label: "Categories", icon: Package, path: "/payments/categories" },
+  //     { id: "accounting-periods", label: "Accounting Periods", icon: TrendingUp, path: "/payments/periods" },
+  //   ],
+  // },
+  // {
+  //   id: "pharmacy",
+  //   label: "Pharmacy",
+  //   icon: Pill,
+  //   module: "pharmacy",
+  //   children: [
+  //     { id: "pharmacy-products", label: "Products", icon: Package, path: "/pharmacy/products" },
+  //     { id: "pharmacy-orders", label: "Orders", icon: ClipboardList, path: "/pharmacy/orders" },
+  //     { id: "pharmacy-pos", label: "POS", icon: ShoppingCart, path: "/pharmacy/pos" },
+  //     { id: "pharmacy-statistics", label: "Statistics", icon: BarChart3, path: "/pharmacy/statistics" },
+  //     { id: "pharmacy-cart", label: "Cart", icon: Receipt, path: "/cart" },
+  //   ],
+  // },
+  // {
+  //   id: "admin",
+  //   label: "Admin",
+  //   icon: Shield,
+  //   module: "admin",
+  //   children: [
+  //     { id: "admin-users", label: "Users", icon: UserCog, path: "/admin/users" },
+  //     { id: "admin-roles", label: "Roles", icon: ShieldCheck, path: "/admin/roles" },
+  //     { id: "admin-settings", label: "Settings", icon: Settings2, path: "/admin/settings" },
+  //     { id: "admin-debug", label: "Debug", icon: Bug, path: "/admin/debug" },
+  //   ],
+  // },
+  // END TEMPORARILY COMMENTED OUT
 ];
 
 interface UniversalSidebarProps {

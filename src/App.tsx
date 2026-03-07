@@ -91,7 +91,9 @@ const AppLayout = () => {
           <UniversalHeader onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
           <main className="flex-1 overflow-auto">
             <Routes>
-              <Route path="/" element={<Dashboard />} />
+              {/* TEMPORARILY CHANGED — redirect root to diagnostics */}
+              <Route path="/" element={<Navigate to="/diagnostics/lab-orders" replace />} />
+              {/* was: <Route path="/" element={<Dashboard />} /> */}
 
               {/* HMS Routes */}
               <Route path="/hms/doctors" element={<ModuleProtectedRoute requiredModule="hms"><Doctors /></ModuleProtectedRoute>} />
@@ -179,7 +181,8 @@ const App = () => {
                 <Route
                   path="/login"
                   element={
-                    isAuthenticated ? <Navigate to="/" replace /> : <Login />
+                    /* TEMPORARILY CHANGED — was: <Navigate to="/" replace /> */
+                    isAuthenticated ? <Navigate to="/diagnostics/lab-orders" replace /> : <Login />
                   }
                 />
                 <Route
