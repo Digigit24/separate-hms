@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useIPDBilling } from '@/hooks/useIPDBilling';
 import { IPDBilling, PaymentStatus } from '@/types/ipdBilling.types';
 import { format } from 'date-fns';
-import { Plus, Search, Receipt } from 'lucide-react';
+import { Plus, Search, Receipt, X, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatPatientName } from '@/utils/nameHelpers';
 
@@ -21,6 +21,8 @@ export const IPDBillingListPage: React.FC = () => {
   // Filter states
   const [search, setSearch] = useState('');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   // Build query params
   const queryParams = useMemo(() => {
@@ -36,8 +38,16 @@ export const IPDBillingListPage: React.FC = () => {
       params.payment_status = paymentStatusFilter;
     }
 
+    if (dateFrom) {
+      params.bill_date_from = dateFrom;
+    }
+
+    if (dateTo) {
+      params.bill_date_to = dateTo;
+    }
+
     return params;
-  }, [search, paymentStatusFilter]);
+  }, [search, paymentStatusFilter, dateFrom, dateTo]);
 
   // Fetch bills
   const { data: billsData, isLoading, mutate } = useIPDBillings(queryParams);
@@ -252,7 +262,7 @@ export const IPDBillingListPage: React.FC = () => {
         <div className="relative w-full sm:w-52">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
-            placeholder="Search bills..."
+            placeholder="Search by bill number, patient..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-8 h-7 text-[12px]"
@@ -269,6 +279,31 @@ export const IPDBillingListPage: React.FC = () => {
             <SelectItem value="unpaid">Unpaid</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex gap-1.5 items-center flex-wrap">
+          <div className="flex items-center gap-1">
+            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="h-7 text-[12px] w-[130px]"
+              placeholder="From"
+            />
+          </div>
+          <span className="text-muted-foreground text-[11px]">to</span>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="h-7 text-[12px] w-[130px]"
+            placeholder="To"
+          />
+          {(dateFrom || dateTo) && (
+            <Button variant="ghost" size="sm" className="h-7 px-1.5" onClick={() => { setDateFrom(''); setDateTo(''); }}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Table */}

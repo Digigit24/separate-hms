@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
-import { Loader2, Plus, Search, IndianRupee, FileText, CreditCard, AlertCircle } from 'lucide-react';
+import { Plus, Search, IndianRupee, FileText, CreditCard, AlertCircle, X, CalendarDays } from 'lucide-react';
 import { ProcedureBill, ProcedureBillListParams } from '@/types/procedureBill.types';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -18,6 +18,8 @@ export const ProcedureBills: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<'paid' | 'unpaid' | 'partial' | ''>('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view'>('create');
@@ -27,6 +29,8 @@ export const ProcedureBills: React.FC = () => {
     page: currentPage,
     search: searchTerm || undefined,
     payment_status: paymentStatusFilter || undefined,
+    bill_date_from: dateFrom || undefined,
+    bill_date_to: dateTo || undefined,
   };
 
   const { data: billsData, error, isLoading, mutate } = useProcedureBills(queryParams);
@@ -186,18 +190,43 @@ export const ProcedureBills: React.FC = () => {
           />
         </div>
         <div className="flex gap-1 flex-wrap">
-          <Button variant={paymentStatusFilter === '' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => setPaymentStatusFilter('')}>
+          <Button variant={paymentStatusFilter === '' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => { setPaymentStatusFilter(''); setCurrentPage(1); }}>
             All
           </Button>
-          <Button variant={paymentStatusFilter === 'paid' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => setPaymentStatusFilter('paid')}>
+          <Button variant={paymentStatusFilter === 'paid' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => { setPaymentStatusFilter('paid'); setCurrentPage(1); }}>
             Paid
           </Button>
-          <Button variant={paymentStatusFilter === 'partial' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => setPaymentStatusFilter('partial')}>
+          <Button variant={paymentStatusFilter === 'partial' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => { setPaymentStatusFilter('partial'); setCurrentPage(1); }}>
             Partial
           </Button>
-          <Button variant={paymentStatusFilter === 'unpaid' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => setPaymentStatusFilter('unpaid')}>
+          <Button variant={paymentStatusFilter === 'unpaid' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => { setPaymentStatusFilter('unpaid'); setCurrentPage(1); }}>
             Unpaid
           </Button>
+        </div>
+        <div className="flex gap-1.5 items-center flex-wrap">
+          <div className="flex items-center gap-1">
+            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1); }}
+              className="h-7 text-[12px] w-[130px]"
+              placeholder="From"
+            />
+          </div>
+          <span className="text-muted-foreground text-[11px]">to</span>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => { setDateTo(e.target.value); setCurrentPage(1); }}
+            className="h-7 text-[12px] w-[130px]"
+            placeholder="To"
+          />
+          {(dateFrom || dateTo) && (
+            <Button variant="ghost" size="sm" className="h-7 px-1.5" onClick={() => { setDateFrom(''); setDateTo(''); setCurrentPage(1); }}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       </div>
 

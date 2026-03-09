@@ -49,6 +49,9 @@ export interface ProcedureBillListParams {
   payment_status?: PaymentStatus;
   search?: string;
   bill_date?: string;
+  bill_date_from?: string;
+  bill_date_to?: string;
+  patient?: number;
   visit?: number;
   [key: string]: string | number | boolean | undefined;
 }
