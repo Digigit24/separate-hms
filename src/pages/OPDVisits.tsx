@@ -90,8 +90,8 @@ export const OPDVisits: React.FC = () => {
     search: searchTerm || undefined,
     status: statusFilter || undefined,
     doctor_id: doctorFilter ? Number(doctorFilter) : undefined,
-    date_from: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
-    date_to: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+    visit_date__gte: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    visit_date__lte: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
   };
 
   // Fetch visits
@@ -127,8 +127,8 @@ export const OPDVisits: React.FC = () => {
       search: searchTerm || undefined,
       status: statusFilter || undefined,
       doctor_id: doctorFilter ? Number(doctorFilter) : undefined,
-      date_from: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
-      date_to: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+      visit_date__gte: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+      visit_date__lte: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
     };
   }, [searchTerm, statusFilter, doctorFilter, dateRange]);
 
