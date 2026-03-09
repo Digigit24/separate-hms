@@ -19,7 +19,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Microscope, Clock, CheckCircle2, XCircle, Activity, FileText, Eye, Download, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import type { DiagnosticOrder, Requisition, CreateLabReportPayload, LabReport } from '@/types/diagnostics.types';
+import type { DiagnosticOrder, CreateLabReportPayload, LabReport } from '@/types/diagnostics.types';
 
 type DiagnosticOrderStatus = 'pending' | 'sample_collected' | 'processing' | 'completed' | 'cancelled';
 
@@ -39,16 +39,9 @@ const STATUS_COLORS: Record<DiagnosticOrderStatus, string> = {
   cancelled: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300',
 };
 
-interface FlattenedLabOrder extends DiagnosticOrder {
-  requisition_number: string;
-  order_date: string;
-  priority: string;
-}
-
 export const LabOrders: React.FC = () => {
   const navigate = useNavigate();
   const {
-    useRequisitions,
     createLabReport,
     useDiagnosticOrders,
     useLabReports,
@@ -68,12 +61,18 @@ export const LabOrders: React.FC = () => {
   const [resultKey, setResultKey] = useState('');
   const [resultValue, setResultValue] = useState('');
 
-  // Fetch requisitions filtered by type=investigation
-  const { data, isLoading } = useRequisitions({ requisition_type: 'investigation' });
-  const { data: ordersData } = useDiagnosticOrders();
+  // Build query params for diagnostic orders
+  const queryParams = useMemo(() => {
+    const params: Record<string, any> = {};
+    if (searchTerm) params.search = searchTerm;
+    if (statusFilter !== 'all') params.status = statusFilter;
+    return params;
+  }, [searchTerm, statusFilter]);
+
+  // Fetch diagnostic orders directly from /diagnostics/orders/
+  const { data: ordersData, isLoading } = useDiagnosticOrders(queryParams);
   const { data: labReportsData } = useLabReports();
-  const requisitions: Requisition[] = data?.results || [];
-  const orders = ordersData?.results || [];
+  const orders: DiagnosticOrder[] = ordersData?.results || [];
   const labReports: LabReport[] = labReportsData?.results || [];
 
   // Map diagnostic_order ID to lab report
@@ -85,34 +84,8 @@ export const LabOrders: React.FC = () => {
     return map;
   }, [labReports]);
 
-  // Flatten investigation_orders from all requisitions
-  const flattenedOrders: FlattenedLabOrder[] = useMemo(() => {
-    return requisitions.flatMap((req) =>
-      (req.investigation_orders || []).map((order) => ({
-        ...order,
-        requisition_number: req.requisition_number,
-        order_date: req.order_date,
-        priority: req.priority,
-      }))
-    );
-  }, [requisitions]);
-
-  // Filtered orders
-  const filteredOrders = useMemo(() => {
-    return flattenedOrders.filter((order) => {
-      const matchesSearch =
-        order.investigation_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.patient_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.patient_mobile?.includes(searchTerm) ||
-        order.requisition_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.sample_id?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [flattenedOrders, searchTerm, statusFilter]);
-
   // DataTable columns
-  const columns: DataTableColumn<FlattenedLabOrder>[] = [
+  const columns: DataTableColumn<DiagnosticOrder>[] = [
     {
       header: 'Order #',
       key: 'id',
@@ -158,13 +131,6 @@ export const LabOrders: React.FC = () => {
       ),
       sortable: true,
       filterable: true,
-    },
-    {
-      header: 'Requisition',
-      key: 'requisition_number',
-      accessor: (row) => row.requisition_number,
-      cell: (row) => <span className="text-sm font-mono">{row.requisition_number}</span>,
-      sortable: true,
     },
     {
       header: 'Sample ID',
@@ -338,11 +304,11 @@ export const LabOrders: React.FC = () => {
 
   // Stats
   const stats = useMemo(() => {
-    const total = filteredOrders.length;
-    const pending = filteredOrders.filter((o) => o.status === 'pending').length;
-    const completed = filteredOrders.filter((o) => o.status === 'completed').length;
+    const total = orders.length;
+    const pending = orders.filter((o) => o.status === 'pending').length;
+    const completed = orders.filter((o) => o.status === 'completed').length;
     return { total, pending, completed };
-  }, [filteredOrders]);
+  }, [orders]);
 
   return (
     <div className="p-4 md:p-5 w-full space-y-3">
@@ -402,13 +368,13 @@ export const LabOrders: React.FC = () => {
       <Card>
         <CardContent className="p-0">
           <DataTable
-            rows={filteredOrders}
+            rows={orders}
             columns={columns}
             isLoading={isLoading}
             getRowId={(row) => row.id}
             getRowLabel={(row) => `Order #${row.id}`}
             emptyTitle="No lab orders found"
-            emptySubtitle="Investigation orders from requisitions will appear here"
+            emptySubtitle="Lab orders will appear here once created"
             renderMobileCard={(row) => (
               <div className="space-y-3">
                 <div className="flex items-start justify-between">
@@ -442,7 +408,7 @@ export const LabOrders: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground font-mono">{row.requisition_number}</span>
+                  <span className="text-sm text-muted-foreground font-mono">#{row.id}</span>
                   {row.status === 'completed' && reportByOrderId.get(row.id) ? (
                     <Button
                       variant="outline"
