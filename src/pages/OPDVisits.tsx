@@ -58,6 +58,7 @@ export const OPDVisits: React.FC = () => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Export confirmation dialog state
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -74,6 +75,7 @@ export const OPDVisits: React.FC = () => {
   // Build query params
   const queryParams: OpdVisitListParams = {
     page: currentPage,
+    page_size: pageSize,
     search: searchTerm || undefined,
     status: statusFilter || undefined,
     doctor_id: doctorFilter ? Number(doctorFilter) : undefined,
@@ -123,6 +125,11 @@ export const OPDVisits: React.FC = () => {
 
   const handleDateToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDateTo(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
     setCurrentPage(1);
   };
 
@@ -622,10 +629,27 @@ export const OPDVisits: React.FC = () => {
 
               {/* Pagination */}
               {!visitsLoading && visits.length > 0 && (
-                <div className="flex items-center justify-between px-6 py-4 border-t">
-                  <p className="text-sm text-muted-foreground">
-                    Showing {visits.length} of {totalCount} visit(s)
-                  </p>
+                <div className="flex items-center justify-between px-6 py-4 border-t flex-wrap gap-3">
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {visits.length} of {totalCount} visit(s)
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[12px] text-muted-foreground">Rows:</span>
+                      <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                        <SelectTrigger className="w-[72px] h-7 text-[12px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[10, 50, 100, 150, 200].map((size) => (
+                            <SelectItem key={size} value={String(size)}>
+                              {size}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
