@@ -12,6 +12,7 @@ import { IPDBilling, PaymentStatus } from '@/types/ipdBilling.types';
 import { format } from 'date-fns';
 import { Plus, Search, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatPatientName } from '@/utils/nameHelpers';
 
 export const IPDBillingListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -92,7 +93,7 @@ export const IPDBillingListPage: React.FC = () => {
       key: 'patient_name',
       cell: (bill) => (
         <div className="space-y-0.5">
-          <div className="font-medium">{bill.patient_name || 'N/A'}</div>
+          <div className="font-medium">{formatPatientName(bill.patient_name)}</div>
           <div className="text-xs text-muted-foreground">
             Admission: {bill.admission_number || bill.admission}
           </div>
@@ -181,7 +182,7 @@ export const IPDBillingListPage: React.FC = () => {
             {bill.bill_number}
           </div>
           <div className="text-sm font-medium truncate">
-            {bill.patient_name || 'N/A'}
+            {formatPatientName(bill.patient_name)}
           </div>
           <div className="text-xs text-muted-foreground">
             Admission: {bill.admission_number || bill.admission}

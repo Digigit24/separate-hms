@@ -18,6 +18,7 @@ import {
   Eye,
   Calendar
 } from 'lucide-react';
+import { formatPatientName } from '@/utils/nameHelpers';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { OPDBill, OPDBillItem, PaymentMode } from '@/types/opdBill.types';
@@ -240,7 +241,7 @@ export const BillDetailView: React.FC<BillDetailViewProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Patient</p>
-              <p className="font-semibold">{bill.patient_name || 'N/A'}</p>
+              <p className="font-semibold">{formatPatientName(bill.patient_name)}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-1">Doctor</p>

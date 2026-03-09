@@ -10,6 +10,7 @@ import { Loader2, Plus, Search, IndianRupee, FileText, CreditCard, AlertCircle }
 import { ProcedureBill, ProcedureBillListParams } from '@/types/procedureBill.types';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { formatPatientName } from '@/utils/nameHelpers';
 import { ProcedureBillFormDrawer } from '@/components/ProcedureBillFormDrawer';
 
 export const ProcedureBills: React.FC = () => {
@@ -80,7 +81,7 @@ export const ProcedureBills: React.FC = () => {
       key: 'patient',
       cell: (bill) => (
         <div className="flex flex-col">
-          <span className="font-medium">{bill.patient_name || 'N/A'}</span>
+          <span className="font-medium">{formatPatientName(bill.patient_name)}</span>
           <span className="text-xs text-muted-foreground">{bill.patient_phone}</span>
         </div>
       ),

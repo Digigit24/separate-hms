@@ -24,6 +24,7 @@ import type {
   BillItemSource,
 } from '@/types/ipd.types';
 import { toast } from 'sonner';
+import { formatPatientName } from '@/utils/nameHelpers';
 
 type BillingRow = IPDBilling | IPDBillingListItem;
 
@@ -112,7 +113,7 @@ export default function IPDBillingPage() {
         key: 'patient_name',
         header: 'Patient',
         accessor: (row) => (row as IPDBillingListItem).patient_name || '',
-        cell: (row) => <span className="font-medium">{(row as IPDBillingListItem).patient_name}</span>,
+        cell: (row) => <span className="font-medium">{formatPatientName((row as IPDBillingListItem).patient_name)}</span>,
         sortable: true,
         filterable: true,
       },
@@ -387,7 +388,7 @@ export default function IPDBillingPage() {
                 <SelectContent>
                   {admissions.map((a) => (
                     <SelectItem key={a.id} value={String(a.id)}>
-                      {a.admission_id} — {a.patient_name}
+                      {a.admission_id} — {formatPatientName(a.patient_name)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -412,7 +413,7 @@ export default function IPDBillingPage() {
               </div>
               <div>
                 <Label>Patient</Label>
-                <div className="font-medium">{billingDetail.patient_name}</div>
+                <div className="font-medium">{formatPatientName(billingDetail.patient_name)}</div>
               </div>
               <div>
                 <Label>Status</Label>

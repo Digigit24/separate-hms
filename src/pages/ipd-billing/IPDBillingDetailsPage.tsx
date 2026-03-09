@@ -7,6 +7,7 @@ import { ArrowLeft } from 'lucide-react';
 import { IPDBillingContent } from '@/components/ipd/IPDBillingContent';
 import { useIPDBilling } from '@/hooks/useIPDBilling';
 import { useIPD } from '@/hooks/useIPD';
+import { formatPatientName } from '@/utils/nameHelpers';
 
 export const IPDBillingDetailsPage: React.FC = () => {
   const { billId } = useParams<{ billId: string }>();
@@ -81,7 +82,7 @@ export const IPDBillingDetailsPage: React.FC = () => {
         <div className="flex items-center gap-2 min-w-0">
           <h1 className="text-lg font-bold leading-none">IPD Bill Details</h1>
           <span className="text-[12px] text-muted-foreground truncate">
-            {bill.bill_number} • {bill.patient_name}
+            {bill.bill_number} • {formatPatientName(bill.patient_name)}
           </span>
         </div>
       </div>

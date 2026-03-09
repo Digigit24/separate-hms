@@ -11,6 +11,7 @@ import { Loader2, Plus, Search, IndianRupee, FileText, CreditCard, AlertCircle, 
 import { OPDBill, OPDBillListParams } from '@/types/opdBill.types';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { formatPatientName } from '@/utils/nameHelpers';
 import { OPDBillFormDrawer } from '@/components/OPDBillFormDrawer';
 
 export const OPDBills: React.FC = () => {
@@ -93,7 +94,7 @@ export const OPDBills: React.FC = () => {
 
         {/* Patient & Visit Info */}
         <div className="flex flex-col gap-1 text-sm">
-          <p className="font-medium">{bill.patient_name || 'N/A'}</p>
+          <p className="font-medium">{formatPatientName(bill.patient_name)}</p>
           <p className="text-muted-foreground font-mono text-xs">Visit: {bill.visit_number || `#${bill.visit}`}</p>
         </div>
 
@@ -168,7 +169,7 @@ export const OPDBills: React.FC = () => {
       key: 'patient',
       cell: (bill) => (
         <div className="flex flex-col">
-          <span className="font-medium">{bill.patient_name || 'N/A'}</span>
+          <span className="font-medium">{formatPatientName(bill.patient_name)}</span>
           <span className="text-xs text-muted-foreground">{bill.patient_phone}</span>
         </div>
       ),

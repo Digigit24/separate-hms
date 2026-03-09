@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { OPDBill } from '@/types/opdBill.types';
+import { formatPatientName } from '@/utils/nameHelpers';
 
 interface BillsListProps {
   bills: OPDBill[];
@@ -104,7 +105,7 @@ export const BillsList: React.FC<BillsListProps> = ({
                   {bill.patient_name && (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <User className="h-4 w-4" />
-                      <span>{bill.patient_name}</span>
+                      <span>{formatPatientName(bill.patient_name)}</span>
                     </div>
                   )}
 
