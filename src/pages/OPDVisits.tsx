@@ -39,6 +39,8 @@ import {
 } from 'lucide-react';
 import { OpdVisit, OpdVisitListParams } from '@/types/opdVisit.types';
 import { opdVisitService } from '@/services/opdVisit.service';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import type { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
@@ -61,8 +63,7 @@ export const OPDVisits: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'waiting' | 'in_consultation' | 'completed' | 'cancelled' | ''>('');
   const [doctorFilter, setDoctorFilter] = useState<string>('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   // Client-side pagination
   const [clientPage, setClientPage] = useState(1);
@@ -89,8 +90,8 @@ export const OPDVisits: React.FC = () => {
     search: searchTerm || undefined,
     status: statusFilter || undefined,
     doctor_id: doctorFilter ? Number(doctorFilter) : undefined,
-    date_from: dateFrom || undefined,
-    date_to: dateTo || undefined,
+    date_from: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    date_to: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
   };
 
   // Fetch visits
@@ -118,7 +119,7 @@ export const OPDVisits: React.FC = () => {
   const endRow = Math.min(clientPage * clientPageSize, allFetchedVisits.length);
 
   // Check if any filter is applied
-  const hasFiltersApplied = !!(searchTerm || statusFilter || doctorFilter || dateFrom || dateTo);
+  const hasFiltersApplied = !!(searchTerm || statusFilter || doctorFilter || dateRange?.from);
 
   // Build filter params (without pagination) for export
   const getFilterParams = useCallback((): OpdVisitListParams => {
@@ -126,10 +127,10 @@ export const OPDVisits: React.FC = () => {
       search: searchTerm || undefined,
       status: statusFilter || undefined,
       doctor_id: doctorFilter ? Number(doctorFilter) : undefined,
-      date_from: dateFrom || undefined,
-      date_to: dateTo || undefined,
+      date_from: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+      date_to: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
     };
-  }, [searchTerm, statusFilter, doctorFilter, dateFrom, dateTo]);
+  }, [searchTerm, statusFilter, doctorFilter, dateRange]);
 
   // Handlers
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -147,13 +148,8 @@ export const OPDVisits: React.FC = () => {
     setClientPage(1);
   };
 
-  const handleDateFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDateFrom(e.target.value);
-    setClientPage(1);
-  };
-
-  const handleDateToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDateTo(e.target.value);
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range);
     setClientPage(1);
   };
 
@@ -560,8 +556,8 @@ export const OPDVisits: React.FC = () => {
       const doc = doctors.find(d => d.id === Number(doctorFilter));
       parts.push(`Doctor: ${doc?.full_name || doctorFilter}`);
     }
-    if (dateFrom) parts.push(`From: ${dateFrom}`);
-    if (dateTo) parts.push(`To: ${dateTo}`);
+    if (dateRange?.from) parts.push(`From: ${format(dateRange.from, 'dd MMM yyyy')}`);
+    if (dateRange?.to) parts.push(`To: ${format(dateRange.to, 'dd MMM yyyy')}`);
     return parts;
   };
 
@@ -665,24 +661,11 @@ export const OPDVisits: React.FC = () => {
             ))}
           </SelectContent>
         </Select>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] text-muted-foreground whitespace-nowrap">From</span>
-          <Input
-            type="date"
-            value={dateFrom}
-            onChange={handleDateFromChange}
-            className="h-7 text-[12px] w-[140px]"
-          />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] text-muted-foreground whitespace-nowrap">To</span>
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={handleDateToChange}
-            className="h-7 text-[12px] w-[140px]"
-          />
-        </div>
+        <DateRangePicker
+          dateRange={dateRange}
+          onDateRangeChange={handleDateRangeChange}
+          placeholder="Select date range"
+        />
         {hasFiltersApplied && (
           <Button
             variant="ghost"
@@ -692,8 +675,7 @@ export const OPDVisits: React.FC = () => {
               setSearchTerm('');
               setStatusFilter('');
               setDoctorFilter('');
-              setDateFrom('');
-              setDateTo('');
+              setDateRange(undefined);
               setClientPage(1);
             }}
           >
