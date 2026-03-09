@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useIPDBilling } from '@/hooks/useIPDBilling';
 import { IPDBilling, PaymentStatus } from '@/types/ipdBilling.types';
 import { format } from 'date-fns';
-import { Plus, Search, Receipt, X, CalendarDays } from 'lucide-react';
+import { Plus, Search, Receipt } from 'lucide-react';
+import type { DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
 import { formatPatientName } from '@/utils/nameHelpers';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 
 export const IPDBillingListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -21,8 +23,7 @@ export const IPDBillingListPage: React.FC = () => {
   // Filter states
   const [search, setSearch] = useState('');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   // Build query params
   const queryParams = useMemo(() => {
@@ -38,16 +39,16 @@ export const IPDBillingListPage: React.FC = () => {
       params.payment_status = paymentStatusFilter;
     }
 
-    if (dateFrom) {
-      params.bill_date_from = dateFrom;
+    if (dateRange?.from) {
+      params.bill_date_from = format(dateRange.from, 'yyyy-MM-dd');
     }
 
-    if (dateTo) {
-      params.bill_date_to = dateTo;
+    if (dateRange?.to) {
+      params.bill_date_to = format(dateRange.to, 'yyyy-MM-dd');
     }
 
     return params;
-  }, [search, paymentStatusFilter, dateFrom, dateTo]);
+  }, [search, paymentStatusFilter, dateRange]);
 
   // Fetch bills
   const { data: billsData, isLoading, mutate } = useIPDBillings(queryParams);
@@ -279,31 +280,11 @@ export const IPDBillingListPage: React.FC = () => {
             <SelectItem value="unpaid">Unpaid</SelectItem>
           </SelectContent>
         </Select>
-        <div className="flex gap-1.5 items-center flex-wrap">
-          <div className="flex items-center gap-1">
-            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="h-7 text-[12px] w-[130px]"
-              placeholder="From"
-            />
-          </div>
-          <span className="text-muted-foreground text-[11px]">to</span>
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="h-7 text-[12px] w-[130px]"
-            placeholder="To"
-          />
-          {(dateFrom || dateTo) && (
-            <Button variant="ghost" size="sm" className="h-7 px-1.5" onClick={() => { setDateFrom(''); setDateTo(''); }}>
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          )}
-        </div>
+        <DateRangePicker
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+          placeholder="Filter by date"
+        />
       </div>
 
       {/* Table */}

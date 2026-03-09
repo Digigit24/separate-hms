@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
-import { Plus, Search, IndianRupee, FileText, CreditCard, AlertCircle, CheckCircle2, Clock, TrendingUp, PieChart, X, CalendarDays } from 'lucide-react';
+import { Plus, Search, IndianRupee, FileText, CreditCard, AlertCircle, CheckCircle2, Clock, TrendingUp, PieChart } from 'lucide-react';
 import { OPDBill, OPDBillListParams } from '@/types/opdBill.types';
 import { format } from 'date-fns';
+import type { DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
 import { formatPatientName } from '@/utils/nameHelpers';
 import { OPDBillFormDrawer } from '@/components/OPDBillFormDrawer';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 
 export const OPDBills: React.FC = () => {
   const navigate = useNavigate();
@@ -20,8 +22,7 @@ export const OPDBills: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<'paid' | 'unpaid' | 'partial' | ''>('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [currentPage, setCurrentPage] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view'>('create');
@@ -31,8 +32,8 @@ export const OPDBills: React.FC = () => {
     page: currentPage,
     search: searchTerm || undefined,
     payment_status: paymentStatusFilter || undefined,
-    bill_date_from: dateFrom || undefined,
-    bill_date_to: dateTo || undefined,
+    bill_date_from: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    bill_date_to: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
   };
 
   const { data: billsData, error, isLoading, mutate } = useOPDBills(queryParams);
@@ -370,31 +371,11 @@ export const OPDBills: React.FC = () => {
             Unpaid
           </Button>
         </div>
-        <div className="flex gap-1.5 items-center flex-wrap">
-          <div className="flex items-center gap-1">
-            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1); }}
-              className="h-7 text-[12px] w-[130px]"
-              placeholder="From"
-            />
-          </div>
-          <span className="text-muted-foreground text-[11px]">to</span>
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(e) => { setDateTo(e.target.value); setCurrentPage(1); }}
-            className="h-7 text-[12px] w-[130px]"
-            placeholder="To"
-          />
-          {(dateFrom || dateTo) && (
-            <Button variant="ghost" size="sm" className="h-7 px-1.5" onClick={() => { setDateFrom(''); setDateTo(''); setCurrentPage(1); }}>
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          )}
-        </div>
+        <DateRangePicker
+          dateRange={dateRange}
+          onDateRangeChange={(range) => { setDateRange(range); setCurrentPage(1); }}
+          placeholder="Filter by date"
+        />
       </div>
 
       {/* Table Card */}
