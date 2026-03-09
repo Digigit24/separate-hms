@@ -1,7 +1,8 @@
 // src/pages/OPDVisits.tsx
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOpdVisit } from '@/hooks/useOpdVisit';
+import { useDoctor } from '@/hooks/useDoctor';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,21 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
 import OPDVisitFormDrawer from '@/components/OPDVisitFormDrawer';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Loader2,
   Plus,
@@ -18,9 +34,11 @@ import {
   Clock,
   CheckCircle2,
   Stethoscope,
+  Download,
 } from 'lucide-react';
 import { OpdVisit, OpdVisitListParams } from '@/types/opdVisit.types';
 import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
 
 export const OPDVisits: React.FC = () => {
   const navigate = useNavigate();
@@ -31,22 +49,36 @@ export const OPDVisits: React.FC = () => {
     deleteOpdVisit,
     useOpdVisitStatistics,
   } = useOpdVisit();
+  const { useDoctors } = useDoctor();
 
   // State for search and filters
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'waiting' | 'in_consultation' | 'completed' | 'cancelled' | ''>('');
+  const [doctorFilter, setDoctorFilter] = useState<string>('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Export confirmation dialog state
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
   const [drawerMode, setDrawerMode] = useState<'view' | 'edit' | 'create'>('view');
 
+  // Fetch doctors for filter dropdown
+  const { data: doctorsData } = useDoctors({ page_size: 100 });
+  const doctors = doctorsData?.results || [];
+
   // Build query params
   const queryParams: OpdVisitListParams = {
     page: currentPage,
     search: searchTerm || undefined,
     status: statusFilter || undefined,
+    doctor_id: doctorFilter ? Number(doctorFilter) : undefined,
+    date_from: dateFrom || undefined,
+    date_to: dateTo || undefined,
   };
 
   // Fetch visits
@@ -65,6 +97,9 @@ export const OPDVisits: React.FC = () => {
   const hasNext = !!visitsData?.next;
   const hasPrevious = !!visitsData?.previous;
 
+  // Check if any filter is applied
+  const hasFiltersApplied = !!(searchTerm || statusFilter || doctorFilter || dateFrom || dateTo);
+
   // Handlers
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -73,6 +108,21 @@ export const OPDVisits: React.FC = () => {
 
   const handleStatusFilter = (status: 'waiting' | 'in_consultation' | 'completed' | 'cancelled' | '') => {
     setStatusFilter(status);
+    setCurrentPage(1);
+  };
+
+  const handleDoctorFilter = (value: string) => {
+    setDoctorFilter(value === 'all' ? '' : value);
+    setCurrentPage(1);
+  };
+
+  const handleDateFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDateFrom(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleDateToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDateTo(e.target.value);
     setCurrentPage(1);
   };
 
@@ -127,6 +177,55 @@ export const OPDVisits: React.FC = () => {
       state: { visitIds, from: '/opd/visits' }
     });
   };
+
+  // Export to CSV
+  const handleExportClick = () => {
+    setExportDialogOpen(true);
+  };
+
+  const handleExportConfirm = useCallback(() => {
+    setExportDialogOpen(false);
+
+    const csvData = visits.map((visit) => ({
+      'Visit Number': visit.visit_number,
+      'Visit Date': visit.visit_date,
+      'Visit Time': visit.visit_time,
+      'Patient Name': visit.patient_details?.full_name || visit.patient_name || '',
+      'Patient ID': visit.patient_details?.patient_id || visit.patient_id || '',
+      'Patient Mobile': visit.patient_details?.mobile_primary || '',
+      'Doctor': visit.doctor_details?.full_name || visit.doctor_name || '',
+      'Visit Type': visit.visit_type || '',
+      'Priority': visit.priority || '',
+      'Status': visit.status || '',
+      'Chief Complaint': visit.chief_complaint || '',
+      'Diagnosis': visit.diagnosis || '',
+      'Consultation Fee': visit.consultation_fee || '0',
+      'Additional Charges': visit.additional_charges || '0',
+      'Total Amount': visit.total_amount || '0',
+      'Payment Status': visit.payment_status || '',
+      'Payment Method': visit.payment_method || '',
+      'Queue Number': visit.queue_number || '',
+      'Follow Up Required': visit.follow_up_required ? 'Yes' : 'No',
+      'Follow Up Date': visit.follow_up_date || '',
+      'Created At': visit.created_at || '',
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(csvData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'OPD Visits');
+
+    // Set column widths
+    worksheet['!cols'] = [
+      { wch: 16 }, { wch: 12 }, { wch: 10 }, { wch: 22 }, { wch: 14 },
+      { wch: 14 }, { wch: 22 }, { wch: 12 }, { wch: 10 }, { wch: 16 },
+      { wch: 25 }, { wch: 25 }, { wch: 14 }, { wch: 16 }, { wch: 14 },
+      { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 16 }, { wch: 12 },
+      { wch: 20 },
+    ];
+
+    const timestamp = format(new Date(), 'yyyy-MM-dd_HHmmss');
+    XLSX.writeFile(workbook, `opd_visits_${timestamp}.csv`, { bookType: 'csv' });
+  }, [visits]);
 
   // Format date and time for display
   const formatDateTime = (date: string, time: string) => {
@@ -353,6 +452,20 @@ export const OPDVisits: React.FC = () => {
     );
   };
 
+  // Build filter summary for export dialog
+  const getFilterSummary = () => {
+    const parts: string[] = [];
+    if (searchTerm) parts.push(`Search: "${searchTerm}"`);
+    if (statusFilter) parts.push(`Status: ${statusFilter.replace('_', ' ')}`);
+    if (doctorFilter) {
+      const doc = doctors.find(d => d.id === Number(doctorFilter));
+      parts.push(`Doctor: ${doc?.full_name || doctorFilter}`);
+    }
+    if (dateFrom) parts.push(`From: ${dateFrom}`);
+    if (dateTo) parts.push(`To: ${dateTo}`);
+    return parts;
+  };
+
   return (
     <div className="p-4 md:p-5 w-full space-y-3">
       {/* Row 1: Title + inline stats + action */}
@@ -369,10 +482,22 @@ export const OPDVisits: React.FC = () => {
             <span className="flex items-center gap-1"><IndianRupee className="h-3 w-3" /> <span className="font-semibold text-foreground">₹{statistics?.revenue_today || '0'}</span></span>
           </div>
         </div>
-        <Button onClick={handleCreate} size="sm" className="w-full sm:w-auto h-7 text-[12px]">
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          New Visit
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button
+            onClick={handleExportClick}
+            variant="outline"
+            size="sm"
+            className="h-7 text-[12px]"
+            disabled={visits.length === 0}
+          >
+            <Download className="h-3.5 w-3.5 mr-1" />
+            Export CSV
+          </Button>
+          <Button onClick={handleCreate} size="sm" className="flex-1 sm:flex-none h-7 text-[12px]">
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            New Visit
+          </Button>
+        </div>
       </div>
 
       {/* Mobile-only stats (hidden on desktop since they're inline above) */}
@@ -415,6 +540,58 @@ export const OPDVisits: React.FC = () => {
             </Button>
           ))}
         </div>
+      </div>
+
+      {/* Row 3: Doctor + Date filters */}
+      <div className="flex gap-2 items-center flex-wrap">
+        <Select value={doctorFilter || 'all'} onValueChange={handleDoctorFilter}>
+          <SelectTrigger className="w-full sm:w-[200px] h-7 text-[12px]">
+            <SelectValue placeholder="All Doctors" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Doctors</SelectItem>
+            {doctors.map((doc) => (
+              <SelectItem key={doc.id} value={String(doc.id)}>
+                {doc.full_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] text-muted-foreground whitespace-nowrap">From</span>
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={handleDateFromChange}
+            className="h-7 text-[12px] w-[140px]"
+          />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] text-muted-foreground whitespace-nowrap">To</span>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={handleDateToChange}
+            className="h-7 text-[12px] w-[140px]"
+          />
+        </div>
+        {hasFiltersApplied && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-[11px] px-2 text-muted-foreground"
+            onClick={() => {
+              setSearchTerm('');
+              setStatusFilter('');
+              setDoctorFilter('');
+              setDateFrom('');
+              setDateTo('');
+              setCurrentPage(1);
+            }}
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
 
       {/* Visits Table */}
@@ -484,6 +661,45 @@ export const OPDVisits: React.FC = () => {
         onDelete={handleDrawerDelete}
         onModeChange={(newMode) => setDrawerMode(newMode)}
       />
+
+      {/* Export Confirmation Dialog */}
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Export OPD Visits</DialogTitle>
+            <DialogDescription>
+              {hasFiltersApplied ? (
+                <span>
+                  You are about to export <span className="font-semibold text-foreground">{visits.length}</span> row(s) with the following filters applied:
+                </span>
+              ) : (
+                <span>
+                  No filters applied. You are about to export <span className="font-semibold text-foreground">{visits.length}</span> row(s) from the current page.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {hasFiltersApplied && (
+            <div className="space-y-1.5 text-sm">
+              {getFilterSummary().map((filter, i) => (
+                <div key={i} className="flex items-center gap-2 text-muted-foreground">
+                  <span className="h-1.5 w-1.5 rounded-full bg-foreground" />
+                  {filter}
+                </div>
+              ))}
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setExportDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleExportConfirm}>
+              <Download className="h-3.5 w-3.5 mr-1.5" />
+              Export {visits.length} row(s)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
