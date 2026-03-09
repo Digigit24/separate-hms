@@ -254,19 +254,19 @@ export const OPDVisits: React.FC = () => {
     XLSX.writeFile(workbook, `opd_visits_${timestamp}.csv`, { bookType: 'csv' });
   };
 
-  const handleExportConfirm = useCallback(async () => {
+  const handleExport = useCallback(async (mode: 'filtered' | 'all') => {
     setExportDialogOpen(false);
     setIsExporting(true);
     exportCancelledRef.current = false;
 
-    const filterParams = getFilterParams();
+    const params: OpdVisitListParams = mode === 'filtered' ? getFilterParams() : {};
     const allVisits: OpdVisit[] = [];
     let page = 1;
     const batchSize = 200;
-    let totalToFetch = totalCount;
 
+    // First call to get the total count
     const progressToastId = toast.loading(
-      `Exporting... 0 of ${totalToFetch} fetched`,
+      'Preparing export...',
       { duration: Infinity }
     );
 
@@ -280,17 +280,17 @@ export const OPDVisits: React.FC = () => {
         }
 
         const response = await opdVisitService.getOpdVisits({
-          ...filterParams,
+          ...params,
           page,
           page_size: batchSize,
         });
 
         allVisits.push(...response.results);
-        totalToFetch = response.count;
+        const total = response.count;
 
-        const percent = Math.round((allVisits.length / totalToFetch) * 100);
+        const percent = Math.round((allVisits.length / total) * 100);
         toast.loading(
-          `Exporting... ${allVisits.length} of ${totalToFetch} fetched (${percent}%)`,
+          `Exporting... ${allVisits.length} of ${total} fetched (${percent}%)`,
           { id: progressToastId, duration: Infinity }
         );
 
@@ -316,7 +316,7 @@ export const OPDVisits: React.FC = () => {
     } finally {
       setIsExporting(false);
     }
-  }, [getFilterParams, totalCount]);
+  }, [getFilterParams]);
 
   const handleCancelExport = useCallback(() => {
     exportCancelledRef.current = true;
@@ -776,43 +776,74 @@ export const OPDVisits: React.FC = () => {
 
       {/* Export Confirmation Dialog */}
       <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[460px]">
           <DialogHeader>
-            <DialogTitle>Export All OPD Visits</DialogTitle>
+            <DialogTitle>Export OPD Visits</DialogTitle>
             <DialogDescription>
-              {hasFiltersApplied ? (
-                <span>
-                  This will export all <span className="font-semibold text-foreground">{totalCount}</span> matching visit(s) with the following filters:
-                </span>
-              ) : (
-                <span>
-                  No filters applied. This will export all <span className="font-semibold text-foreground">{totalCount}</span> visit(s).
-                </span>
-              )}
+              Choose to export filtered data or all records.
             </DialogDescription>
           </DialogHeader>
+
           {hasFiltersApplied && (
-            <div className="space-y-1.5 text-sm">
-              {getFilterSummary().map((filter, i) => (
-                <div key={i} className="flex items-center gap-2 text-muted-foreground">
-                  <span className="h-1.5 w-1.5 rounded-full bg-foreground" />
-                  {filter}
-                </div>
-              ))}
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Active filters:</p>
+              <div className="space-y-1.5 text-sm">
+                {getFilterSummary().map((filter, i) => (
+                  <div key={i} className="flex items-center gap-2 text-muted-foreground">
+                    <span className="h-1.5 w-1.5 rounded-full bg-foreground" />
+                    {filter}
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Matching records: <span className="font-semibold text-foreground">{totalCount}</span>
+              </p>
             </div>
           )}
-          {totalCount > 500 && (
-            <p className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
-              This may take some time as there are many records to fetch. You can cancel the export at any time.
+
+          {!hasFiltersApplied && (
+            <p className="text-sm text-muted-foreground">
+              No filters applied. Total records: <span className="font-semibold text-foreground">{totalCount}</span>
             </p>
           )}
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setExportDialogOpen(false)}>
-              Cancel
+
+          <div className="flex flex-col gap-2 pt-2">
+            {hasFiltersApplied && (
+              <Button
+                className="w-full justify-start h-auto py-3 px-4"
+                variant="outline"
+                onClick={() => handleExport('filtered')}
+              >
+                <div className="flex flex-col items-start gap-0.5">
+                  <div className="flex items-center gap-1.5 font-medium">
+                    <Download className="h-3.5 w-3.5" />
+                    Export Filtered Data
+                  </div>
+                  <span className="text-[11px] text-muted-foreground font-normal">
+                    Export {totalCount} matching record(s) with current filters
+                  </span>
+                </div>
+              </Button>
+            )}
+            <Button
+              className="w-full justify-start h-auto py-3 px-4"
+              onClick={() => handleExport('all')}
+            >
+              <div className="flex flex-col items-start gap-0.5">
+                <div className="flex items-center gap-1.5 font-medium">
+                  <Download className="h-3.5 w-3.5" />
+                  Export All Data
+                </div>
+                <span className="text-[11px] text-muted-foreground font-normal">
+                  Export all visit records without any filters
+                </span>
+              </div>
             </Button>
-            <Button onClick={handleExportConfirm}>
-              <Download className="h-3.5 w-3.5 mr-1.5" />
-              Export {totalCount} row(s)
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setExportDialogOpen(false)}>
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
