@@ -84,6 +84,8 @@ export const OPDVisits: React.FC = () => {
   const doctors = doctorsData?.results || [];
 
   // Build query params - always fetch 200 from API
+  // Send filters to API (search & status work server-side)
+  // Doctor and date filters are applied client-side as fallback
   const queryParams: OpdVisitListParams = {
     page: 1,
     page_size: API_FETCH_SIZE,
@@ -105,8 +107,34 @@ export const OPDVisits: React.FC = () => {
   // Fetch statistics
   const { data: statistics } = useOpdVisitStatistics();
 
-  const allFetchedVisits = visitsData?.results || [];
-  const totalCount = visitsData?.count || 0;
+  const rawVisits = visitsData?.results || [];
+
+  // Client-side filtering for doctor and date range
+  // (applied as fallback in case backend doesn't support these filters)
+  const allFetchedVisits = useMemo(() => {
+    return rawVisits.filter((visit) => {
+      // Doctor filter
+      if (doctorFilter && visit.doctor !== Number(doctorFilter)) {
+        return false;
+      }
+      // Date range filter
+      if (dateRange?.from) {
+        const visitDate = new Date(visit.visit_date);
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        if (visitDate < fromDate) return false;
+      }
+      if (dateRange?.to) {
+        const visitDate = new Date(visit.visit_date);
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        if (visitDate > toDate) return false;
+      }
+      return true;
+    });
+  }, [rawVisits, doctorFilter, dateRange]);
+
+  const totalCount = allFetchedVisits.length;
 
   // Client-side pagination
   const totalClientPages = Math.ceil(allFetchedVisits.length / clientPageSize);
