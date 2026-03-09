@@ -1,5 +1,5 @@
 // src/pages/OPDVisits.tsx
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOpdVisit } from '@/hooks/useOpdVisit';
 import { useDoctor } from '@/hooks/useDoctor';
@@ -35,10 +35,16 @@ import {
   CheckCircle2,
   Stethoscope,
   Download,
+  X,
 } from 'lucide-react';
 import { OpdVisit, OpdVisitListParams } from '@/types/opdVisit.types';
+import { opdVisitService } from '@/services/opdVisit.service';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
+
+const PAGE_SIZE_OPTIONS = [100, 150, 200] as const;
+const API_FETCH_SIZE = 200;
 
 export const OPDVisits: React.FC = () => {
   const navigate = useNavigate();
@@ -57,11 +63,15 @@ export const OPDVisits: React.FC = () => {
   const [doctorFilter, setDoctorFilter] = useState<string>('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
 
-  // Export confirmation dialog state
+  // Client-side pagination
+  const [clientPage, setClientPage] = useState(1);
+  const [clientPageSize, setClientPageSize] = useState<number>(100);
+
+  // Export state
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const exportCancelledRef = useRef(false);
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -72,10 +82,10 @@ export const OPDVisits: React.FC = () => {
   const { data: doctorsData } = useDoctors({ page_size: 100 });
   const doctors = doctorsData?.results || [];
 
-  // Build query params
+  // Build query params - always fetch 200 from API
   const queryParams: OpdVisitListParams = {
-    page: currentPage,
-    page_size: pageSize,
+    page: 1,
+    page_size: API_FETCH_SIZE,
     search: searchTerm || undefined,
     status: statusFilter || undefined,
     doctor_id: doctorFilter ? Number(doctorFilter) : undefined,
@@ -94,47 +104,66 @@ export const OPDVisits: React.FC = () => {
   // Fetch statistics
   const { data: statistics } = useOpdVisitStatistics();
 
-  const visits = visitsData?.results || [];
+  const allFetchedVisits = visitsData?.results || [];
   const totalCount = visitsData?.count || 0;
-  const hasNext = !!visitsData?.next;
-  const hasPrevious = !!visitsData?.previous;
+
+  // Client-side pagination
+  const totalClientPages = Math.ceil(allFetchedVisits.length / clientPageSize);
+  const paginatedVisits = useMemo(() => {
+    const start = (clientPage - 1) * clientPageSize;
+    return allFetchedVisits.slice(start, start + clientPageSize);
+  }, [allFetchedVisits, clientPage, clientPageSize]);
+
+  const startRow = allFetchedVisits.length > 0 ? (clientPage - 1) * clientPageSize + 1 : 0;
+  const endRow = Math.min(clientPage * clientPageSize, allFetchedVisits.length);
 
   // Check if any filter is applied
   const hasFiltersApplied = !!(searchTerm || statusFilter || doctorFilter || dateFrom || dateTo);
 
+  // Build filter params (without pagination) for export
+  const getFilterParams = useCallback((): OpdVisitListParams => {
+    return {
+      search: searchTerm || undefined,
+      status: statusFilter || undefined,
+      doctor_id: doctorFilter ? Number(doctorFilter) : undefined,
+      date_from: dateFrom || undefined,
+      date_to: dateTo || undefined,
+    };
+  }, [searchTerm, statusFilter, doctorFilter, dateFrom, dateTo]);
+
   // Handlers
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1);
+    setClientPage(1);
   };
 
   const handleStatusFilter = (status: 'waiting' | 'in_consultation' | 'completed' | 'cancelled' | '') => {
     setStatusFilter(status);
-    setCurrentPage(1);
+    setClientPage(1);
   };
 
   const handleDoctorFilter = (value: string) => {
     setDoctorFilter(value === 'all' ? '' : value);
-    setCurrentPage(1);
+    setClientPage(1);
   };
 
   const handleDateFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDateFrom(e.target.value);
-    setCurrentPage(1);
+    setClientPage(1);
   };
 
   const handleDateToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDateTo(e.target.value);
-    setCurrentPage(1);
+    setClientPage(1);
   };
 
-  const handlePageSizeChange = (value: string) => {
-    setPageSize(Number(value));
-    setCurrentPage(1);
+  const handleClientPageSizeChange = (value: string) => {
+    setClientPageSize(Number(value));
+    setClientPage(1);
   };
 
   const handleView = (visit: OpdVisit) => {
-    const visitIds = visits.map(v => v.id);
+    const visitIds = allFetchedVisits.map(v => v.id);
     navigate(`/opd/consultation/${visit.id}`, {
       state: { visitIds, from: '/opd/visits' }
     });
@@ -170,30 +199,26 @@ export const OPDVisits: React.FC = () => {
   };
 
   const handleBilling = (visit: OpdVisit) => {
-    // Navigate to consultation route with billing tab active
-    const visitIds = visits.map(v => v.id);
+    const visitIds = allFetchedVisits.map(v => v.id);
     navigate(`/opd/consultation/${visit.id}`, {
       state: { visitIds, from: '/opd/visits', activeTab: 'billing' }
     });
   };
 
   const handleConsultation = (visit: OpdVisit) => {
-    // Pass the list of visit IDs for navigation
-    const visitIds = visits.map(v => v.id);
+    const visitIds = allFetchedVisits.map(v => v.id);
     navigate(`/opd/consultation/${visit.id}`, {
       state: { visitIds, from: '/opd/visits' }
     });
   };
 
-  // Export to CSV
+  // --- Export ---
   const handleExportClick = () => {
     setExportDialogOpen(true);
   };
 
-  const handleExportConfirm = useCallback(() => {
-    setExportDialogOpen(false);
-
-    const csvData = visits.map((visit) => ({
+  const generateCsvFromVisits = (data: OpdVisit[]) => {
+    const csvData = data.map((visit) => ({
       'Visit Number': visit.visit_number,
       'Visit Date': visit.visit_date,
       'Visit Time': visit.visit_time,
@@ -221,7 +246,6 @@ export const OPDVisits: React.FC = () => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'OPD Visits');
 
-    // Set column widths
     worksheet['!cols'] = [
       { wch: 16 }, { wch: 12 }, { wch: 10 }, { wch: 22 }, { wch: 14 },
       { wch: 14 }, { wch: 22 }, { wch: 12 }, { wch: 10 }, { wch: 16 },
@@ -232,7 +256,75 @@ export const OPDVisits: React.FC = () => {
 
     const timestamp = format(new Date(), 'yyyy-MM-dd_HHmmss');
     XLSX.writeFile(workbook, `opd_visits_${timestamp}.csv`, { bookType: 'csv' });
-  }, [visits]);
+  };
+
+  const handleExportConfirm = useCallback(async () => {
+    setExportDialogOpen(false);
+    setIsExporting(true);
+    exportCancelledRef.current = false;
+
+    const filterParams = getFilterParams();
+    const allVisits: OpdVisit[] = [];
+    let page = 1;
+    const batchSize = 200;
+    let totalToFetch = totalCount;
+
+    const progressToastId = toast.loading(
+      `Exporting... 0 of ${totalToFetch} fetched`,
+      { duration: Infinity }
+    );
+
+    try {
+      while (true) {
+        if (exportCancelledRef.current) {
+          toast.dismiss(progressToastId);
+          toast.info('Export cancelled');
+          setIsExporting(false);
+          return;
+        }
+
+        const response = await opdVisitService.getOpdVisits({
+          ...filterParams,
+          page,
+          page_size: batchSize,
+        });
+
+        allVisits.push(...response.results);
+        totalToFetch = response.count;
+
+        const percent = Math.round((allVisits.length / totalToFetch) * 100);
+        toast.loading(
+          `Exporting... ${allVisits.length} of ${totalToFetch} fetched (${percent}%)`,
+          { id: progressToastId, duration: Infinity }
+        );
+
+        if (!response.next) break;
+        page++;
+      }
+
+      if (exportCancelledRef.current) {
+        toast.dismiss(progressToastId);
+        toast.info('Export cancelled');
+        setIsExporting(false);
+        return;
+      }
+
+      generateCsvFromVisits(allVisits);
+      toast.success(`Exported ${allVisits.length} visit(s) successfully`, {
+        id: progressToastId,
+      });
+    } catch (error: any) {
+      toast.error(error.message || 'Export failed', {
+        id: progressToastId,
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }, [getFilterParams, totalCount]);
+
+  const handleCancelExport = useCallback(() => {
+    exportCancelledRef.current = true;
+  }, []);
 
   // Format date and time for display
   const formatDateTime = (date: string, time: string) => {
@@ -495,10 +587,19 @@ export const OPDVisits: React.FC = () => {
             variant="outline"
             size="sm"
             className="h-7 text-[12px]"
-            disabled={visits.length === 0}
+            disabled={totalCount === 0 || isExporting}
           >
-            <Download className="h-3.5 w-3.5 mr-1" />
-            Export CSV
+            {isExporting ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download className="h-3.5 w-3.5 mr-1" />
+                Export CSV
+              </>
+            )}
           </Button>
           <Button onClick={handleCreate} size="sm" className="flex-1 sm:flex-none h-7 text-[12px]">
             <Plus className="h-3.5 w-3.5 mr-1" />
@@ -593,7 +694,7 @@ export const OPDVisits: React.FC = () => {
               setDoctorFilter('');
               setDateFrom('');
               setDateTo('');
-              setCurrentPage(1);
+              setClientPage(1);
             }}
           >
             Clear filters
@@ -612,7 +713,7 @@ export const OPDVisits: React.FC = () => {
             <>
               {visitsLoading && <div className="flex justify-end px-4 py-2"><Loader2 className="h-4 w-4 animate-spin" /></div>}
               <DataTable
-                rows={visits}
+                rows={paginatedVisits}
                 isLoading={visitsLoading}
                 columns={columns}
                 renderMobileCard={renderMobileCard}
@@ -628,20 +729,20 @@ export const OPDVisits: React.FC = () => {
               />
 
               {/* Pagination */}
-              {!visitsLoading && visits.length > 0 && (
+              {!visitsLoading && allFetchedVisits.length > 0 && (
                 <div className="flex items-center justify-between px-6 py-4 border-t flex-wrap gap-3">
                   <div className="flex items-center gap-3">
                     <p className="text-sm text-muted-foreground">
-                      Showing {visits.length} of {totalCount} visit(s)
+                      Showing {startRow}–{endRow} of {allFetchedVisits.length}{totalCount > allFetchedVisits.length ? ` (${totalCount} total)` : ''} visit(s)
                     </p>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[12px] text-muted-foreground">Rows:</span>
-                      <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                      <span className="text-[12px] text-muted-foreground">Per page:</span>
+                      <Select value={String(clientPageSize)} onValueChange={handleClientPageSizeChange}>
                         <SelectTrigger className="w-[72px] h-7 text-[12px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {[10, 50, 100, 150, 200].map((size) => (
+                          {PAGE_SIZE_OPTIONS.map((size) => (
                             <SelectItem key={size} value={String(size)}>
                               {size}
                             </SelectItem>
@@ -650,24 +751,29 @@ export const OPDVisits: React.FC = () => {
                       </Select>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={!hasPrevious}
-                      onClick={() => setCurrentPage((p) => p - 1)}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={!hasNext}
-                      onClick={() => setCurrentPage((p) => p + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
+                  {totalClientPages > 1 && (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={clientPage <= 1}
+                        onClick={() => setClientPage((p) => p - 1)}
+                      >
+                        Previous
+                      </Button>
+                      <span className="flex items-center text-sm text-muted-foreground px-2">
+                        {clientPage} / {totalClientPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={clientPage >= totalClientPages}
+                        onClick={() => setClientPage((p) => p + 1)}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -690,15 +796,15 @@ export const OPDVisits: React.FC = () => {
       <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Export OPD Visits</DialogTitle>
+            <DialogTitle>Export All OPD Visits</DialogTitle>
             <DialogDescription>
               {hasFiltersApplied ? (
                 <span>
-                  You are about to export <span className="font-semibold text-foreground">{visits.length}</span> row(s) with the following filters applied:
+                  This will export all <span className="font-semibold text-foreground">{totalCount}</span> matching visit(s) with the following filters:
                 </span>
               ) : (
                 <span>
-                  No filters applied. You are about to export <span className="font-semibold text-foreground">{visits.length}</span> row(s) from the current page.
+                  No filters applied. This will export all <span className="font-semibold text-foreground">{totalCount}</span> visit(s).
                 </span>
               )}
             </DialogDescription>
@@ -713,17 +819,39 @@ export const OPDVisits: React.FC = () => {
               ))}
             </div>
           )}
+          {totalCount > 500 && (
+            <p className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+              This may take some time as there are many records to fetch. You can cancel the export at any time.
+            </p>
+          )}
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setExportDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleExportConfirm}>
               <Download className="h-3.5 w-3.5 mr-1.5" />
-              Export {visits.length} row(s)
+              Export {totalCount} row(s)
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Export Progress Bar (fixed bottom) */}
+      {isExporting && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background border rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 min-w-[320px] max-w-[420px]">
+          <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+          <span className="text-sm text-muted-foreground flex-1">Exporting visits...</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-[12px] text-muted-foreground hover:text-destructive"
+            onClick={handleCancelExport}
+          >
+            <X className="h-3.5 w-3.5 mr-1" />
+            Cancel
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
