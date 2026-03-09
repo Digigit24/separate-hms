@@ -45,7 +45,6 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
-const PAGE_SIZE_OPTIONS = [100, 150, 200] as const;
 const API_FETCH_SIZE = 200;
 
 export const OPDVisits: React.FC = () => {
@@ -64,10 +63,6 @@ export const OPDVisits: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'waiting' | 'in_consultation' | 'completed' | 'cancelled' | ''>('');
   const [doctorFilter, setDoctorFilter] = useState<string>('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
-
-  // Client-side pagination
-  const [clientPage, setClientPage] = useState(1);
-  const [clientPageSize, setClientPageSize] = useState<number>(100);
 
   // Export state
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -136,16 +131,6 @@ export const OPDVisits: React.FC = () => {
 
   const totalCount = allFetchedVisits.length;
 
-  // Client-side pagination
-  const totalClientPages = Math.ceil(allFetchedVisits.length / clientPageSize);
-  const paginatedVisits = useMemo(() => {
-    const start = (clientPage - 1) * clientPageSize;
-    return allFetchedVisits.slice(start, start + clientPageSize);
-  }, [allFetchedVisits, clientPage, clientPageSize]);
-
-  const startRow = allFetchedVisits.length > 0 ? (clientPage - 1) * clientPageSize + 1 : 0;
-  const endRow = Math.min(clientPage * clientPageSize, allFetchedVisits.length);
-
   // Check if any filter is applied
   const hasFiltersApplied = !!(searchTerm || statusFilter || doctorFilter || dateRange?.from);
 
@@ -163,27 +148,18 @@ export const OPDVisits: React.FC = () => {
   // Handlers
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    setClientPage(1);
   };
 
   const handleStatusFilter = (status: 'waiting' | 'in_consultation' | 'completed' | 'cancelled' | '') => {
     setStatusFilter(status);
-    setClientPage(1);
   };
 
   const handleDoctorFilter = (value: string) => {
     setDoctorFilter(value === 'all' ? '' : value);
-    setClientPage(1);
   };
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
     setDateRange(range);
-    setClientPage(1);
-  };
-
-  const handleClientPageSizeChange = (value: string) => {
-    setClientPageSize(Number(value));
-    setClientPage(1);
   };
 
   const handleView = (visit: OpdVisit) => {
@@ -704,7 +680,6 @@ export const OPDVisits: React.FC = () => {
               setStatusFilter('');
               setDoctorFilter('');
               setDateRange(undefined);
-              setClientPage(1);
             }}
           >
             Clear filters
@@ -723,7 +698,7 @@ export const OPDVisits: React.FC = () => {
             <>
               {visitsLoading && <div className="flex justify-end px-4 py-2"><Loader2 className="h-4 w-4 animate-spin" /></div>}
               <DataTable
-                rows={paginatedVisits}
+                rows={allFetchedVisits}
                 isLoading={visitsLoading}
                 columns={columns}
                 renderMobileCard={renderMobileCard}
@@ -737,55 +712,6 @@ export const OPDVisits: React.FC = () => {
                 emptyTitle="No visits found"
                 emptySubtitle="Try adjusting your search or filters, or create a new visit"
               />
-
-              {/* Pagination */}
-              {!visitsLoading && allFetchedVisits.length > 0 && (
-                <div className="flex items-center justify-between px-6 py-4 border-t flex-wrap gap-3">
-                  <div className="flex items-center gap-3">
-                    <p className="text-sm text-muted-foreground">
-                      Showing {startRow}–{endRow} of {allFetchedVisits.length}{totalCount > allFetchedVisits.length ? ` (${totalCount} total)` : ''} visit(s)
-                    </p>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[12px] text-muted-foreground">Per page:</span>
-                      <Select value={String(clientPageSize)} onValueChange={handleClientPageSizeChange}>
-                        <SelectTrigger className="w-[72px] h-7 text-[12px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {PAGE_SIZE_OPTIONS.map((size) => (
-                            <SelectItem key={size} value={String(size)}>
-                              {size}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  {totalClientPages > 1 && (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={clientPage <= 1}
-                        onClick={() => setClientPage((p) => p - 1)}
-                      >
-                        Previous
-                      </Button>
-                      <span className="flex items-center text-sm text-muted-foreground px-2">
-                        {clientPage} / {totalClientPages}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={clientPage >= totalClientPages}
-                        onClick={() => setClientPage((p) => p + 1)}
-                      >
-                        Next
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
             </>
           )}
         </CardContent>
