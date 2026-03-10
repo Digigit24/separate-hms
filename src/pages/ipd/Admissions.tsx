@@ -1,9 +1,9 @@
 // src/pages/ipd/Admissions.tsx
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
 import { useIPD } from '@/hooks/useIPD';
-import { Admission, ADMISSION_STATUS_LABELS } from '@/types/ipd.types';
+import { Admission, AdmissionStatus, ADMISSION_STATUS_LABELS } from '@/types/ipd.types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { AdmissionFormDrawer } from '@/components/ipd/AdmissionFormDrawer';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import type { DateRange } from 'react-day-picker';
 
 export default function Admissions() {
   const navigate = useNavigate();
@@ -40,6 +42,8 @@ export default function Admissions() {
   const [isDischargeDialogOpen, setIsDischargeDialogOpen] = useState(false);
   const [selectedAdmission, setSelectedAdmission] = useState<Admission | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<AdmissionStatus | ''>('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const [dischargeData, setDischargeData] = useState({
     discharge_type: 'Normal',
@@ -48,9 +52,42 @@ export default function Admissions() {
 
   const { useAdmissions, dischargePatient } = useIPD();
 
-  const { data: admissionsData, isLoading, error: fetchError, mutate } = useAdmissions({ search: searchQuery });
+  const { data: admissionsData, isLoading, error: fetchError, mutate } = useAdmissions({
+    search: searchQuery || undefined,
+    status: statusFilter || undefined,
+    admission_date__gte: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    admission_date__lte: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+  });
 
-  const admissions = admissionsData?.results || [];
+  const rawAdmissions = admissionsData?.results || [];
+
+  // Client-side filtering for status and date range
+  // (applied as fallback in case backend doesn't support these filters)
+  const admissions = useMemo(() => {
+    return rawAdmissions.filter((admission) => {
+      // Status filter
+      if (statusFilter && admission.status !== statusFilter) {
+        return false;
+      }
+      // Date range filter
+      if (dateRange?.from) {
+        const admDate = new Date(admission.admission_date);
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        if (admDate < fromDate) return false;
+      }
+      if (dateRange?.to) {
+        const admDate = new Date(admission.admission_date);
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        if (admDate > toDate) return false;
+      }
+      return true;
+    });
+  }, [rawAdmissions, statusFilter, dateRange]);
+
+  // Check if any filter is applied
+  const hasFiltersApplied = !!(searchQuery || statusFilter || dateRange?.from);
 
   // Show error state if data fetch fails
   if (fetchError && !isLoading && admissions.length === 0) {
@@ -353,7 +390,7 @@ export default function Admissions() {
         <span><span className="font-semibold text-foreground">{dischargedToday}</span> discharged</span>
       </div>
 
-      {/* Row 2: Search */}
+      {/* Row 2: Search + status filters */}
       <div className="flex gap-2 items-center flex-wrap">
         <div className="relative w-full sm:w-52">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -364,6 +401,47 @@ export default function Admissions() {
             className="pl-8 h-7 text-[12px]"
           />
         </div>
+        <div className="flex gap-1 flex-wrap">
+          {[
+            { value: '' as const, label: 'All' },
+            { value: 'admitted' as const, label: 'Admitted' },
+            { value: 'discharged' as const, label: 'Discharged' },
+            { value: 'transferred' as const, label: 'Transferred' },
+          ].map((f) => (
+            <Button
+              key={f.value}
+              variant={statusFilter === f.value ? 'default' : 'outline'}
+              size="sm"
+              className="h-7 text-[11px] px-2"
+              onClick={() => setStatusFilter(f.value)}
+            >
+              {f.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Row 3: Date range filter + clear */}
+      <div className="flex gap-2 items-center flex-wrap">
+        <DateRangePicker
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+          placeholder="Select date range"
+        />
+        {hasFiltersApplied && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-[11px] px-2 text-muted-foreground"
+            onClick={() => {
+              setSearchQuery('');
+              setStatusFilter('');
+              setDateRange(undefined);
+            }}
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
 
       {/* Admissions Table */}

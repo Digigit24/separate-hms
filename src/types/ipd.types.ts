@@ -302,6 +302,8 @@ export interface AdmissionFilters {
   doctor_id?: string;
   patient?: number;
   search?: string;
+  admission_date__gte?: string;
+  admission_date__lte?: string;
 }
 
 export interface BillingFilters {

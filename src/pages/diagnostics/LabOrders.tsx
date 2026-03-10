@@ -19,6 +19,8 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Microscope, Clock, CheckCircle2, XCircle, Activity, FileText, Eye, Download, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import type { DateRange } from 'react-day-picker';
 import type { DiagnosticOrder, CreateLabReportPayload, LabReport } from '@/types/diagnostics.types';
 
 type DiagnosticOrderStatus = 'pending' | 'sample_collected' | 'processing' | 'completed' | 'cancelled';
@@ -49,6 +51,7 @@ export const LabOrders: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<DiagnosticOrderStatus | 'all'>('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   // Lab report drawer state
   const [reportDrawerOpen, setReportDrawerOpen] = useState(false);
@@ -66,14 +69,36 @@ export const LabOrders: React.FC = () => {
     const params: Record<string, any> = {};
     if (searchTerm) params.search = searchTerm;
     if (statusFilter !== 'all') params.status = statusFilter;
+    if (dateRange?.from) params.created_at__gte = format(dateRange.from, 'yyyy-MM-dd');
+    if (dateRange?.to) params.created_at__lte = format(dateRange.to, 'yyyy-MM-dd');
     return params;
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, statusFilter, dateRange]);
 
   // Fetch diagnostic orders directly from /diagnostics/orders/
   const { data: ordersData, isLoading } = useDiagnosticOrders(queryParams);
   const { data: labReportsData } = useLabReports();
-  const orders: DiagnosticOrder[] = ordersData?.results || [];
+  const rawOrders: DiagnosticOrder[] = ordersData?.results || [];
   const labReports: LabReport[] = labReportsData?.results || [];
+
+  // Client-side filtering for date range
+  // (applied as fallback in case backend doesn't support these filters)
+  const orders = useMemo(() => {
+    return rawOrders.filter((order) => {
+      if (dateRange?.from) {
+        const orderDate = new Date(order.created_at);
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        if (orderDate < fromDate) return false;
+      }
+      if (dateRange?.to) {
+        const orderDate = new Date(order.created_at);
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        if (orderDate > toDate) return false;
+      }
+      return true;
+    });
+  }, [rawOrders, dateRange]);
 
   // Map diagnostic_order ID to lab report
   const reportByOrderId = useMemo(() => {
@@ -302,6 +327,9 @@ export const LabOrders: React.FC = () => {
         },
       ];
 
+  // Check if any filter is applied
+  const hasFiltersApplied = !!(searchTerm || statusFilter !== 'all' || dateRange?.from);
+
   // Stats
   const stats = useMemo(() => {
     const total = orders.length;
@@ -362,6 +390,25 @@ export const LabOrders: React.FC = () => {
             ))}
           </SelectContent>
         </Select>
+        <DateRangePicker
+          dateRange={dateRange}
+          onDateRangeChange={(range) => setDateRange(range)}
+          placeholder="Select date range"
+        />
+        {hasFiltersApplied && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-[11px] px-2 text-muted-foreground"
+            onClick={() => {
+              setSearchTerm('');
+              setStatusFilter('all');
+              setDateRange(undefined);
+            }}
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
 
       {/* Table */}

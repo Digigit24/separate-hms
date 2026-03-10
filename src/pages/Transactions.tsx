@@ -3,6 +3,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { usePayment } from '@/hooks/usePayment';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/DataTable';
 import type { RowActions } from '@/components/DataTable';
@@ -14,8 +15,11 @@ import {
   TrendingUp,
   TrendingDown,
   RefreshCw,
+  Search,
 } from 'lucide-react';
 import { Transaction } from '@/types/payment.types';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import type { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -31,16 +35,23 @@ export const Transactions: React.FC = () => {
   // State for pagination
   const [currentPage, setCurrentPage] = useState(1);
 
+  // State for search and filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>('view');
 
-  // Build query params
+  // Build query params - send filters to API in case backend supports them
   const queryParams = {
     page: currentPage,
     page_size: 20,
     ordering: '-created_at',
+    search: searchTerm || undefined,
+    created_at__gte: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    created_at__lte: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
   };
 
   // Fetch transactions
@@ -57,8 +68,54 @@ export const Transactions: React.FC = () => {
     isLoading: statsLoading
   } = useTransactionStatistics();
 
-  const transactions = transactionsData?.results || [];
+  const rawTransactions = transactionsData?.results || [];
+
+  // Client-side filtering as fallback (in case backend doesn't support these filters)
+  const filteredTransactions = useMemo(() => {
+    return rawTransactions.filter((transaction) => {
+      // Search filter
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const matchesSearch =
+          transaction.transaction_number?.toLowerCase().includes(term) ||
+          transaction.description?.toLowerCase().includes(term) ||
+          transaction.transaction_type?.toLowerCase().includes(term) ||
+          transaction.category?.name?.toLowerCase().includes(term) ||
+          transaction.payment_method?.toLowerCase().includes(term) ||
+          transaction.amount?.toString().includes(term);
+        if (!matchesSearch) return false;
+      }
+      // Date range filter
+      if (dateRange?.from) {
+        const txDate = new Date(transaction.created_at);
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        if (txDate < fromDate) return false;
+      }
+      if (dateRange?.to) {
+        const txDate = new Date(transaction.created_at);
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        if (txDate > toDate) return false;
+      }
+      return true;
+    });
+  }, [rawTransactions, searchTerm, dateRange]);
+
+  const transactions = filteredTransactions;
   const totalCount = transactionsData?.count || 0;
+
+  // Check if any filter is applied
+  const hasFiltersApplied = !!(searchTerm || dateRange?.from);
+
+  // Handlers for filters
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range);
+  };
 
   // Handlers
   const handleCreateTransaction = useCallback(() => {
@@ -337,6 +394,37 @@ export const Transactions: React.FC = () => {
           <span><span className="font-semibold text-foreground">{stats.overall_stats.total_transactions}</span> txns</span>
         </div>
       )}
+
+      {/* Row 2: Search + Date Range filters */}
+      <div className="flex gap-2 items-center flex-wrap">
+        <div className="relative w-full sm:w-52">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className="pl-8 h-7 text-[12px]"
+          />
+        </div>
+        <DateRangePicker
+          dateRange={dateRange}
+          onDateRangeChange={handleDateRangeChange}
+          placeholder="Select date range"
+        />
+        {hasFiltersApplied && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-[11px] px-2 text-muted-foreground"
+            onClick={() => {
+              setSearchTerm('');
+              setDateRange(undefined);
+            }}
+          >
+            Clear filters
+          </Button>
+        )}
+      </div>
 
       {/* Main Content */}
       <Card>

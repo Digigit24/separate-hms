@@ -1,5 +1,5 @@
 // src/pages/opd-production/ProcedureBills.tsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useProcedureBill } from '@/hooks/useProcedureBill';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,26 @@ export const ProcedureBills: React.FC = () => {
   const totalCount = billsData?.count || 0;
   const hasNext = !!billsData?.next;
   const hasPrevious = !!billsData?.previous;
+
+  // Client-side date range filtering as fallback
+  const filteredBills = useMemo(() => {
+    if (!dateRange?.from && !dateRange?.to) return bills;
+    return bills.filter((bill) => {
+      if (!bill.bill_date) return false;
+      const billDate = new Date(bill.bill_date);
+      if (isNaN(billDate.getTime())) return false;
+      const billDateStr = format(billDate, 'yyyy-MM-dd');
+      if (dateRange.from) {
+        const fromStr = format(dateRange.from, 'yyyy-MM-dd');
+        if (billDateStr < fromStr) return false;
+      }
+      if (dateRange.to) {
+        const toStr = format(dateRange.to, 'yyyy-MM-dd');
+        if (billDateStr > toStr) return false;
+      }
+      return true;
+    });
+  }, [bills, dateRange]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -221,7 +241,7 @@ export const ProcedureBills: React.FC = () => {
           ) : (
             <>
               <DataTable
-                rows={bills}
+                rows={filteredBills}
                 isLoading={isLoading}
                 columns={columns}
                 getRowId={(bill) => bill.id}

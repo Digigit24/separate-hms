@@ -9,10 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Search, FileText, CheckCircle2, Download, Upload, Clock, Phone, Send, Loader2, Check, CheckCheck } from 'lucide-react';
+import { Plus, Search, FileText, CheckCircle2, Download, Upload, Clock, Phone, Send, Loader2, Check, CheckCheck, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import type { DateRange } from 'react-day-picker';
 import type { LabReport, CreateLabReportPayload } from '@/types/diagnostics.types';
 import { externalWhatsappService } from '@/services/externalWhatsappService';
 import { templatesService } from '@/services/whatsapp/templatesService';
@@ -36,6 +38,7 @@ export const LabReports: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [sendingReportId, setSendingReportId] = useState<number | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const pollTimersRef = useRef<NodeJS.Timeout[]>([]);
 
   // Cleanup polling timers on unmount
@@ -71,6 +74,9 @@ export const LabReports: React.FC = () => {
     return map;
   }, [orders]);
 
+  // Check if any filter is applied
+  const hasFiltersApplied = !!(searchTerm || dateRange?.from);
+
   // Filtered reports
   const filteredReports = useMemo(() => {
     return reports.filter((report) => {
@@ -80,9 +86,25 @@ export const LabReports: React.FC = () => {
         report.patient_name?.toLowerCase().includes(term) ||
         report.patient_mobile?.includes(searchTerm) ||
         report.investigation_name?.toLowerCase().includes(term);
-      return matchesSearch;
+      if (!matchesSearch) return false;
+
+      // Date range filter on created_at
+      if (dateRange?.from) {
+        const reportDate = new Date(report.created_at);
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        if (reportDate < fromDate) return false;
+      }
+      if (dateRange?.to) {
+        const reportDate = new Date(report.created_at);
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        if (reportDate > toDate) return false;
+      }
+
+      return true;
     });
-  }, [reports, searchTerm]);
+  }, [reports, searchTerm, dateRange]);
 
   // DataTable columns
   const columns: DataTableColumn<LabReport>[] = [
@@ -528,7 +550,7 @@ export const LabReports: React.FC = () => {
         <span><span className="font-semibold text-foreground">{reportStats.pending}</span> Pending</span>
       </div>
 
-      {/* Row 2: Search */}
+      {/* Row 2: Search + Date Range filter */}
       <div className="flex gap-2 items-center flex-wrap">
         <div className="relative w-full sm:w-52">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -539,6 +561,24 @@ export const LabReports: React.FC = () => {
             className="pl-8 h-7 text-[12px]"
           />
         </div>
+        <DateRangePicker
+          dateRange={dateRange}
+          onDateRangeChange={(range) => setDateRange(range)}
+          placeholder="Select date range"
+        />
+        {hasFiltersApplied && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-[11px] px-2 text-muted-foreground"
+            onClick={() => {
+              setSearchTerm('');
+              setDateRange(undefined);
+            }}
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
 
       {/* Table */}

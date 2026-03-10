@@ -21,6 +21,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Search, ClipboardList, Clock, AlertCircle, CheckCircle2, XCircle, Activity, Microscope, Pill, Stethoscope, Package } from 'lucide-react';
 import { toast } from 'sonner';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import type { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
 import type { Requisition, RequisitionStatus, RequisitionPriority, RequisitionType, CreateRequisitionPayload } from '@/types/diagnostics.types';
 
@@ -76,6 +78,7 @@ export const Requisitions: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<RequisitionStatus | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<RequisitionType | 'all'>('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [activeTab, setActiveTab] = useState('details');
 
   // Form state
@@ -102,9 +105,24 @@ export const Requisitions: React.FC = () => {
         req.patient_name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || req.status === statusFilter;
       const matchesType = typeFilter === 'all' || req.requisition_type === typeFilter;
+
+      // Date range filter (client-side fallback using order_date)
+      if (dateRange?.from) {
+        const reqDate = new Date(req.order_date);
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        if (reqDate < fromDate) return false;
+      }
+      if (dateRange?.to) {
+        const reqDate = new Date(req.order_date);
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        if (reqDate > toDate) return false;
+      }
+
       return matchesSearch && matchesStatus && matchesType;
     });
-  }, [requisitions, searchTerm, statusFilter, typeFilter]);
+  }, [requisitions, searchTerm, statusFilter, typeFilter, dateRange]);
 
   // DataTable columns
   const columns: DataTableColumn<Requisition>[] = [
@@ -429,6 +447,26 @@ export const Requisitions: React.FC = () => {
             ))}
           </SelectContent>
         </Select>
+        <DateRangePicker
+          dateRange={dateRange}
+          onDateRangeChange={(range) => setDateRange(range)}
+          placeholder="Select date range"
+        />
+        {(searchTerm || statusFilter !== 'all' || typeFilter !== 'all' || dateRange?.from) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-[11px] px-2 text-muted-foreground"
+            onClick={() => {
+              setSearchTerm('');
+              setStatusFilter('all');
+              setTypeFilter('all');
+              setDateRange(undefined);
+            }}
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
 
       {/* Table */}

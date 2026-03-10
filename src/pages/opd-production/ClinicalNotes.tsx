@@ -1,5 +1,5 @@
 // src/pages/opd-production/ClinicalNotes.tsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useClinicalNote } from '@/hooks/useClinicalNote';
 import { useOpdVisit } from '@/hooks/useOpdVisit';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,9 +13,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { Loader2, Plus, Search, FileText, ClipboardList, User, Phone } from 'lucide-react';
+import { Loader2, Plus, Search, FileText, ClipboardList, User, Phone, X } from 'lucide-react';
 import { ClinicalNote, ClinicalNoteListParams } from '@/types/clinicalNote.types';
 import { format } from 'date-fns';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import type { DateRange } from 'react-day-picker';
 import { ClinicalNoteFormDrawer } from '@/components/ClinicalNoteFormDrawer';
 
 export const ClinicalNotes: React.FC = () => {
@@ -23,6 +25,7 @@ export const ClinicalNotes: React.FC = () => {
   const { useOpdVisitById } = useOpdVisit();
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [currentPage, setCurrentPage] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view'>('create');
@@ -44,6 +47,31 @@ export const ClinicalNotes: React.FC = () => {
   const totalCount = notesData?.count || 0;
   const hasNext = !!notesData?.next;
   const hasPrevious = !!notesData?.previous;
+
+  // Client-side date range filtering
+  const filteredNotes = useMemo(() => {
+    return notes.filter((note) => {
+      if (dateRange?.from) {
+        const noteDate = new Date(note.note_date);
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        if (noteDate < fromDate) return false;
+      }
+      if (dateRange?.to) {
+        const noteDate = new Date(note.note_date);
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        if (noteDate > toDate) return false;
+      }
+      return true;
+    });
+  }, [notes, dateRange]);
+
+  const hasFiltersApplied = !!(searchTerm || dateRange?.from);
+
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range);
+  };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -133,7 +161,7 @@ export const ClinicalNotes: React.FC = () => {
         <span><span className="font-semibold text-foreground">{notes.filter(n => n.next_followup_date).length}</span> With Follow-up Date</span>
       </div>
 
-      {/* Row 2: Search */}
+      {/* Row 2: Search + Date filter */}
       <div className="flex gap-2 items-center flex-wrap">
         <div className="relative w-full sm:w-52">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -144,6 +172,25 @@ export const ClinicalNotes: React.FC = () => {
             className="pl-8 h-7 text-[12px]"
           />
         </div>
+        <DateRangePicker
+          dateRange={dateRange}
+          onDateRangeChange={handleDateRangeChange}
+          placeholder="Select date range"
+        />
+        {hasFiltersApplied && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-[11px] px-2 text-muted-foreground"
+            onClick={() => {
+              setSearchTerm('');
+              setDateRange(undefined);
+              setCurrentPage(1);
+            }}
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
 
       {/* Table Card */}
@@ -156,7 +203,7 @@ export const ClinicalNotes: React.FC = () => {
           ) : (
             <>
               <DataTable
-                rows={notes}
+                rows={filteredNotes}
                 isLoading={isLoading}
                 columns={columns}
                 getRowId={(note) => note.id}
@@ -166,10 +213,10 @@ export const ClinicalNotes: React.FC = () => {
                 emptySubtitle="Try adjusting your filters"
               />
 
-              {!isLoading && notes.length > 0 && (
+              {!isLoading && filteredNotes.length > 0 && (
                 <div className="flex items-center justify-between px-6 py-4 border-t">
                   <p className="text-sm text-muted-foreground">
-                    Showing {notes.length} of {totalCount} note(s)
+                    Showing {filteredNotes.length} of {totalCount} note(s)
                   </p>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" disabled={!hasPrevious} onClick={() => setCurrentPage((p) => p - 1)}>

@@ -1,5 +1,5 @@
 // src/pages/Appointments.tsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppointment } from '@/hooks/useAppointment';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,6 +27,8 @@ import {
   Tag,
 } from 'lucide-react';
 import { Appointment, AppointmentListParams } from '@/types/appointment.types';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import type { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
 
 export const Appointments: React.FC = () => {
@@ -41,6 +43,7 @@ export const Appointments: React.FC = () => {
   // State for search and filters
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | ''>('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [activeTab, setActiveTab] = useState<'appointments' | 'types'>('appointments');
@@ -59,6 +62,8 @@ export const Appointments: React.FC = () => {
     page: currentPage,
     search: searchTerm || undefined,
     status: statusFilter || undefined,
+    appointment_date__gte: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    appointment_date__lte: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
   };
 
   // Fetch appointments
@@ -72,10 +77,35 @@ export const Appointments: React.FC = () => {
   // Fetch statistics
   const { data: statistics } = useAppointmentStatistics();
 
-  const appointments = appointmentsData?.results || [];
-  const totalCount = appointmentsData?.count || 0;
+  const rawAppointments = appointmentsData?.results || [];
   const hasNext = !!appointmentsData?.next;
   const hasPrevious = !!appointmentsData?.previous;
+
+  // Client-side filtering for date range
+  // (applied as fallback in case backend doesn't support these filters)
+  const appointments = useMemo(() => {
+    return rawAppointments.filter((appointment) => {
+      // Date range filter
+      if (dateRange?.from) {
+        const appointmentDate = new Date(appointment.appointment_date);
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        if (appointmentDate < fromDate) return false;
+      }
+      if (dateRange?.to) {
+        const appointmentDate = new Date(appointment.appointment_date);
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        if (appointmentDate > toDate) return false;
+      }
+      return true;
+    });
+  }, [rawAppointments, dateRange]);
+
+  const totalCount = appointments.length;
+
+  // Check if any filter is applied
+  const hasFiltersApplied = !!(searchTerm || statusFilter || dateRange?.from);
 
   // Debug logging
   console.log('Appointments data:', { appointments, totalCount, isLoading: appointmentsLoading, error: appointmentsError });
@@ -88,6 +118,11 @@ export const Appointments: React.FC = () => {
 
   const handleStatusFilter = (status: 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | '') => {
     setStatusFilter(status);
+    setCurrentPage(1);
+  };
+
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range);
     setCurrentPage(1);
   };
 
@@ -398,6 +433,26 @@ export const Appointments: React.FC = () => {
             </Button>
           ))}
         </div>
+        <DateRangePicker
+          dateRange={dateRange}
+          onDateRangeChange={handleDateRangeChange}
+          placeholder="Select date range"
+        />
+        {hasFiltersApplied && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-[11px] px-2 text-muted-foreground"
+            onClick={() => {
+              setSearchTerm('');
+              setStatusFilter('');
+              setDateRange(undefined);
+              setCurrentPage(1);
+            }}
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
 
       {/* Appointments View - List or Calendar */}

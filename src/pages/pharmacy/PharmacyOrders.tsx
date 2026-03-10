@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { useDiagnostics } from '@/hooks/useDiagnostics';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -14,6 +15,8 @@ import {
 } from '@/components/ui/select';
 import { Search, Pill, Clock, CheckCircle2, ClipboardList } from 'lucide-react';
 import { format } from 'date-fns';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import type { DateRange } from 'react-day-picker';
 import type { Requisition, RequisitionStatus } from '@/types/diagnostics.types';
 
 const STATUS_OPTIONS: { value: RequisitionStatus; label: string }[] = [
@@ -28,12 +31,16 @@ export const PharmacyOrders: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<RequisitionStatus | 'all'>('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   // Fetch all requisitions and filter client-side for medicine type
   const { data, isLoading } = useRequisitions();
   const medicineRequisitions: Requisition[] = useMemo(() => {
     return (data?.results || []).filter((req) => req.requisition_type === 'medicine');
   }, [data]);
+
+  // Check if any filter is applied
+  const hasFiltersApplied = !!(searchTerm || statusFilter !== 'all' || dateRange?.from);
 
   // Filtered requisitions
   const filteredOrders = useMemo(() => {
@@ -42,9 +49,24 @@ export const PharmacyOrders: React.FC = () => {
         req.requisition_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
         req.patient_name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || req.status === statusFilter;
+
+      // Date range filter on order_date
+      if (dateRange?.from) {
+        const orderDate = new Date(req.order_date);
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        if (orderDate < fromDate) return false;
+      }
+      if (dateRange?.to) {
+        const orderDate = new Date(req.order_date);
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        if (orderDate > toDate) return false;
+      }
+
       return matchesSearch && matchesStatus;
     });
-  }, [medicineRequisitions, searchTerm, statusFilter]);
+  }, [medicineRequisitions, searchTerm, statusFilter, dateRange]);
 
   // DataTable columns
   const columns: DataTableColumn<Requisition>[] = [
@@ -167,6 +189,25 @@ export const PharmacyOrders: React.FC = () => {
             ))}
           </SelectContent>
         </Select>
+        <DateRangePicker
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+          placeholder="Select date range"
+        />
+        {hasFiltersApplied && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-[11px] px-2 text-muted-foreground"
+            onClick={() => {
+              setSearchTerm('');
+              setStatusFilter('all');
+              setDateRange(undefined);
+            }}
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
 
       {/* Table */}

@@ -55,6 +55,27 @@ export const IPDBillingListPage: React.FC = () => {
 
   const bills = billsData?.results || [];
 
+  // Client-side date range filtering as fallback
+  const filteredBills = useMemo(() => {
+    if (!dateRange?.from && !dateRange?.to) return bills;
+    return bills.filter((bill) => {
+      if (!bill.bill_date) return false;
+      const billDate = new Date(bill.bill_date);
+      if (isNaN(billDate.getTime())) return false;
+      // Normalize to date-only for comparison
+      const billDateStr = format(billDate, 'yyyy-MM-dd');
+      if (dateRange.from) {
+        const fromStr = format(dateRange.from, 'yyyy-MM-dd');
+        if (billDateStr < fromStr) return false;
+      }
+      if (dateRange.to) {
+        const toStr = format(dateRange.to, 'yyyy-MM-dd');
+        if (billDateStr > toStr) return false;
+      }
+      return true;
+    });
+  }, [bills, dateRange]);
+
   // Handle bill click - navigate to billing details
   const handleBillClick = (bill: IPDBilling) => {
     navigate(`/ipd/billing/${bill.id}`);
@@ -291,7 +312,7 @@ export const IPDBillingListPage: React.FC = () => {
       <Card>
         <CardContent className="p-0">
           <DataTable
-            rows={bills}
+            rows={filteredBills}
             isLoading={isLoading}
             columns={columns}
             renderMobileCard={renderMobileCard}

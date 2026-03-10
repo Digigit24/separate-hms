@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { OpdVisit, OpdVisitListParams } from '@/types/opdVisit.types';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import type { DateRange } from 'react-day-picker';
 import { format, isToday, isBefore, startOfDay } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -36,6 +38,7 @@ export const FollowUps: React.FC = () => {
   const [editingVisitId, setEditingVisitId] = useState<number | null>(null);
   const [followUpDateInput, setFollowUpDateInput] = useState<Date | undefined>(undefined);
   const [saving, setSaving] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const queryParams: OpdVisitListParams = {
     page: currentPage,
@@ -66,18 +69,35 @@ export const FollowUps: React.FC = () => {
     return 'upcoming';
   };
 
-  // Client-side filter on follow-up status
+  // Client-side filter on follow-up status and date range
   const filteredVisits = useMemo(() => {
-    if (activeFilter === 'all') return allVisits;
     return allVisits.filter((v) => {
-      const status = getFollowUpStatus(v);
-      if (activeFilter === 'completed') return status === 'completed';
-      if (activeFilter === 'today') return status === 'today';
-      if (activeFilter === 'overdue') return status === 'overdue';
-      if (activeFilter === 'upcoming') return status === 'upcoming';
+      // Follow-up status filter
+      if (activeFilter !== 'all') {
+        const status = getFollowUpStatus(v);
+        if (activeFilter === 'completed' && status !== 'completed') return false;
+        if (activeFilter === 'today' && status !== 'today') return false;
+        if (activeFilter === 'overdue' && status !== 'overdue') return false;
+        if (activeFilter === 'upcoming' && status !== 'upcoming') return false;
+      }
+      // Date range filter on follow_up_date
+      if (dateRange?.from) {
+        if (!v.follow_up_date) return false;
+        const fuDate = new Date(v.follow_up_date);
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        if (fuDate < fromDate) return false;
+      }
+      if (dateRange?.to) {
+        if (!v.follow_up_date) return false;
+        const fuDate = new Date(v.follow_up_date);
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        if (fuDate > toDate) return false;
+      }
       return true;
     });
-  }, [allVisits, activeFilter]);
+  }, [allVisits, activeFilter, dateRange]);
 
   // Stats
   const stats = useMemo(() => {
@@ -378,6 +398,20 @@ export const FollowUps: React.FC = () => {
   );
   };
 
+  const hasFiltersApplied = !!(searchTerm || activeFilter !== 'all' || dateRange?.from);
+
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range);
+    setCurrentPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setActiveFilter('all');
+    setDateRange(undefined);
+    setCurrentPage(1);
+  };
+
   const filterTabs: { value: FollowUpFilter; label: string; count?: number; icon: React.ReactNode }[] = [
     { value: 'all', label: 'All', count: stats.total, icon: <Calendar className="h-3 w-3" /> },
     { value: 'overdue', label: 'Overdue', count: stats.overdueCount, icon: <AlertTriangle className="h-3 w-3" /> },
@@ -448,6 +482,21 @@ export const FollowUps: React.FC = () => {
             </Button>
           ))}
         </div>
+        <DateRangePicker
+          dateRange={dateRange}
+          onDateRangeChange={handleDateRangeChange}
+          placeholder="Follow-up date range"
+        />
+        {hasFiltersApplied && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-[11px] px-2 text-muted-foreground"
+            onClick={handleClearFilters}
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
 
       {/* Table */}
