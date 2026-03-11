@@ -1,5 +1,5 @@
 // src/pages/OPDVisits.tsx
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOpdVisit } from '@/hooks/useOpdVisit';
 import { useDoctor } from '@/hooks/useDoctor';
@@ -78,7 +78,7 @@ export const OPDVisits: React.FC = () => {
   const { data: doctorsData } = useDoctors({ page_size: 100 });
   const doctors = doctorsData?.results || [];
 
-  // Build query params - always fetch 200 from API
+  // Build query params for first page
   // Send filters to API (search & status work server-side)
   // Doctor and date filters are applied client-side as fallback
   const queryParams: OpdVisitListParams = {
@@ -91,7 +91,7 @@ export const OPDVisits: React.FC = () => {
     visit_date__lte: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
   };
 
-  // Fetch visits
+  // Fetch first page of visits
   const {
     data: visitsData,
     error: visitsError,
@@ -102,7 +102,68 @@ export const OPDVisits: React.FC = () => {
   // Fetch statistics
   const { data: statistics } = useOpdVisitStatistics();
 
-  const rawVisits = visitsData?.results || [];
+  // State to accumulate all pages
+  const [allPages, setAllPages] = useState<OpdVisit[]>([]);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const fetchAbortRef = useRef(false);
+
+  // When first page data changes, fetch remaining pages if any
+  useEffect(() => {
+    if (!visitsData) {
+      setAllPages([]);
+      return;
+    }
+
+    const firstPageResults = visitsData.results || [];
+    const totalCount = visitsData.count || 0;
+
+    // If all data fits in first page, no need to fetch more
+    if (!visitsData.next || firstPageResults.length >= totalCount) {
+      setAllPages(firstPageResults);
+      return;
+    }
+
+    // There are more pages - fetch them all
+    fetchAbortRef.current = false;
+    setAllPages(firstPageResults);
+    setIsFetchingMore(true);
+
+    const fetchRemainingPages = async () => {
+      const accumulated = [...firstPageResults];
+      let nextPage = 2;
+
+      while (accumulated.length < totalCount) {
+        if (fetchAbortRef.current) break;
+
+        try {
+          const response = await opdVisitService.getOpdVisits({
+            ...queryParams,
+            page: nextPage,
+            page_size: API_FETCH_SIZE,
+          });
+          accumulated.push(...response.results);
+          setAllPages([...accumulated]);
+
+          if (!response.next) break;
+          nextPage++;
+        } catch {
+          break;
+        }
+      }
+
+      setIsFetchingMore(false);
+    };
+
+    fetchRemainingPages();
+
+    return () => {
+      fetchAbortRef.current = true;
+    };
+  // Re-fetch when visitsData identity changes (triggered by filter/search changes)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visitsData]);
+
+  const rawVisits = allPages;
 
   // Client-side filtering for doctor and date range
   // (applied as fallback in case backend doesn't support these filters)
@@ -696,7 +757,16 @@ export const OPDVisits: React.FC = () => {
             </div>
           ) : (
             <>
-              {visitsLoading && <div className="flex justify-end px-4 py-2"><Loader2 className="h-4 w-4 animate-spin" /></div>}
+              {(visitsLoading || isFetchingMore) && (
+                <div className="flex justify-end items-center gap-2 px-4 py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {isFetchingMore && (
+                    <span className="text-xs text-muted-foreground">
+                      Loading {allPages.length} of {visitsData?.count || '...'} records...
+                    </span>
+                  )}
+                </div>
+              )}
               <DataTable
                 rows={allFetchedVisits}
                 isLoading={visitsLoading}
