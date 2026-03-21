@@ -109,6 +109,9 @@ export interface DataTableProps<T> {
   /** optional: extra action items you want in dropdown */
   extraActions?: (row: T) => React.ReactNode;
 
+  /** optional: per-row className for custom row styling */
+  getRowClassName?: (row: T) => string;
+
   /** empty state text */
   emptyTitle?: string;
   emptySubtitle?: string;
@@ -143,6 +146,7 @@ export function DataTable<T>({
   onConsultation,
   onBilling,
   extraActions,
+  getRowClassName,
   emptyTitle = 'No records found',
   emptySubtitle = 'Try adjusting your filters or search criteria',
 }: DataTableProps<T>) {
@@ -407,7 +411,7 @@ export function DataTable<T>({
               };
 
               return (
-                <div key={getRowId(row)} className="bg-card border rounded-lg p-4 space-y-3 hover:shadow-md transition-shadow">
+                <div key={getRowId(row)} className={`bg-card border rounded-lg p-4 space-y-3 hover:shadow-md transition-shadow ${getRowClassName ? getRowClassName(row) : ''}`}>
                   {renderMobileCard(row, rowActions)}
                 </div>
               );
@@ -648,7 +652,7 @@ export function DataTable<T>({
               return (
                 <TableRow
                   key={id}
-                  className={`group hover:bg-muted/50 transition-colors align-top border-b border-border/50 ${isRowClickable ? 'cursor-pointer' : ''} ${isSelected ? 'bg-muted/70 border-l-4 border-l-primary' : ''}`}
+                  className={`group hover:bg-muted/50 transition-colors align-top border-b border-border/50 ${isRowClickable ? 'cursor-pointer' : ''} ${isSelected ? 'bg-muted/70 border-l-4 border-l-primary' : ''} ${getRowClassName ? getRowClassName(row) : ''}`}
                   onClick={isRowClickable ? handleRowClick : undefined}
                 >
                   {columns.map((col) => (

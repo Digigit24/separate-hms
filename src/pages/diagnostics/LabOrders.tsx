@@ -266,7 +266,7 @@ export const LabOrders: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-[12px] border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+              className="h-7 text-[12px]"
               onClick={(e) => {
                 e.stopPropagation();
                 handleViewReport(report);
@@ -496,6 +496,12 @@ export const LabOrders: React.FC = () => {
             isLoading={isLoading}
             getRowId={(row) => row.id}
             getRowLabel={(row) => `Order #${row.id}`}
+            getRowClassName={(row) => {
+              const hasReport = row.status === 'completed' && reportByOrderId.has(row.id);
+              return hasReport
+                ? 'bg-emerald-50/50 dark:bg-emerald-950/20'
+                : '';
+            }}
             emptyTitle="No lab orders found"
             emptySubtitle="Lab orders will appear here once created"
             renderMobileCard={(row) => (
@@ -536,7 +542,7 @@ export const LabOrders: React.FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 text-[12px] border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+                      className="h-7 text-[12px]"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleViewReport(reportByOrderId.get(row.id)!);
