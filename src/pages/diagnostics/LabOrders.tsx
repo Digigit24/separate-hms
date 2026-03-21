@@ -266,7 +266,7 @@ export const LabOrders: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-[12px]"
+              className="h-7 text-[12px] border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950"
               onClick={(e) => {
                 e.stopPropagation();
                 handleViewReport(report);
@@ -536,7 +536,7 @@ export const LabOrders: React.FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 text-[12px]"
+                      className="h-7 text-[12px] border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleViewReport(reportByOrderId.get(row.id)!);
