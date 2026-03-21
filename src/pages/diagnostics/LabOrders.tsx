@@ -1,6 +1,7 @@
 // src/pages/diagnostics/LabOrders.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useDiagnostics } from '@/hooks/useDiagnostics';
+import { diagnosticsService } from '@/services/diagnosticsService';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
 import { SideDrawer, DrawerActionButton } from '@/components/SideDrawer';
 import { Button } from '@/components/ui/button';
@@ -16,12 +17,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
-import { Search, Microscope, Clock, CheckCircle2, XCircle, Activity, FileText, Eye, Download, Phone } from 'lucide-react';
+import { Search, Microscope, Clock, CheckCircle2, XCircle, Activity, FileText, Eye, Download, Phone, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import type { DateRange } from 'react-day-picker';
 import type { DiagnosticOrder, CreateLabReportPayload, LabReport } from '@/types/diagnostics.types';
+
+const API_FETCH_SIZE = 200;
 
 type DiagnosticOrderStatus = 'pending' | 'sample_collected' | 'processing' | 'completed' | 'cancelled';
 
@@ -66,7 +69,11 @@ export const LabOrders: React.FC = () => {
 
   // Build query params for diagnostic orders
   const queryParams = useMemo(() => {
-    const params: Record<string, any> = {};
+    const params: Record<string, any> = {
+      page: 1,
+      page_size: API_FETCH_SIZE,
+      ordering: '-created_at',
+    };
     if (searchTerm) params.search = searchTerm;
     if (statusFilter !== 'all') params.status = statusFilter;
     if (dateRange?.from) params.created_at__gte = format(dateRange.from, 'yyyy-MM-dd');
@@ -74,16 +81,75 @@ export const LabOrders: React.FC = () => {
     return params;
   }, [searchTerm, statusFilter, dateRange]);
 
-  // Fetch diagnostic orders directly from /diagnostics/orders/
+  // Fetch first page of diagnostic orders
   const { data: ordersData, isLoading } = useDiagnosticOrders(queryParams);
   const { data: labReportsData } = useLabReports();
-  const rawOrders: DiagnosticOrder[] = ordersData?.results || [];
   const labReports: LabReport[] = labReportsData?.results || [];
+
+  // State to accumulate all pages
+  const [allPages, setAllPages] = useState<DiagnosticOrder[]>([]);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const fetchAbortRef = useRef(false);
+
+  // When first page data changes, fetch remaining pages if any
+  useEffect(() => {
+    if (!ordersData) {
+      setAllPages([]);
+      return;
+    }
+
+    const firstPageResults = ordersData.results || [];
+    const totalCount = ordersData.count || 0;
+
+    // If all data fits in first page, no need to fetch more
+    if (!ordersData.next || firstPageResults.length >= totalCount) {
+      setAllPages(firstPageResults);
+      return;
+    }
+
+    // There are more pages - fetch them all
+    fetchAbortRef.current = false;
+    setAllPages(firstPageResults);
+    setIsFetchingMore(true);
+
+    const fetchRemainingPages = async () => {
+      const accumulated = [...firstPageResults];
+      let nextPage = 2;
+
+      while (accumulated.length < totalCount) {
+        if (fetchAbortRef.current) break;
+
+        try {
+          const response = await diagnosticsService.getDiagnosticOrders({
+            ...queryParams,
+            page: nextPage,
+            page_size: API_FETCH_SIZE,
+          });
+          accumulated.push(...response.results);
+          setAllPages([...accumulated]);
+
+          if (!response.next) break;
+          nextPage++;
+        } catch {
+          break;
+        }
+      }
+
+      setIsFetchingMore(false);
+    };
+
+    fetchRemainingPages();
+
+    return () => {
+      fetchAbortRef.current = true;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ordersData]);
 
   // Client-side filtering for date range
   // (applied as fallback in case backend doesn't support these filters)
   const orders = useMemo(() => {
-    return rawOrders.filter((order) => {
+    return allPages.filter((order) => {
       if (dateRange?.from) {
         const orderDate = new Date(order.created_at);
         const fromDate = new Date(dateRange.from);
@@ -98,7 +164,7 @@ export const LabOrders: React.FC = () => {
       }
       return true;
     });
-  }, [rawOrders, dateRange]);
+  }, [allPages, dateRange]);
 
   // Map diagnostic_order ID to lab report
   const reportByOrderId = useMemo(() => {
@@ -414,6 +480,16 @@ export const LabOrders: React.FC = () => {
       {/* Table */}
       <Card>
         <CardContent className="p-0">
+          {(isLoading || isFetchingMore) && (
+            <div className="flex justify-end items-center gap-2 px-4 py-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {isFetchingMore && (
+                <span className="text-xs text-muted-foreground">
+                  Loading {allPages.length} of {ordersData?.count || '...'} records...
+                </span>
+              )}
+            </div>
+          )}
           <DataTable
             rows={orders}
             columns={columns}
