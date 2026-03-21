@@ -83,8 +83,58 @@ export const LabOrders: React.FC = () => {
 
   // Fetch first page of diagnostic orders
   const { data: ordersData, isLoading } = useDiagnosticOrders(queryParams);
-  const { data: labReportsData } = useLabReports();
-  const labReports: LabReport[] = labReportsData?.results || [];
+  const { data: labReportsData } = useLabReports({ page_size: API_FETCH_SIZE });
+  const [allReports, setAllReports] = useState<LabReport[]>([]);
+  const reportsFetchAbortRef = useRef(false);
+
+  // Fetch all pages of lab reports
+  useEffect(() => {
+    if (!labReportsData) {
+      setAllReports([]);
+      return;
+    }
+
+    const firstPageResults = labReportsData.results || [];
+    const totalCount = labReportsData.count || 0;
+
+    if (!labReportsData.next || firstPageResults.length >= totalCount) {
+      setAllReports(firstPageResults);
+      return;
+    }
+
+    reportsFetchAbortRef.current = false;
+    setAllReports(firstPageResults);
+
+    const fetchRemainingReports = async () => {
+      const accumulated = [...firstPageResults];
+      let nextPage = 2;
+
+      while (accumulated.length < totalCount) {
+        if (reportsFetchAbortRef.current) break;
+        try {
+          const response = await diagnosticsService.getLabReports({
+            page: nextPage,
+            page_size: API_FETCH_SIZE,
+          });
+          accumulated.push(...response.results);
+          setAllReports([...accumulated]);
+          if (!response.next) break;
+          nextPage++;
+        } catch {
+          break;
+        }
+      }
+    };
+
+    fetchRemainingReports();
+
+    return () => {
+      reportsFetchAbortRef.current = true;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [labReportsData]);
+
+  const labReports: LabReport[] = allReports;
 
   // State to accumulate all pages
   const [allPages, setAllPages] = useState<DiagnosticOrder[]>([]);
