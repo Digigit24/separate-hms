@@ -1,6 +1,6 @@
 // src/components/DataTable.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -128,6 +128,155 @@ export interface RowActions<T> {
 }
 
 // --------------------------------------
+// Shared pagination page-numbers renderer
+// --------------------------------------
+
+function renderPageNumbers(
+  totalPages: number,
+  currentPage: number,
+  setCurrentPage: (page: number) => void,
+  compact?: boolean,
+) {
+  if (compact) {
+    // Mobile / floating: show up to 5 pages
+    return Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+      let page: number;
+      if (totalPages <= 5) {
+        page = i + 1;
+      } else if (currentPage <= 3) {
+        page = i + 1;
+      } else if (currentPage >= totalPages - 2) {
+        page = totalPages - 4 + i;
+      } else {
+        page = currentPage - 2 + i;
+      }
+      return (
+        <PaginationItem key={page}>
+          <PaginationLink
+            onClick={() => setCurrentPage(page)}
+            isActive={currentPage === page}
+            className="cursor-pointer"
+          >
+            {page}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    });
+  }
+
+  // Desktop: show first, last, current ±1, with ellipsis
+  return Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+    const showPage =
+      page === 1 ||
+      page === totalPages ||
+      (page >= currentPage - 1 && page <= currentPage + 1);
+
+    if (!showPage) {
+      if (page === currentPage - 2 || page === currentPage + 2) {
+        return (
+          <PaginationItem key={page}>
+            <span className="px-2 text-muted-foreground">...</span>
+          </PaginationItem>
+        );
+      }
+      return null;
+    }
+
+    return (
+      <PaginationItem key={page}>
+        <PaginationLink
+          onClick={() => setCurrentPage(page)}
+          isActive={currentPage === page}
+          className="cursor-pointer"
+        >
+          {page}
+        </PaginationLink>
+      </PaginationItem>
+    );
+  });
+}
+
+// --------------------------------------
+// Floating Pagination (IntersectionObserver-based)
+// --------------------------------------
+
+function FloatingPagination({
+  totalPages,
+  currentPage,
+  setCurrentPage,
+  startIndex,
+  endIndex,
+  totalItems,
+  isVisible,
+}: {
+  totalPages: number;
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  startIndex: number;
+  endIndex: number;
+  totalItems: number;
+  isVisible: boolean;
+}) {
+  if (!isVisible || totalPages <= 1) return null;
+
+  return (
+    <div
+      className="fixed bottom-4 right-4 z-50 bg-background/95 backdrop-blur-sm border rounded-xl shadow-lg px-4 py-2.5 flex items-center gap-3 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
+    >
+      <span className="text-xs text-muted-foreground hidden sm:inline">
+        {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems}
+      </span>
+
+      <Pagination>
+        <PaginationContent className="gap-0.5">
+          <PaginationItem>
+            <PaginationPrevious
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              className={`h-8 px-2 text-xs ${currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
+            />
+          </PaginationItem>
+
+          {renderPageNumbers(totalPages, currentPage, setCurrentPage, true)}
+
+          <PaginationItem>
+            <PaginationNext
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              className={`h-8 px-2 text-xs ${currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    </div>
+  );
+}
+
+// --------------------------------------
+// useInlinePaginationVisibility hook
+// --------------------------------------
+
+function useInlinePaginationVisibility() {
+  const inlinePaginationRef = useRef<HTMLDivElement>(null);
+  const [isInlineVisible, setIsInlineVisible] = useState(true);
+
+  useEffect(() => {
+    const el = inlinePaginationRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInlineVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return { inlinePaginationRef, showFloating: !isInlineVisible };
+}
+
+// --------------------------------------
 // Component
 // --------------------------------------
 
@@ -167,6 +316,9 @@ export function DataTable<T>({
   // pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState(50);
+
+  // floating pagination visibility
+  const { inlinePaginationRef, showFloating } = useInlinePaginationVisibility();
 
   // Handle column sort
   const handleSort = (column: DataTableColumn<T>) => {
@@ -418,9 +570,9 @@ export function DataTable<T>({
             })}
           </div>
 
-          {/* Pagination controls for mobile */}
+          {/* Inline Pagination controls for mobile */}
           {filteredAndSortedRows.length > 0 && (
-            <div className="border-t bg-background p-4 space-y-3">
+            <div ref={inlinePaginationRef} className="border-t bg-background p-4 space-y-3">
               {/* Entries per page selector */}
               <div className="flex items-center justify-center gap-2">
                 <span className="text-sm text-muted-foreground">Show</span>
@@ -456,30 +608,7 @@ export function DataTable<T>({
                       />
                     </PaginationItem>
 
-                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                      let page: number;
-                      if (totalPages <= 5) {
-                        page = i + 1;
-                      } else if (currentPage <= 3) {
-                        page = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        page = totalPages - 4 + i;
-                      } else {
-                        page = currentPage - 2 + i;
-                      }
-
-                      return (
-                        <PaginationItem key={page}>
-                          <PaginationLink
-                            onClick={() => setCurrentPage(page)}
-                            isActive={currentPage === page}
-                            className="cursor-pointer"
-                          >
-                            {page}
-                          </PaginationLink>
-                        </PaginationItem>
-                      );
-                    })}
+                    {renderPageNumbers(totalPages, currentPage, setCurrentPage, true)}
 
                     <PaginationItem>
                       <PaginationNext
@@ -492,6 +621,17 @@ export function DataTable<T>({
               )}
             </div>
           )}
+
+          {/* Floating Pagination (visible when inline is off-screen) */}
+          <FloatingPagination
+            totalPages={totalPages}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            totalItems={filteredAndSortedRows.length}
+            isVisible={showFloating && filteredAndSortedRows.length > 0}
+          />
         </div>
 
         {/* Delete dialog */}
@@ -706,9 +846,9 @@ export function DataTable<T>({
           </TableBody>
         </Table>
 
-        {/* Pagination controls */}
+        {/* Inline Pagination controls */}
         {filteredAndSortedRows.length > 0 && (
-          <div className="flex items-center justify-between px-4 py-4 border-t">
+          <div ref={inlinePaginationRef} className="flex items-center justify-between px-4 py-4 border-t">
             {/* Entries per page selector */}
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Show</span>
@@ -746,37 +886,7 @@ export function DataTable<T>({
                       />
                     </PaginationItem>
 
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                      // Show first page, last page, current page, and pages around current
-                      const showPage =
-                        page === 1 ||
-                        page === totalPages ||
-                        (page >= currentPage - 1 && page <= currentPage + 1);
-
-                      if (!showPage) {
-                        // Show ellipsis for skipped pages
-                        if (page === currentPage - 2 || page === currentPage + 2) {
-                          return (
-                            <PaginationItem key={page}>
-                              <span className="px-2 text-muted-foreground">...</span>
-                            </PaginationItem>
-                          );
-                        }
-                        return null;
-                      }
-
-                      return (
-                        <PaginationItem key={page}>
-                          <PaginationLink
-                            onClick={() => setCurrentPage(page)}
-                            isActive={currentPage === page}
-                            className="cursor-pointer"
-                          >
-                            {page}
-                          </PaginationLink>
-                        </PaginationItem>
-                      );
-                    })}
+                    {renderPageNumbers(totalPages, currentPage, setCurrentPage)}
 
                     <PaginationItem>
                       <PaginationNext
@@ -790,6 +900,17 @@ export function DataTable<T>({
             </div>
           </div>
         )}
+
+        {/* Floating Pagination (visible when inline is off-screen) */}
+        <FloatingPagination
+          totalPages={totalPages}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          totalItems={filteredAndSortedRows.length}
+          isVisible={showFloating && filteredAndSortedRows.length > 0}
+        />
       </div>
 
       {/* Delete dialog */}
