@@ -1,6 +1,6 @@
 // src/components/DataTable.tsx
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -255,12 +255,20 @@ function FloatingPagination({
 // --------------------------------------
 
 function useInlinePaginationVisibility() {
-  const inlinePaginationRef = useRef<HTMLDivElement>(null);
   const [isInlineVisible, setIsInlineVisible] = useState(true);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
-  useEffect(() => {
-    const el = inlinePaginationRef.current;
-    if (!el) return;
+  const inlinePaginationRef = useCallback((node: HTMLDivElement | null) => {
+    // Disconnect previous observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
+
+    if (!node) {
+      // Element unmounted — hide floating since there's no pagination to track
+      return;
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -269,8 +277,8 @@ function useInlinePaginationVisibility() {
       { threshold: 0.1 },
     );
 
-    observer.observe(el);
-    return () => observer.disconnect();
+    observer.observe(node);
+    observerRef.current = observer;
   }, []);
 
   return { inlinePaginationRef, showFloating: !isInlineVisible };

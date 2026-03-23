@@ -2,7 +2,7 @@
 // Server-side pagination with inline + floating behavior.
 // When the inline pagination is scrolled off-screen, a floating pill appears.
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -35,12 +35,16 @@ export function ServerPagination({
   onNext,
   itemLabel,
 }: ServerPaginationProps) {
-  const inlineRef = useRef<HTMLDivElement>(null);
   const [showFloating, setShowFloating] = useState(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
-  useEffect(() => {
-    const el = inlineRef.current;
-    if (!el) return;
+  const inlineRef = useCallback((node: HTMLDivElement | null) => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
+
+    if (!node) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -49,8 +53,8 @@ export function ServerPagination({
       { threshold: 0.1 },
     );
 
-    observer.observe(el);
-    return () => observer.disconnect();
+    observer.observe(node);
+    observerRef.current = observer;
   }, []);
 
   const totalPages = Math.ceil(totalCount / pageSize) || 1;
