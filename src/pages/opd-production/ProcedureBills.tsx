@@ -1,57 +1,50 @@
 // src/pages/opd-production/ProcedureBills.tsx
 import React, { useState } from 'react';
-import { useProcedureBill } from '@/hooks/useProcedureBill';
+import { useProcedureMaster } from '@/hooks/useProcedureMaster';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
 import { ServerPagination } from '@/components/ServerPagination';
-import { Plus, Search, IndianRupee, FileText, CreditCard, AlertCircle } from 'lucide-react';
-import { ProcedureBill, ProcedureBillListParams } from '@/types/procedureBill.types';
-import { format } from 'date-fns';
-import type { DateRange } from 'react-day-picker';
+import { Plus, Search, Briefcase, IndianRupee } from 'lucide-react';
+import { ProcedureMaster, ProcedureMasterListParams, ProcedureCategory } from '@/types/procedureMaster.types';
 import { toast } from 'sonner';
-import { formatPatientName } from '@/utils/nameHelpers';
-import { ProcedureBillFormDrawer } from '@/components/ProcedureBillFormDrawer';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { ProcedureMasterFormDrawer } from '@/components/ProcedureMasterFormDrawer';
 
 export const ProcedureBills: React.FC = () => {
-  const { useProcedureBills, deleteBill, printBill } = useProcedureBill();
+  const { useProcedureMasters, deleteProcedure } = useProcedureMaster();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState<'paid' | 'unpaid' | 'partial' | ''>('');
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [categoryFilter, setCategoryFilter] = useState<ProcedureCategory | ''>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view'>('create');
-  const [selectedBillId, setSelectedBillId] = useState<number | null>(null);
+  const [selectedProcedureId, setSelectedProcedureId] = useState<number | null>(null);
 
-  const queryParams: ProcedureBillListParams = {
+  const queryParams: ProcedureMasterListParams = {
     page: currentPage,
     search: searchTerm || undefined,
-    payment_status: paymentStatusFilter || undefined,
-    bill_date_from: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
-    bill_date_to: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+    category: categoryFilter || undefined,
   };
 
-  const { data: billsData, error, isLoading, mutate } = useProcedureBills(queryParams);
+  const { data: proceduresData, error, isLoading, mutate } = useProcedureMasters(queryParams);
 
-  const bills = billsData?.results || [];
-  const totalCount = billsData?.count || 0;
-  const hasNext = !!billsData?.next;
-  const hasPrevious = !!billsData?.previous;
+  const procedures = proceduresData?.results || [];
+  const totalCount = proceduresData?.count || 0;
+  const hasNext = !!proceduresData?.next;
+  const hasPrevious = !!proceduresData?.previous;
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1);
   };
 
-  const handleDelete = async (bill: ProcedureBill) => {
-    if (window.confirm(`Delete bill ${bill.bill_number}?`)) {
+  const handleDelete = async (procedure: ProcedureMaster) => {
+    if (window.confirm(`Delete procedure ${procedure.name}?`)) {
       try {
-        await deleteBill(bill.id);
-        toast.success('Bill deleted');
+        await deleteProcedure(procedure.id);
+        toast.success('Procedure deleted');
         mutate();
       } catch (error: any) {
         toast.error(error.message);
@@ -59,91 +52,66 @@ export const ProcedureBills: React.FC = () => {
     }
   };
 
-  const handlePrint = async (bill: ProcedureBill) => {
-    try {
-      const result = await printBill(bill.id);
-      window.open(result.pdf_url, '_blank');
-      toast.success('Bill printed');
-    } catch (error: any) {
-      toast.error(error.message);
-    }
+  const getCategoryColor = (category: ProcedureCategory) => {
+    const colors: Record<ProcedureCategory, string> = {
+      laboratory: 'bg-neutral-800 dark:bg-neutral-300',
+      radiology: 'bg-neutral-700 dark:bg-neutral-400',
+      cardiology: 'bg-neutral-500',
+      pathology: 'bg-neutral-900 dark:bg-neutral-200',
+      ultrasound: 'bg-neutral-600 dark:bg-neutral-500',
+      ct_scan: 'bg-neutral-600 dark:bg-neutral-500',
+      mri: 'bg-neutral-500 dark:bg-neutral-500',
+      ecg: 'bg-neutral-500 dark:bg-neutral-500',
+      xray: 'bg-cyan-600',
+      other: 'bg-neutral-400 dark:bg-neutral-600',
+    };
+    return colors[category] || 'bg-neutral-400 dark:bg-neutral-600';
   };
 
-  const columns: DataTableColumn<ProcedureBill>[] = [
+  const columns: DataTableColumn<ProcedureMaster>[] = [
     {
-      header: 'Bill',
-      key: 'bill_number',
-      cell: (bill) => (
+      header: 'Procedure',
+      key: 'name',
+      cell: (procedure) => (
         <div className="flex flex-col">
-          <span className="font-medium font-mono text-sm">{bill.bill_number}</span>
-          <span className="text-xs text-muted-foreground">
-            {format(new Date(bill.bill_date), 'MMM dd, yyyy')}
-          </span>
+          <span className="font-medium">{procedure.name}</span>
+          <span className="text-xs text-muted-foreground font-mono">{procedure.code}</span>
         </div>
       ),
     },
     {
-      header: 'Patient',
-      key: 'patient',
-      cell: (bill) => (
-        <div className="flex flex-col">
-          <span className="font-medium">{formatPatientName(bill.patient_name)}</span>
-          <span className="text-xs text-muted-foreground">{bill.patient_phone}</span>
+      header: 'Category',
+      key: 'category',
+      cell: (procedure) => (
+        <Badge variant="default" className={`${getCategoryColor(procedure.category)} text-xs`}>
+          {procedure.category.replace('_', ' ').toUpperCase()}
+        </Badge>
+      ),
+    },
+    {
+      header: 'Description',
+      key: 'description',
+      cell: (procedure) => (
+        <div className="max-w-md">
+          <p className="text-sm truncate">{procedure.description || 'N/A'}</p>
         </div>
       ),
     },
     {
-      header: 'Doctor',
-      key: 'doctor',
-      cell: (bill) => (
-        <span className="text-sm">{bill.doctor_name || 'N/A'}</span>
+      header: 'Charge',
+      key: 'default_charge',
+      cell: (procedure) => (
+        <span className="font-medium">₹{procedure.default_charge}</span>
       ),
     },
     {
-      header: 'Items',
-      key: 'items',
-      cell: (bill) => (
-        <div className="flex flex-col text-xs">
-          <span className="font-medium">{bill.items.length} items</span>
-          {bill.items.slice(0, 2).map((item, idx) => (
-            <span key={idx} className="text-muted-foreground truncate max-w-xs">
-              • {item.particular_name || `Procedure #${item.procedure}`} x{item.quantity}
-            </span>
-          ))}
-          {bill.items.length > 2 && (
-            <span className="text-muted-foreground">+{bill.items.length - 2} more</span>
-          )}
-        </div>
+      header: 'Status',
+      key: 'is_active',
+      cell: (procedure) => (
+        <Badge variant={procedure.is_active ? 'default' : 'secondary'} className={procedure.is_active ? 'bg-neutral-900 dark:bg-neutral-200' : ''}>
+          {procedure.is_active ? 'Active' : 'Inactive'}
+        </Badge>
       ),
-    },
-    {
-      header: 'Amount',
-      key: 'total_amount',
-      cell: (bill) => (
-        <div className="flex flex-col text-sm">
-          <span className="font-medium">₹{bill.total_amount}</span>
-          {parseFloat(bill.balance_amount) > 0 && (
-            <span className="text-xs text-orange-600">Bal: ₹{bill.balance_amount}</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      header: 'Payment',
-      key: 'payment_status',
-      cell: (bill) => {
-        const statusConfig = {
-          paid: { label: 'Paid', className: 'bg-neutral-900 dark:bg-neutral-200' },
-          partial: { label: 'Partial', className: 'bg-neutral-600 dark:bg-neutral-500' },
-          unpaid: { label: 'Unpaid', className: 'bg-neutral-500' },
-        };
-        const config = statusConfig[bill.payment_status];
-        return (
-          <Badge variant="default" className={config.className}>
-            {config.label}
-          </Badge>
-        );
-      },
     },
   ];
 
@@ -152,64 +120,37 @@ export const ProcedureBills: React.FC = () => {
       {/* Row 1: Title + inline stats + action */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4 flex-wrap">
-          <h1 className="text-lg font-bold leading-none">Procedure Bills</h1>
+          <h1 className="text-lg font-bold leading-none">Procedures</h1>
           <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
-            <span className="flex items-center gap-1"><FileText className="h-3 w-3" /> <span className="font-semibold text-foreground">{totalCount}</span> Bills</span>
+            <span className="flex items-center gap-1"><Briefcase className="h-3 w-3" /> <span className="font-semibold text-foreground">{totalCount}</span> Total</span>
             <span className="text-border">|</span>
-            <span className="flex items-center gap-1"><IndianRupee className="h-3 w-3" /> <span className="font-semibold text-foreground">₹{bills.reduce((sum, b) => sum + parseFloat(b.received_amount || '0'), 0).toFixed(0)}</span> Collected</span>
-            <span className="text-border">|</span>
-            <span className="flex items-center gap-1"><AlertCircle className="h-3 w-3" /> <span className="font-semibold text-foreground">₹{bills.reduce((sum, b) => sum + parseFloat(b.balance_amount || '0'), 0).toFixed(0)}</span> Pending</span>
-            <span className="text-border">|</span>
-            <span className="flex items-center gap-1"><CreditCard className="h-3 w-3" /> <span className="font-semibold text-foreground">{bills.filter(b => b.payment_status === 'unpaid').length}</span> Unpaid</span>
+            <span className="flex items-center gap-1"><IndianRupee className="h-3 w-3" /> Avg <span className="font-semibold text-foreground">₹{procedures.length > 0 ? (procedures.reduce((sum, p) => sum + parseFloat(p.default_charge || '0'), 0) / procedures.length).toFixed(0) : '0'}</span></span>
           </div>
         </div>
-        <Button onClick={() => { setDrawerMode('create'); setSelectedBillId(null); setDrawerOpen(true); }} size="sm" className="w-full sm:w-auto h-7 text-[12px]">
+        <Button onClick={() => { setDrawerMode('create'); setSelectedProcedureId(null); setDrawerOpen(true); }} size="sm" className="w-full sm:w-auto h-7 text-[12px]">
           <Plus className="h-3.5 w-3.5 mr-1" />
-          New Bill
+          New Procedure
         </Button>
       </div>
 
       {/* Mobile-only stats */}
       <div className="flex sm:hidden items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
-        <span><span className="font-semibold text-foreground">{totalCount}</span> Bills</span>
+        <span><span className="font-semibold text-foreground">{totalCount}</span> Total</span>
         <span className="text-border">|</span>
-        <span><span className="font-semibold text-foreground">₹{bills.reduce((sum, b) => sum + parseFloat(b.received_amount || '0'), 0).toFixed(0)}</span> Collected</span>
-        <span className="text-border">|</span>
-        <span><span className="font-semibold text-foreground">₹{bills.reduce((sum, b) => sum + parseFloat(b.balance_amount || '0'), 0).toFixed(0)}</span> Pending</span>
-        <span className="text-border">|</span>
-        <span><span className="font-semibold text-foreground">{bills.filter(b => b.payment_status === 'unpaid').length}</span> Unpaid</span>
+        <span>Avg <span className="font-semibold text-foreground">₹{procedures.length > 0 ? (procedures.reduce((sum, p) => sum + parseFloat(p.default_charge || '0'), 0) / procedures.length).toFixed(0) : '0'}</span></span>
       </div>
 
-      {/* Row 2: Search + filters */}
+      {/* Row 2: Search */}
       <div className="flex gap-2 items-center flex-wrap">
         <div className="relative w-full sm:w-52">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
-            placeholder="Search by bill number, patient..."
+            placeholder="Search by name, code..."
             value={searchTerm}
             onChange={handleSearch}
             className="pl-8 h-7 text-[12px]"
           />
         </div>
-        <div className="flex gap-1 flex-wrap">
-          <Button variant={paymentStatusFilter === '' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => { setPaymentStatusFilter(''); setCurrentPage(1); }}>
-            All
-          </Button>
-          <Button variant={paymentStatusFilter === 'paid' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => { setPaymentStatusFilter('paid'); setCurrentPage(1); }}>
-            Paid
-          </Button>
-          <Button variant={paymentStatusFilter === 'partial' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => { setPaymentStatusFilter('partial'); setCurrentPage(1); }}>
-            Partial
-          </Button>
-          <Button variant={paymentStatusFilter === 'unpaid' ? 'default' : 'outline'} size="sm" className="h-7 text-[11px] px-2" onClick={() => { setPaymentStatusFilter('unpaid'); setCurrentPage(1); }}>
-            Unpaid
-          </Button>
-        </div>
-        <DateRangePicker
-          dateRange={dateRange}
-          onDateRangeChange={(range) => { setDateRange(range); setCurrentPage(1); }}
-          placeholder="Filter by date"
-        />
       </div>
 
       {/* Table Card */}
@@ -222,40 +163,40 @@ export const ProcedureBills: React.FC = () => {
           ) : (
             <>
               <DataTable
-                rows={bills}
+                rows={procedures}
                 isLoading={isLoading}
                 columns={columns}
-                getRowId={(bill) => bill.id}
-                getRowLabel={(bill) => bill.bill_number}
-                onView={(bill) => handlePrint(bill)}
-                onEdit={(bill) => { setDrawerMode('edit'); setSelectedBillId(bill.id); setDrawerOpen(true); }}
+                getRowId={(procedure) => procedure.id}
+                getRowLabel={(procedure) => procedure.name}
+                onView={(procedure) => { setDrawerMode('view'); setSelectedProcedureId(procedure.id); setDrawerOpen(true); }}
+                onEdit={(procedure) => { setDrawerMode('edit'); setSelectedProcedureId(procedure.id); setDrawerOpen(true); }}
                 onDelete={handleDelete}
-                emptyTitle="No bills found"
-                emptySubtitle="Try adjusting your filters"
+                emptyTitle="No procedures found"
+                emptySubtitle="Try adjusting your search"
                 disableClientPagination
               />
 
-              {!isLoading && bills.length > 0 && (
+              {!isLoading && procedures.length > 0 && (
                 <ServerPagination
                   currentPage={currentPage}
                   totalCount={totalCount}
-                  pageSize={bills.length}
+                  pageSize={procedures.length}
                   hasNext={hasNext}
                   hasPrevious={hasPrevious}
                   onPrevious={() => setCurrentPage((p) => p - 1)}
                   onNext={() => setCurrentPage((p) => p + 1)}
-                  itemLabel="bill(s)"
+                  itemLabel="procedure(s)"
                 />
               )}
             </>
           )}
         </CardContent>
       </Card>
-      <ProcedureBillFormDrawer
+      <ProcedureMasterFormDrawer
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         mode={drawerMode}
-        billId={selectedBillId}
+        procedureId={selectedProcedureId}
         onSuccess={mutate}
       />
     </div>
