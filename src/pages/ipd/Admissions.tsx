@@ -1,5 +1,5 @@
 // src/pages/ipd/Admissions.tsx
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
 import { useIPD } from '@/hooks/useIPD';
@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { AdmissionFormDrawer } from '@/components/ipd/AdmissionFormDrawer';
+import { ServerPagination } from '@/components/ServerPagination';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import type { DateRange } from 'react-day-picker';
 
@@ -44,6 +45,7 @@ export default function Admissions() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<AdmissionStatus | ''>('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [dischargeData, setDischargeData] = useState({
     discharge_type: 'Normal',
@@ -53,38 +55,17 @@ export default function Admissions() {
   const { useAdmissions, dischargePatient } = useIPD();
 
   const { data: admissionsData, isLoading, error: fetchError, mutate } = useAdmissions({
+    page: currentPage,
     search: searchQuery || undefined,
     status: statusFilter || undefined,
     admission_date__gte: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
     admission_date__lte: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
   });
 
-  const rawAdmissions = admissionsData?.results || [];
-
-  // Client-side filtering for status and date range
-  // (applied as fallback in case backend doesn't support these filters)
-  const admissions = useMemo(() => {
-    return rawAdmissions.filter((admission) => {
-      // Status filter
-      if (statusFilter && admission.status !== statusFilter) {
-        return false;
-      }
-      // Date range filter
-      if (dateRange?.from) {
-        const admDate = new Date(admission.admission_date);
-        const fromDate = new Date(dateRange.from);
-        fromDate.setHours(0, 0, 0, 0);
-        if (admDate < fromDate) return false;
-      }
-      if (dateRange?.to) {
-        const admDate = new Date(admission.admission_date);
-        const toDate = new Date(dateRange.to);
-        toDate.setHours(23, 59, 59, 999);
-        if (admDate > toDate) return false;
-      }
-      return true;
-    });
-  }, [rawAdmissions, statusFilter, dateRange]);
+  const admissions = admissionsData?.results || [];
+  const totalCount = admissionsData?.count || 0;
+  const hasNext = !!admissionsData?.next;
+  const hasPrevious = !!admissionsData?.previous;
 
   // Check if any filter is applied
   const hasFiltersApplied = !!(searchQuery || statusFilter || dateRange?.from);
@@ -397,7 +378,7 @@ export default function Admissions() {
           <Input
             placeholder="Search..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             className="pl-8 h-7 text-[12px]"
           />
         </div>
@@ -413,7 +394,7 @@ export default function Admissions() {
               variant={statusFilter === f.value ? 'default' : 'outline'}
               size="sm"
               className="h-7 text-[11px] px-2"
-              onClick={() => setStatusFilter(f.value)}
+              onClick={() => { setStatusFilter(f.value); setCurrentPage(1); }}
             >
               {f.label}
             </Button>
@@ -425,7 +406,7 @@ export default function Admissions() {
       <div className="flex gap-2 items-center flex-wrap">
         <DateRangePicker
           dateRange={dateRange}
-          onDateRangeChange={setDateRange}
+          onDateRangeChange={(r) => { setDateRange(r); setCurrentPage(1); }}
           placeholder="Select date range"
         />
         {hasFiltersApplied && (
@@ -437,6 +418,7 @@ export default function Admissions() {
               setSearchQuery('');
               setStatusFilter('');
               setDateRange(undefined);
+              setCurrentPage(1);
             }}
           >
             Clear filters
@@ -472,7 +454,21 @@ export default function Admissions() {
             )}
             emptyTitle="No admissions found"
             emptySubtitle="Create a new admission to get started"
+            disableClientPagination
           />
+
+          {!isLoading && totalCount > 0 && (
+            <ServerPagination
+              currentPage={currentPage}
+              totalCount={totalCount}
+              pageSize={admissions.length}
+              hasNext={hasNext}
+              hasPrevious={hasPrevious}
+              onPrevious={() => setCurrentPage((p) => p - 1)}
+              onNext={() => setCurrentPage((p) => p + 1)}
+              itemLabel="admission(s)"
+            />
+          )}
         </CardContent>
       </Card>
 

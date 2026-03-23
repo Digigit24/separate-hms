@@ -1,5 +1,5 @@
 // src/pages/opd-production/ClinicalNotes.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useClinicalNote } from '@/hooks/useClinicalNote';
 import { useOpdVisit } from '@/hooks/useOpdVisit';
 import { Card, CardContent } from '@/components/ui/card';
@@ -39,6 +39,8 @@ export const ClinicalNotes: React.FC = () => {
   const queryParams: ClinicalNoteListParams = {
     page: currentPage,
     search: searchTerm || undefined,
+    note_date__gte: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    note_date__lte: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
   };
 
   const { data: notesData, error, isLoading, mutate } = useClinicalNotes(queryParams);
@@ -49,29 +51,11 @@ export const ClinicalNotes: React.FC = () => {
   const hasNext = !!notesData?.next;
   const hasPrevious = !!notesData?.previous;
 
-  // Client-side date range filtering
-  const filteredNotes = useMemo(() => {
-    return notes.filter((note) => {
-      if (dateRange?.from) {
-        const noteDate = new Date(note.note_date);
-        const fromDate = new Date(dateRange.from);
-        fromDate.setHours(0, 0, 0, 0);
-        if (noteDate < fromDate) return false;
-      }
-      if (dateRange?.to) {
-        const noteDate = new Date(note.note_date);
-        const toDate = new Date(dateRange.to);
-        toDate.setHours(23, 59, 59, 999);
-        if (noteDate > toDate) return false;
-      }
-      return true;
-    });
-  }, [notes, dateRange]);
-
   const hasFiltersApplied = !!(searchTerm || dateRange?.from);
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
     setDateRange(range);
+    setCurrentPage(1);
   };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -204,7 +188,7 @@ export const ClinicalNotes: React.FC = () => {
           ) : (
             <>
               <DataTable
-                rows={filteredNotes}
+                rows={notes}
                 isLoading={isLoading}
                 columns={columns}
                 getRowId={(note) => note.id}
@@ -212,13 +196,14 @@ export const ClinicalNotes: React.FC = () => {
                 onRowClick={handleRowClick}
                 emptyTitle="No follow-ups found"
                 emptySubtitle="Try adjusting your filters"
+                disableClientPagination
               />
 
-              {!isLoading && filteredNotes.length > 0 && (
+              {!isLoading && totalCount > 0 && (
                 <ServerPagination
                   currentPage={currentPage}
                   totalCount={totalCount}
-                  pageSize={filteredNotes.length}
+                  pageSize={notes.length}
                   hasNext={hasNext}
                   hasPrevious={hasPrevious}
                   onPrevious={() => setCurrentPage((p) => p - 1)}

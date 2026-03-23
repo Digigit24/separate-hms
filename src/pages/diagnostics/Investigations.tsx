@@ -369,6 +369,7 @@ export const Investigations: React.FC = () => {
             onDelete={handleDelete}
             emptyTitle="No investigations found"
             emptySubtitle="Create your first investigation to get started"
+            disableClientPagination
             renderMobileCard={(row, actions) => (
               <div className="space-y-3">
                 <div className="flex items-start justify-between">

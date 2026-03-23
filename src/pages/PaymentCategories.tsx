@@ -265,6 +265,7 @@ export const PaymentCategories: React.FC = () => {
             onDelete={handleDeleteCategory}
             emptyTitle="No categories found"
             emptySubtitle="Get started by creating your first category"
+            disableClientPagination
           />
 
           {/* Pagination */}

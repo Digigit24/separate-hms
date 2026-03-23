@@ -297,6 +297,8 @@ export interface BedFilters {
 }
 
 export interface AdmissionFilters {
+  page?: number;
+  page_size?: number;
   status?: AdmissionStatus;
   ward?: number;
   doctor_id?: string;
@@ -304,6 +306,7 @@ export interface AdmissionFilters {
   search?: string;
   admission_date__gte?: string;
   admission_date__lte?: string;
+  [key: string]: string | number | boolean | undefined;
 }
 
 export interface BillingFilters {

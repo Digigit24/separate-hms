@@ -1,5 +1,5 @@
 // src/pages/Transactions.tsx
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { usePayment } from '@/hooks/usePayment';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,41 +69,7 @@ export const Transactions: React.FC = () => {
     isLoading: statsLoading
   } = useTransactionStatistics();
 
-  const rawTransactions = transactionsData?.results || [];
-
-  // Client-side filtering as fallback (in case backend doesn't support these filters)
-  const filteredTransactions = useMemo(() => {
-    return rawTransactions.filter((transaction) => {
-      // Search filter
-      if (searchTerm) {
-        const term = searchTerm.toLowerCase();
-        const matchesSearch =
-          transaction.transaction_number?.toLowerCase().includes(term) ||
-          transaction.description?.toLowerCase().includes(term) ||
-          transaction.transaction_type?.toLowerCase().includes(term) ||
-          transaction.category?.name?.toLowerCase().includes(term) ||
-          transaction.payment_method?.toLowerCase().includes(term) ||
-          transaction.amount?.toString().includes(term);
-        if (!matchesSearch) return false;
-      }
-      // Date range filter
-      if (dateRange?.from) {
-        const txDate = new Date(transaction.created_at);
-        const fromDate = new Date(dateRange.from);
-        fromDate.setHours(0, 0, 0, 0);
-        if (txDate < fromDate) return false;
-      }
-      if (dateRange?.to) {
-        const txDate = new Date(transaction.created_at);
-        const toDate = new Date(dateRange.to);
-        toDate.setHours(23, 59, 59, 999);
-        if (txDate > toDate) return false;
-      }
-      return true;
-    });
-  }, [rawTransactions, searchTerm, dateRange]);
-
-  const transactions = filteredTransactions;
+  const transactions = transactionsData?.results || [];
   const totalCount = transactionsData?.count || 0;
 
   // Check if any filter is applied
@@ -112,10 +78,12 @@ export const Transactions: React.FC = () => {
   // Handlers for filters
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+    setCurrentPage(1);
   };
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
     setDateRange(range);
+    setCurrentPage(1);
   };
 
   // Handlers
@@ -442,6 +410,7 @@ export const Transactions: React.FC = () => {
             onDelete={handleDeleteTransaction}
             emptyTitle="No transactions found"
             emptySubtitle="Get started by creating your first transaction"
+            disableClientPagination
           />
 
           {/* Pagination */}

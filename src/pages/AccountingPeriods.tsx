@@ -358,6 +358,7 @@ export const AccountingPeriods: React.FC = () => {
             onDelete={handleDeletePeriod}
             emptyTitle="No accounting periods found"
             emptySubtitle="Get started by creating your first accounting period"
+            disableClientPagination
           />
 
           {/* Pagination */}

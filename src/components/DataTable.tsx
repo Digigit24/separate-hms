@@ -115,6 +115,13 @@ export interface DataTableProps<T> {
   /** empty state text */
   emptyTitle?: string;
   emptySubtitle?: string;
+
+  /**
+   * When true, DataTable will NOT apply its own client-side pagination.
+   * All rows are displayed as-is. Use this when the parent handles
+   * server-side pagination via ServerPagination component.
+   */
+  disableClientPagination?: boolean;
 }
 
 // This is just to pass bound handlers down to mobile card
@@ -306,6 +313,7 @@ export function DataTable<T>({
   getRowClassName,
   emptyTitle = 'No records found',
   emptySubtitle = 'Try adjusting your filters or search criteria',
+  disableClientPagination = false,
 }: DataTableProps<T>) {
   const isMobile = useIsMobile();
 
@@ -411,11 +419,11 @@ export function DataTable<T>({
     return result;
   }, [rows, filters, sortConfig, columns]);
 
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredAndSortedRows.length / entriesPerPage);
-  const startIndex = (currentPage - 1) * entriesPerPage;
-  const endIndex = startIndex + entriesPerPage;
-  const processedRows = filteredAndSortedRows.slice(startIndex, endIndex);
+  // Calculate pagination (skipped when server handles pagination)
+  const totalPages = disableClientPagination ? 1 : Math.ceil(filteredAndSortedRows.length / entriesPerPage);
+  const startIndex = disableClientPagination ? 0 : (currentPage - 1) * entriesPerPage;
+  const endIndex = disableClientPagination ? filteredAndSortedRows.length : startIndex + entriesPerPage;
+  const processedRows = disableClientPagination ? filteredAndSortedRows : filteredAndSortedRows.slice(startIndex, endIndex);
 
   // Reset to page 1 when filters or entries per page changes
   React.useEffect(() => {
@@ -578,8 +586,8 @@ export function DataTable<T>({
             })}
           </div>
 
-          {/* Inline Pagination controls for mobile */}
-          {filteredAndSortedRows.length > 0 && (
+          {/* Inline Pagination controls for mobile (hidden when server handles pagination) */}
+          {!disableClientPagination && filteredAndSortedRows.length > 0 && (
             <div ref={inlinePaginationRef} className="border-t bg-background p-4 space-y-3">
               {/* Entries per page selector */}
               <div className="flex items-center justify-center gap-2">
@@ -630,16 +638,18 @@ export function DataTable<T>({
             </div>
           )}
 
-          {/* Floating Pagination (visible when inline is off-screen) */}
-          <FloatingPagination
-            totalPages={totalPages}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            startIndex={startIndex}
-            endIndex={endIndex}
-            totalItems={filteredAndSortedRows.length}
-            isVisible={showFloating && filteredAndSortedRows.length > 0}
-          />
+          {/* Floating Pagination (visible when inline is off-screen, hidden when server handles pagination) */}
+          {!disableClientPagination && (
+            <FloatingPagination
+              totalPages={totalPages}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              totalItems={filteredAndSortedRows.length}
+              isVisible={showFloating && filteredAndSortedRows.length > 0}
+            />
+          )}
         </div>
 
         {/* Delete dialog */}
@@ -854,8 +864,8 @@ export function DataTable<T>({
           </TableBody>
         </Table>
 
-        {/* Inline Pagination controls */}
-        {filteredAndSortedRows.length > 0 && (
+        {/* Inline Pagination controls (hidden when server handles pagination) */}
+        {!disableClientPagination && filteredAndSortedRows.length > 0 && (
           <div ref={inlinePaginationRef} className="flex items-center justify-between px-4 py-4 border-t">
             {/* Entries per page selector */}
             <div className="flex items-center gap-2">
@@ -909,16 +919,18 @@ export function DataTable<T>({
           </div>
         )}
 
-        {/* Floating Pagination (visible when inline is off-screen) */}
-        <FloatingPagination
-          totalPages={totalPages}
-          currentPage={currentPage}
-          setCurrentPage={setCurrentPage}
-          startIndex={startIndex}
-          endIndex={endIndex}
-          totalItems={filteredAndSortedRows.length}
-          isVisible={showFloating && filteredAndSortedRows.length > 0}
-        />
+        {/* Floating Pagination (visible when inline is off-screen, hidden when server handles pagination) */}
+        {!disableClientPagination && (
+          <FloatingPagination
+            totalPages={totalPages}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            totalItems={filteredAndSortedRows.length}
+            isVisible={showFloating && filteredAndSortedRows.length > 0}
+          />
+        )}
       </div>
 
       {/* Delete dialog */}

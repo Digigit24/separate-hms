@@ -199,6 +199,7 @@ export const VisitFindings: React.FC = () => {
                 onDelete={handleDelete}
                 emptyTitle="No visit findings found"
                 emptySubtitle="Try adjusting your filters"
+                disableClientPagination
               />
 
               {!isLoading && findings.length > 0 && (

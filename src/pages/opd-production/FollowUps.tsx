@@ -45,6 +45,8 @@ export const FollowUps: React.FC = () => {
     page: currentPage,
     search: searchTerm || undefined,
     visit_type: 'follow_up',
+    follow_up_date__gte: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    follow_up_date__lte: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
   };
 
   const {
@@ -70,35 +72,18 @@ export const FollowUps: React.FC = () => {
     return 'upcoming';
   };
 
-  // Client-side filter on follow-up status and date range
+  // Client-side filter on follow-up status (computed field, not available server-side)
   const filteredVisits = useMemo(() => {
+    if (activeFilter === 'all') return allVisits;
     return allVisits.filter((v) => {
-      // Follow-up status filter
-      if (activeFilter !== 'all') {
-        const status = getFollowUpStatus(v);
-        if (activeFilter === 'completed' && status !== 'completed') return false;
-        if (activeFilter === 'today' && status !== 'today') return false;
-        if (activeFilter === 'overdue' && status !== 'overdue') return false;
-        if (activeFilter === 'upcoming' && status !== 'upcoming') return false;
-      }
-      // Date range filter on follow_up_date
-      if (dateRange?.from) {
-        if (!v.follow_up_date) return false;
-        const fuDate = new Date(v.follow_up_date);
-        const fromDate = new Date(dateRange.from);
-        fromDate.setHours(0, 0, 0, 0);
-        if (fuDate < fromDate) return false;
-      }
-      if (dateRange?.to) {
-        if (!v.follow_up_date) return false;
-        const fuDate = new Date(v.follow_up_date);
-        const toDate = new Date(dateRange.to);
-        toDate.setHours(23, 59, 59, 999);
-        if (fuDate > toDate) return false;
-      }
+      const status = getFollowUpStatus(v);
+      if (activeFilter === 'completed' && status !== 'completed') return false;
+      if (activeFilter === 'today' && status !== 'today') return false;
+      if (activeFilter === 'overdue' && status !== 'overdue') return false;
+      if (activeFilter === 'upcoming' && status !== 'upcoming') return false;
       return true;
     });
-  }, [allVisits, activeFilter, dateRange]);
+  }, [allVisits, activeFilter]);
 
   // Stats
   const stats = useMemo(() => {
@@ -525,6 +510,7 @@ export const FollowUps: React.FC = () => {
                 onConsultation={handleConsultation}
                 emptyTitle="No follow-ups found"
                 emptySubtitle="No visits with follow-up required matching your filters"
+                disableClientPagination
               />
 
               {/* Pagination */}

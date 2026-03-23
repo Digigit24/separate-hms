@@ -1,5 +1,5 @@
 // src/pages/ipd-billing/IPDBillingListPage.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DataTable, type DataTableColumn } from '@/components/DataTable';
 import { Badge } from '@/components/ui/badge';
@@ -8,8 +8,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useIPDBilling } from '@/hooks/useIPDBilling';
-import { IPDBilling, PaymentStatus } from '@/types/ipdBilling.types';
+import { IPDBilling, IPDBillingListParams, PaymentStatus } from '@/types/ipdBilling.types';
 import { format } from 'date-fns';
+import { ServerPagination } from '@/components/ServerPagination';
 import { Plus, Search, Receipt } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
@@ -24,57 +25,25 @@ export const IPDBillingListPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Build query params
-  const queryParams = useMemo(() => {
-    const params: any = {
-      ordering: '-bill_date',
-    };
-
-    if (search) {
-      params.search = search;
-    }
-
-    if (paymentStatusFilter && paymentStatusFilter !== 'all') {
-      params.payment_status = paymentStatusFilter;
-    }
-
-    if (dateRange?.from) {
-      params.bill_date_from = format(dateRange.from, 'yyyy-MM-dd');
-    }
-
-    if (dateRange?.to) {
-      params.bill_date_to = format(dateRange.to, 'yyyy-MM-dd');
-    }
-
-    return params;
-  }, [search, paymentStatusFilter, dateRange]);
+  // Build query params - all filtering is server-side
+  const queryParams: IPDBillingListParams = {
+    page: currentPage,
+    ordering: '-bill_date',
+    search: search || undefined,
+    payment_status: (paymentStatusFilter && paymentStatusFilter !== 'all' ? paymentStatusFilter : undefined) as any,
+    bill_date_from: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    bill_date_to: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+  };
 
   // Fetch bills
   const { data: billsData, isLoading, mutate } = useIPDBillings(queryParams);
 
   const bills = billsData?.results || [];
-
-  // Client-side date range filtering as fallback
-  const filteredBills = useMemo(() => {
-    if (!dateRange?.from && !dateRange?.to) return bills;
-    return bills.filter((bill) => {
-      if (!bill.bill_date) return false;
-      const billDate = new Date(bill.bill_date);
-      if (isNaN(billDate.getTime())) return false;
-      // Normalize to date-only for comparison
-      const billDateStr = format(billDate, 'yyyy-MM-dd');
-      if (dateRange.from) {
-        const fromStr = format(dateRange.from, 'yyyy-MM-dd');
-        if (billDateStr < fromStr) return false;
-      }
-      if (dateRange.to) {
-        const toStr = format(dateRange.to, 'yyyy-MM-dd');
-        if (billDateStr > toStr) return false;
-      }
-      return true;
-    });
-  }, [bills, dateRange]);
+  const totalCount = billsData?.count || 0;
+  const hasNext = !!billsData?.next;
+  const hasPrevious = !!billsData?.previous;
 
   // Handle bill click - navigate to billing details
   const handleBillClick = (bill: IPDBilling) => {
@@ -286,11 +255,11 @@ export const IPDBillingListPage: React.FC = () => {
           <Input
             placeholder="Search by bill number, patient..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             className="pl-8 h-7 text-[12px]"
           />
         </div>
-        <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
+        <Select value={paymentStatusFilter} onValueChange={(v) => { setPaymentStatusFilter(v); setCurrentPage(1); }}>
           <SelectTrigger className="w-[150px] h-7 text-[12px]">
             <SelectValue placeholder="Payment Status" />
           </SelectTrigger>
@@ -303,7 +272,7 @@ export const IPDBillingListPage: React.FC = () => {
         </Select>
         <DateRangePicker
           dateRange={dateRange}
-          onDateRangeChange={setDateRange}
+          onDateRangeChange={(r) => { setDateRange(r); setCurrentPage(1); }}
           placeholder="Filter by date"
         />
       </div>
@@ -312,7 +281,7 @@ export const IPDBillingListPage: React.FC = () => {
       <Card>
         <CardContent className="p-0">
           <DataTable
-            rows={filteredBills}
+            rows={bills}
             isLoading={isLoading}
             columns={columns}
             renderMobileCard={renderMobileCard}
@@ -322,7 +291,21 @@ export const IPDBillingListPage: React.FC = () => {
             onDelete={handleDeleteBill}
             emptyTitle="No IPD bills found"
             emptySubtitle="Bills will appear here once they are created for admissions"
+            disableClientPagination
           />
+
+          {!isLoading && totalCount > 0 && (
+            <ServerPagination
+              currentPage={currentPage}
+              totalCount={totalCount}
+              pageSize={bills.length}
+              hasNext={hasNext}
+              hasPrevious={hasPrevious}
+              onPrevious={() => setCurrentPage((p) => p - 1)}
+              onNext={() => setCurrentPage((p) => p + 1)}
+              itemLabel="bill(s)"
+            />
+          )}
         </CardContent>
       </Card>
     </div>

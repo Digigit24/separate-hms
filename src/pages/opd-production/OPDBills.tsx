@@ -1,5 +1,5 @@
 // src/pages/opd-production/OPDBills.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOPDBill } from '@/hooks/useOPDBill';
 import { Card, CardContent } from '@/components/ui/card';
@@ -44,26 +44,6 @@ export const OPDBills: React.FC = () => {
   const totalCount = billsData?.count || 0;
   const hasNext = !!billsData?.next;
   const hasPrevious = !!billsData?.previous;
-
-  // Client-side date range filtering as fallback
-  const filteredBills = useMemo(() => {
-    if (!dateRange?.from && !dateRange?.to) return bills;
-    return bills.filter((bill) => {
-      if (!bill.bill_date) return false;
-      const billDate = new Date(bill.bill_date);
-      if (isNaN(billDate.getTime())) return false;
-      const billDateStr = format(billDate, 'yyyy-MM-dd');
-      if (dateRange.from) {
-        const fromStr = format(dateRange.from, 'yyyy-MM-dd');
-        if (billDateStr < fromStr) return false;
-      }
-      if (dateRange.to) {
-        const toStr = format(dateRange.to, 'yyyy-MM-dd');
-        if (billDateStr > toStr) return false;
-      }
-      return true;
-    });
-  }, [bills, dateRange]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -409,7 +389,7 @@ export const OPDBills: React.FC = () => {
           ) : (
             <>
               <DataTable
-                rows={filteredBills}
+                rows={bills}
                 isLoading={isLoading}
                 columns={columns}
                 renderMobileCard={renderMobileCard}
@@ -420,6 +400,7 @@ export const OPDBills: React.FC = () => {
                 onDelete={handleDelete}
                 emptyTitle="No bills found"
                 emptySubtitle="Try adjusting your filters"
+                disableClientPagination
               />
 
               {!isLoading && bills.length > 0 && (
