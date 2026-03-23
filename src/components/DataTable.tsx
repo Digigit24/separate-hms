@@ -223,7 +223,7 @@ function FloatingPagination({
     <div
       className="fixed bottom-4 right-4 z-50 bg-background/95 backdrop-blur-sm border rounded-xl shadow-lg px-4 py-2.5 flex items-center gap-3 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
     >
-      <span className="text-xs text-muted-foreground hidden sm:inline">
+      <span className="text-xs text-muted-foreground hidden sm:inline whitespace-nowrap">
         {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems}
       </span>
 
