@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/DataTable';
 import type { RowActions } from '@/components/DataTable';
+import { ServerPagination } from '@/components/ServerPagination';
 import TransactionDetailsDrawer from '@/components/transaction-drawer/TransactionDetailsDrawer';
 import {
   Plus,
@@ -445,29 +446,16 @@ export const Transactions: React.FC = () => {
 
           {/* Pagination */}
           {!transactionsLoading && transactionsData && transactionsData.count > 0 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t">
-              <p className="text-sm text-muted-foreground">
-                Showing {transactions.length} of {totalCount} transaction(s)
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!transactionsData.previous}
-                  onClick={() => setCurrentPage((prev) => prev - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!transactionsData.next}
-                  onClick={() => setCurrentPage((prev) => prev + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
+            <ServerPagination
+              currentPage={currentPage}
+              totalCount={totalCount}
+              pageSize={transactions.length}
+              hasNext={!!transactionsData.next}
+              hasPrevious={!!transactionsData.previous}
+              onPrevious={() => setCurrentPage((prev) => prev - 1)}
+              onNext={() => setCurrentPage((prev) => prev + 1)}
+              itemLabel="transaction(s)"
+            />
           )}
         </CardContent>
       </Card>

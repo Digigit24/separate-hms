@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/DataTable';
 import type { RowActions } from '@/components/DataTable';
+import { ServerPagination } from '@/components/ServerPagination';
 import AccountingPeriodDetailsDrawer from '@/components/accounting-period-drawer/AccountingPeriodDetailsDrawer';
 import {
   Plus,
@@ -361,29 +362,16 @@ export const AccountingPeriods: React.FC = () => {
 
           {/* Pagination */}
           {!periodsLoading && periodsData && periodsData.count > 0 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t">
-              <p className="text-sm text-muted-foreground">
-                Showing {periods.length} of {totalCount} period{totalCount === 1 ? '' : 's'}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!periodsData.previous}
-                  onClick={() => setCurrentPage((prev) => prev - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!periodsData.next}
-                  onClick={() => setCurrentPage((prev) => prev + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
+            <ServerPagination
+              currentPage={currentPage}
+              totalCount={totalCount}
+              pageSize={periods.length}
+              hasNext={!!periodsData.next}
+              hasPrevious={!!periodsData.previous}
+              onPrevious={() => setCurrentPage((prev) => prev - 1)}
+              onNext={() => setCurrentPage((prev) => prev + 1)}
+              itemLabel={totalCount === 1 ? 'period' : 'periods'}
+            />
           )}
         </CardContent>
       </Card>

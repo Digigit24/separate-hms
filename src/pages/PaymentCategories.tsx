@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/DataTable';
 import type { RowActions } from '@/components/DataTable';
+import { ServerPagination } from '@/components/ServerPagination';
 import PaymentCategoryDetailsDrawer from '@/components/payment-category-drawer/PaymentCategoryDetailsDrawer';
 import {
   Plus,
@@ -268,29 +269,16 @@ export const PaymentCategories: React.FC = () => {
 
           {/* Pagination */}
           {!categoriesLoading && categoriesData && categoriesData.count > 0 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t">
-              <p className="text-sm text-muted-foreground">
-                Showing {categories.length} of {totalCount} categor{totalCount === 1 ? 'y' : 'ies'}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!categoriesData.previous}
-                  onClick={() => setCurrentPage((prev) => prev - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!categoriesData.next}
-                  onClick={() => setCurrentPage((prev) => prev + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
+            <ServerPagination
+              currentPage={currentPage}
+              totalCount={totalCount}
+              pageSize={categories.length}
+              hasNext={!!categoriesData.next}
+              hasPrevious={!!categoriesData.previous}
+              onPrevious={() => setCurrentPage((prev) => prev - 1)}
+              onNext={() => setCurrentPage((prev) => prev + 1)}
+              itemLabel={totalCount === 1 ? 'category' : 'categories'}
+            />
           )}
         </CardContent>
       </Card>

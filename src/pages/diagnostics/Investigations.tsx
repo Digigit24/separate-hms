@@ -2,6 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useDiagnostics } from '@/hooks/useDiagnostics';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
+import { ServerPagination } from '@/components/ServerPagination';
 import { SideDrawer, DrawerActionButton } from '@/components/SideDrawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -391,52 +392,16 @@ export const Investigations: React.FC = () => {
 
           {/* Pagination footer */}
           {totalCount > 0 && (
-            <div className="flex items-center justify-between px-4 py-2 border-t text-[12px] text-muted-foreground">
-              <span>
-                {((page - 1) * pageSize) + 1}–{Math.min(page * pageSize, totalCount)} of {totalCount}
-              </span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  disabled={page <= 1}
-                  onClick={() => setPage(1)}
-                >
-                  «
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  ‹ Prev
-                </Button>
-                <span className="px-2 font-medium text-foreground">
-                  {page} / {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next ›
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage(totalPages)}
-                >
-                  »
-                </Button>
-              </div>
-            </div>
+            <ServerPagination
+              currentPage={page}
+              totalCount={totalCount}
+              pageSize={pageSize}
+              hasNext={page < totalPages}
+              hasPrevious={page > 1}
+              onPrevious={() => setPage((p) => p - 1)}
+              onNext={() => setPage((p) => p + 1)}
+              itemLabel="investigation(s)"
+            />
           )}
         </CardContent>
       </Card>

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
+import { ServerPagination } from '@/components/ServerPagination';
 import { Plus, Search, IndianRupee, FileText, CreditCard, AlertCircle, CheckCircle2, Clock, TrendingUp, PieChart } from 'lucide-react';
 import { OPDBill, OPDBillListParams } from '@/types/opdBill.types';
 import { format } from 'date-fns';
@@ -422,19 +423,16 @@ export const OPDBills: React.FC = () => {
               />
 
               {!isLoading && bills.length > 0 && (
-                <div className="flex items-center justify-between px-6 py-4 border-t">
-                  <p className="text-sm text-muted-foreground">
-                    Showing {bills.length} of {totalCount} bill(s)
-                  </p>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" disabled={!hasPrevious} onClick={() => setCurrentPage((p) => p - 1)}>
-                      Previous
-                    </Button>
-                    <Button variant="outline" size="sm" disabled={!hasNext} onClick={() => setCurrentPage((p) => p + 1)}>
-                      Next
-                    </Button>
-                  </div>
-                </div>
+                <ServerPagination
+                  currentPage={currentPage}
+                  totalCount={totalCount}
+                  pageSize={bills.length}
+                  hasNext={hasNext}
+                  hasPrevious={hasPrevious}
+                  onPrevious={() => setCurrentPage((p) => p - 1)}
+                  onNext={() => setCurrentPage((p) => p + 1)}
+                  itemLabel="bill(s)"
+                />
               )}
             </>
           )}
