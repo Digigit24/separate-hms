@@ -253,8 +253,8 @@ const RecentActivitiesTable = () => {
   const { data: opdData, isLoading: opdLoading } = useOpdVisits({ page_size: 10, ordering: '-visit_date' });
   const { data: ipdData, isLoading: ipdLoading } = useAdmissions({ page_size: 10, ordering: '-admission_date' });
 
-  const opdVisits = opdData?.results || [];
-  const ipdAdmissions = ipdData?.results || [];
+  const opdVisits = (opdData?.results || []).slice(0, 10);
+  const ipdAdmissions = (ipdData?.results || []).slice(0, 10);
 
   const opdColumns: DataTableColumn<OpdVisit>[] = [
     {
