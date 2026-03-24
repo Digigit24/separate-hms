@@ -1,6 +1,7 @@
 // src/pages/diagnostics/LabReports.tsx
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useDiagnostics } from '@/hooks/useDiagnostics';
+import { diagnosticsService } from '@/services/diagnosticsService';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
 import { SideDrawer, DrawerActionButton } from '@/components/SideDrawer';
 import { Button } from '@/components/ui/button';
@@ -53,11 +54,64 @@ export const LabReports: React.FC = () => {
     result_data: {},
   });
 
-  // Fetch data
-  const { data, isLoading, mutate } = useLabReports();
-  const { data: ordersData, mutate: mutateOrders } = useDiagnosticOrders();
+  const API_FETCH_SIZE = 200;
 
-  const reports = data?.results || [];
+  // Fetch data - latest first
+  const { data, isLoading, mutate } = useLabReports({ page: 1, page_size: API_FETCH_SIZE, ordering: '-created_at' });
+  const { data: ordersData, mutate: mutateOrders } = useDiagnosticOrders({ page_size: API_FETCH_SIZE });
+
+  // Accumulate all pages of lab reports
+  const [allReports, setAllReports] = useState<LabReport[]>([]);
+  const reportsFetchAbortRef = useRef(false);
+
+  useEffect(() => {
+    if (!data) {
+      setAllReports([]);
+      return;
+    }
+
+    const firstPageResults = data.results || [];
+    const totalCount = data.count || 0;
+
+    if (!data.next || firstPageResults.length >= totalCount) {
+      setAllReports(firstPageResults);
+      return;
+    }
+
+    reportsFetchAbortRef.current = false;
+    setAllReports(firstPageResults);
+
+    const fetchRemainingPages = async () => {
+      const accumulated = [...firstPageResults];
+      let nextPage = 2;
+
+      while (accumulated.length < totalCount) {
+        if (reportsFetchAbortRef.current) break;
+        try {
+          const response = await diagnosticsService.getLabReports({
+            page: nextPage,
+            page_size: API_FETCH_SIZE,
+            ordering: '-created_at',
+          });
+          accumulated.push(...response.results);
+          setAllReports([...accumulated]);
+          if (!response.next) break;
+          nextPage++;
+        } catch {
+          break;
+        }
+      }
+    };
+
+    fetchRemainingPages();
+
+    return () => {
+      reportsFetchAbortRef.current = true;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
+  const reports = allReports;
   const orders = ordersData?.results || [];
 
   // Build lookup map: order ID -> WhatsApp status from orders
