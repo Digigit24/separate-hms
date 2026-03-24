@@ -1,5 +1,5 @@
 // src/pages/Transactions.tsx
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { usePayment } from '@/hooks/usePayment';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
