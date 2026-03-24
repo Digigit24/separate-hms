@@ -67,19 +67,15 @@ export const LabOrders: React.FC = () => {
   const [resultKey, setResultKey] = useState('');
   const [resultValue, setResultValue] = useState('');
 
-  // Build query params for diagnostic orders
+  // Build query params for diagnostic orders - fetch all, filter client-side
   const queryParams = useMemo(() => {
     const params: Record<string, any> = {
       page: 1,
       page_size: API_FETCH_SIZE,
       ordering: '-created_at',
     };
-    if (searchTerm) params.search = searchTerm;
-    if (statusFilter !== 'all') params.status = statusFilter;
-    if (dateRange?.from) params.created_at__gte = format(dateRange.from, 'yyyy-MM-dd');
-    if (dateRange?.to) params.created_at__lte = format(dateRange.to, 'yyyy-MM-dd');
     return params;
-  }, [searchTerm, statusFilter, dateRange]);
+  }, []);
 
   // Fetch first page of diagnostic orders
   const { data: ordersData, isLoading } = useDiagnosticOrders(queryParams);
@@ -196,10 +192,20 @@ export const LabOrders: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ordersData]);
 
-  // Client-side filtering for date range
-  // (applied as fallback in case backend doesn't support these filters)
+  // Client-side filtering as fallback in case backend doesn't support these filters
   const orders = useMemo(() => {
     return allPages.filter((order) => {
+      // Search by patient name or phone
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const nameMatch = order.patient_name?.toLowerCase().includes(term);
+        const phoneMatch = order.patient_mobile?.toLowerCase().includes(term);
+        const investigationMatch = order.investigation_name?.toLowerCase().includes(term);
+        if (!nameMatch && !phoneMatch && !investigationMatch) return false;
+      }
+      // Status filter
+      if (statusFilter !== 'all' && order.status !== statusFilter) return false;
+      // Date range filter
       if (dateRange?.from) {
         const orderDate = new Date(order.created_at);
         const fromDate = new Date(dateRange.from);
@@ -214,7 +220,7 @@ export const LabOrders: React.FC = () => {
       }
       return true;
     });
-  }, [allPages, dateRange]);
+  }, [allPages, searchTerm, statusFilter, dateRange]);
 
   // Map diagnostic_order ID to lab report
   const reportByOrderId = useMemo(() => {
