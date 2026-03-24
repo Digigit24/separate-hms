@@ -250,8 +250,8 @@ const RecentActivitiesTable = () => {
   const { useOpdVisits } = useOpdVisit();
   const { useAdmissions } = useIPD();
 
-  const { data: opdData, isLoading: opdLoading } = useOpdVisits({ page_size: 5, ordering: '-visit_date' });
-  const { data: ipdData, isLoading: ipdLoading } = useAdmissions({ page_size: 5, ordering: '-admission_date' });
+  const { data: opdData, isLoading: opdLoading } = useOpdVisits({ page_size: 10, ordering: '-visit_date' });
+  const { data: ipdData, isLoading: ipdLoading } = useAdmissions({ page_size: 10, ordering: '-admission_date' });
 
   const opdVisits = opdData?.results || [];
   const ipdAdmissions = ipdData?.results || [];
@@ -361,7 +361,7 @@ const RecentActivitiesTable = () => {
             isLoading={opdLoading}
             onRowClick={(row) => navigate(`/opd/consultation/${row.id}`)}
             getRowId={(row) => row.id}
-            hidePagination
+            disableClientPagination
             emptyTitle="No recent visits"
             density="compact"
           />
@@ -379,7 +379,7 @@ const RecentActivitiesTable = () => {
             isLoading={ipdLoading}
             onRowClick={(row) => navigate(`/ipd/admissions/${row.id}`)}
             getRowId={(row) => row.id}
-            hidePagination
+            disableClientPagination
             emptyTitle="No recent admissions"
             density="compact"
           />
