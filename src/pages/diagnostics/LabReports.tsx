@@ -111,8 +111,28 @@ export const LabReports: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
-  const reports = allReports;
   const orders = ordersData?.results || [];
+
+  // Build lookup map: order ID -> order details (patient info + WhatsApp status)
+  const orderMap = useMemo(() => {
+    const map: Record<number, typeof orders[0]> = {};
+    orders.forEach((order) => {
+      map[order.id] = order;
+    });
+    return map;
+  }, [orders]);
+
+  // Enrich reports with patient info from diagnostic orders as fallback
+  const reports = useMemo(() => {
+    return allReports.map((report) => {
+      const order = orderMap[report.diagnostic_order];
+      return {
+        ...report,
+        patient_name: report.patient_name || order?.patient_name || '',
+        patient_mobile: report.patient_mobile || order?.patient_mobile || null,
+      };
+    });
+  }, [allReports, orderMap]);
 
   // Build lookup map: order ID -> WhatsApp status from orders
   const orderWhatsappMap = useMemo(() => {
