@@ -116,6 +116,7 @@ const menuItems: MenuItem[] = [
       { id: "diagnostics-lab-orders", label: "Lab Orders", icon: ClipboardList, path: "/diagnostics/lab-orders" },
       { id: "diagnostics-investigations", label: "Investigations", icon: Microscope, path: "/diagnostics/investigations" },
       { id: "diagnostics-lab-reports", label: "Lab Reports", icon: FileText, path: "/diagnostics/lab-reports" },
+      { id: "diagnostics-transactions", label: "Transactions", icon: IndianRupee, path: "/diagnostics/transactions" },
     ],
   },
   {

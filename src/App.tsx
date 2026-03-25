@@ -57,6 +57,7 @@ import { Requisitions } from "./pages/diagnostics/Requisitions";
 import { Investigations } from "./pages/diagnostics/Investigations";
 import { LabReports } from "./pages/diagnostics/LabReports";
 import { LabOrders } from "./pages/diagnostics/LabOrders";
+import { DiagnosticTransactions } from "./pages/diagnostics/DiagnosticTransactions";
 import { PharmacyOrders } from "./pages/pharmacy/PharmacyOrders";
 
 import { WebSocketProvider } from "./context/WebSocketProvider";
@@ -129,6 +130,7 @@ const AppLayout = () => {
               <Route path="/diagnostics/lab-orders" element={<ModuleProtectedRoute requiredModule="diagnostics"><LabOrders /></ModuleProtectedRoute>} />
               <Route path="/diagnostics/investigations" element={<ModuleProtectedRoute requiredModule="diagnostics"><Investigations /></ModuleProtectedRoute>} />
               <Route path="/diagnostics/lab-reports" element={<ModuleProtectedRoute requiredModule="diagnostics"><LabReports /></ModuleProtectedRoute>} />
+              <Route path="/diagnostics/transactions" element={<ModuleProtectedRoute requiredModule="diagnostics"><DiagnosticTransactions /></ModuleProtectedRoute>} />
 
               {/* Payment Routes */}
               <Route path="/payments/transactions" element={<ModuleProtectedRoute requiredModule="payments"><Transactions /></ModuleProtectedRoute>} />
