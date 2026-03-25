@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
-import { Search, Microscope, Clock, CheckCircle2, XCircle, Activity, IndianRupee, Phone, Loader2 } from 'lucide-react';
+import { Search, Microscope, Clock, CheckCircle2, XCircle, Activity, IndianRupee, Phone, Loader2, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import type { DateRange } from 'react-day-picker';
@@ -154,6 +154,51 @@ export const DiagnosticTransactions: React.FC = () => {
 
   const hasFiltersApplied = !!(searchTerm || statusFilter !== 'all' || dateRange?.from);
 
+  // Export to CSV
+  const handleExportCSV = () => {
+    if (orders.length === 0) return;
+
+    const headers = ['Order #', 'Date', 'Investigation', 'Patient Name', 'Patient Mobile', 'Status', 'Amount'];
+    const rows = orders.map((order) => [
+      order.id,
+      format(new Date(order.created_at), 'yyyy-MM-dd'),
+      order.investigation_name,
+      order.patient_name,
+      order.patient_mobile || '',
+      order.status,
+      parseFloat(order.price) || 0,
+    ]);
+
+    // Add summary row
+    rows.push([]);
+    rows.push(['', '', '', '', '', 'Total', stats.totalAmount]);
+    rows.push(['', '', '', '', '', 'Completed', stats.completedAmount]);
+    rows.push(['', '', '', '', '', 'Pending', stats.pendingAmount]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) =>
+        row.map((cell) => {
+          const str = String(cell ?? '');
+          return str.includes(',') || str.includes('"') || str.includes('\n')
+            ? `"${str.replace(/"/g, '""')}"`
+            : str;
+        }).join(',')
+      ),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const dateStr = format(new Date(), 'yyyy-MM-dd');
+    link.download = `investigation-transactions-${dateStr}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   // Columns
   const columns: DataTableColumn<DiagnosticOrder>[] = [
     {
@@ -257,6 +302,16 @@ export const DiagnosticTransactions: React.FC = () => {
             <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> Pending <span className="font-semibold text-foreground">₹{stats.pendingAmount.toLocaleString()}</span> ({stats.pendingCount})</span>
           </div>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-[12px]"
+          onClick={handleExportCSV}
+          disabled={orders.length === 0}
+        >
+          <Download className="h-3.5 w-3.5 mr-1" />
+          Export CSV
+        </Button>
       </div>
 
       {/* Mobile-only stats */}
