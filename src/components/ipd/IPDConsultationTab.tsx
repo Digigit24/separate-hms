@@ -17,6 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Save, Printer, Plus, FileText } from 'lucide-react';
+import { format } from 'date-fns';
 import { Admission } from '@/types/ipd.types';
 import { toast } from 'sonner';
 import { useOPDTemplate } from '@/hooks/useOPDTemplate';
@@ -455,7 +456,7 @@ export const IPDConsultationTab: React.FC<IPDConsultationTabProps> = ({ admissio
                       <strong>Patient:</strong> {admission.patient_name?.replace(/ None$/, '') || ''}
                     </p>
                     <p>
-                      <strong>Admission Date:</strong> {admission.admission_date}
+                      <strong>Admission Date:</strong> {admission.admission_date ? format(new Date(admission.admission_date), 'dd MMM yyyy HH:mm') : 'N/A'}
                     </p>
                     <p>
                       <strong>Ward:</strong> {admission.ward_name}

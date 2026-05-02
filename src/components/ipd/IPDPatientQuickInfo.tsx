@@ -23,7 +23,7 @@ export const IPDPatientQuickInfo: React.FC<IPDPatientQuickInfoProps> = ({ admiss
           <span className="text-xs text-muted-foreground">Admission Date</span>
           <span className="font-medium flex items-center gap-2">
             <Calendar className="h-3 w-3 text-green-500" />
-            {admission.admission_date ? format(new Date(admission.admission_date), 'dd MMM yyyy') : 'N/A'}
+            {admission.admission_date ? format(new Date(admission.admission_date), 'dd MMM yyyy HH:mm') : 'N/A'}
           </span>
         </div>
         <div className="flex flex-col gap-1">

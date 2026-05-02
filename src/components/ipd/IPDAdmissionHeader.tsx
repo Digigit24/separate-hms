@@ -29,6 +29,7 @@ interface IPDAdmissionHeaderProps {
   dischargeData: {
     discharge_type: string;
     discharge_summary: string;
+    discharge_date_local?: string;
   };
   activeTab: string;
   onBack: () => void;
@@ -78,7 +79,7 @@ export const IPDAdmissionHeader: React.FC<IPDAdmissionHeaderProps> = ({
             </span>
 
             <span className="text-[11px] text-muted-foreground shrink-0 hidden md:inline">
-              {admission.admission_date ? format(new Date(admission.admission_date), 'dd MMM yyyy') : 'N/A'}
+              {admission.admission_date ? format(new Date(admission.admission_date), 'dd MMM yyyy HH:mm') : 'N/A'}
             </span>
 
             <span className="text-[11px] text-muted-foreground shrink-0 hidden lg:inline">
@@ -158,6 +159,17 @@ export const IPDAdmissionHeader: React.FC<IPDAdmissionHeaderProps> = ({
                 placeholder="e.g., Normal, Against Medical Advice"
                 className="h-8 text-sm"
               />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="discharge_date" className="text-xs">Discharge Date & Time (Optional)</Label>
+              <Input
+                id="discharge_date"
+                type="datetime-local"
+                value={dischargeData.discharge_date_local || ''}
+                onChange={(e) => setDischargeData({ ...dischargeData, discharge_date_local: e.target.value })}
+                className="h-8 text-sm"
+              />
+              <p className="text-xs text-muted-foreground">Leave empty to use current time</p>
             </div>
             <div className="space-y-1">
               <Label htmlFor="discharge_summary" className="text-xs">Discharge Summary</Label>

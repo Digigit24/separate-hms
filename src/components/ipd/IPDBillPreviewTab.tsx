@@ -130,7 +130,7 @@ export const IPDBillPreviewTab = forwardRef<HTMLDivElement, IPDBillPreviewTabPro
                   Admission Date
                 </span>
                 <span style={{ color: '#000000' }}>
-                  {admission.admission_date ? format(new Date(admission.admission_date), 'dd/MM/yyyy') : 'N/A'}
+                  {admission.admission_date ? format(new Date(admission.admission_date), 'dd/MM/yyyy HH:mm') : 'N/A'}
                 </span>
               </div>
               <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #d1d5db' }}>

@@ -24,6 +24,7 @@ export default function AdmissionDetails() {
   const [dischargeData, setDischargeData] = useState({
     discharge_type: 'Normal',
     discharge_summary: '',
+    discharge_date_local: '',
   });
 
   // Update active tab when tab query parameter changes
@@ -45,7 +46,15 @@ export default function AdmissionDetails() {
     if (!admission) return;
     setIsSaving(true);
     try {
-      await dischargePatient(admission.id, dischargeData);
+      const submissionData = {
+        discharge_type: dischargeData.discharge_type,
+        discharge_summary: dischargeData.discharge_summary,
+        ...(dischargeData.discharge_date_local && {
+          discharge_date: new Date(dischargeData.discharge_date_local).toISOString(),
+        }),
+      };
+
+      await dischargePatient(admission.id, submissionData);
       toast.success('Patient discharged successfully');
       setShowDischargeDialog(false);
       mutateAdmission();
