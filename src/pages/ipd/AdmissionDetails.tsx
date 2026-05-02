@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { IPDAdmissionHeader } from '@/components/ipd/IPDAdmissionHeader';
 import { IPDAdmissionTabs } from '@/components/ipd/IPDAdmissionTabs';
+import type { DateTimePicker as DateTimePickerType } from '@/components/ui/datetime-picker';
 
 export default function AdmissionDetails() {
   const { id } = useParams<{ id: string }>();
@@ -24,8 +25,8 @@ export default function AdmissionDetails() {
   const [dischargeData, setDischargeData] = useState({
     discharge_type: 'Normal',
     discharge_summary: '',
-    discharge_date_local: '',
   });
+  const [dischargeDate, setDischargeDate] = useState<Date | undefined>();
 
   // Update active tab when tab query parameter changes
   useEffect(() => {
@@ -49,14 +50,15 @@ export default function AdmissionDetails() {
       const submissionData = {
         discharge_type: dischargeData.discharge_type,
         discharge_summary: dischargeData.discharge_summary,
-        ...(dischargeData.discharge_date_local && {
-          discharge_date: new Date(dischargeData.discharge_date_local).toISOString(),
+        ...(dischargeDate && {
+          discharge_date: dischargeDate.toISOString(),
         }),
       };
 
       await dischargePatient(admission.id, submissionData);
       toast.success('Patient discharged successfully');
       setShowDischargeDialog(false);
+      setDischargeDate(undefined);
       mutateAdmission();
     } catch (err: any) {
       toast.error(err.message || 'Failed to discharge patient');
@@ -91,12 +93,14 @@ export default function AdmissionDetails() {
         isSaving={isSaving}
         showDischargeDialog={showDischargeDialog}
         dischargeData={dischargeData}
+        dischargeDate={dischargeDate}
         activeTab={activeTab}
         onBack={handleBack}
         onDischarge={handleDischargePatient}
         onTabChange={setActiveTab}
         setShowDischargeDialog={setShowDischargeDialog}
         setDischargeData={setDischargeData}
+        setDischargeDate={setDischargeDate}
       />
 
       <div className="flex-1 overflow-auto">

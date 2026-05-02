@@ -3,6 +3,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DateTimePicker } from '@/components/ui/datetime-picker';
 import {
   Dialog,
   DialogContent,
@@ -29,14 +30,15 @@ interface IPDAdmissionHeaderProps {
   dischargeData: {
     discharge_type: string;
     discharge_summary: string;
-    discharge_date_local?: string;
   };
+  dischargeDate?: Date;
   activeTab: string;
   onBack: () => void;
   onDischarge: () => void;
   onTabChange: (tab: string) => void;
   setShowDischargeDialog: (show: boolean) => void;
   setDischargeData: (data: any) => void;
+  setDischargeDate?: (date: Date | undefined) => void;
 }
 
 export const IPDAdmissionHeader: React.FC<IPDAdmissionHeaderProps> = ({
@@ -44,12 +46,14 @@ export const IPDAdmissionHeader: React.FC<IPDAdmissionHeaderProps> = ({
   isSaving,
   showDischargeDialog,
   dischargeData,
+  dischargeDate,
   activeTab,
   onBack,
   onDischarge,
   onTabChange,
   setShowDischargeDialog,
   setDischargeData,
+  setDischargeDate,
 }) => {
   const navigate = useNavigate();
   const patientName = admission.patient_name?.replace(/ None$/, '') || 'Unknown Patient';
@@ -161,15 +165,17 @@ export const IPDAdmissionHeader: React.FC<IPDAdmissionHeaderProps> = ({
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="discharge_date" className="text-xs">Discharge Date & Time (Optional)</Label>
-              <Input
-                id="discharge_date"
-                type="datetime-local"
-                value={dischargeData.discharge_date_local || ''}
-                onChange={(e) => setDischargeData({ ...dischargeData, discharge_date_local: e.target.value })}
-                className="h-8 text-sm"
-              />
-              <p className="text-xs text-muted-foreground">Leave empty to use current time</p>
+              <Label className="text-xs">Discharge Date & Time (Optional)</Label>
+              {setDischargeDate && (
+                <>
+                  <DateTimePicker
+                    date={dischargeDate}
+                    onDateTimeChange={setDischargeDate}
+                    placeholder="Select discharge date and time"
+                  />
+                  <p className="text-xs text-muted-foreground">Leave empty to use current time</p>
+                </>
+              )}
             </div>
             <div className="space-y-1">
               <Label htmlFor="discharge_summary" className="text-xs">Discharge Summary</Label>
