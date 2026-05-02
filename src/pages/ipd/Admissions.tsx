@@ -48,6 +48,7 @@ export default function Admissions() {
   const [dischargeData, setDischargeData] = useState({
     discharge_type: 'Normal',
     discharge_summary: '',
+    discharge_date_local: '',
   });
 
   const { useAdmissions, dischargePatient } = useIPD();
@@ -114,14 +115,22 @@ export default function Admissions() {
     if (!selectedAdmission) return;
 
     try {
-      await dischargePatient(selectedAdmission.id, dischargeData);
+      const submissionData = {
+        discharge_type: dischargeData.discharge_type,
+        discharge_summary: dischargeData.discharge_summary,
+        ...(dischargeData.discharge_date_local && {
+          discharge_date: new Date(dischargeData.discharge_date_local).toISOString(),
+        }),
+      };
+
+      await dischargePatient(selectedAdmission.id, submissionData);
       toast({
         title: 'Success',
         description: 'Patient discharged successfully',
       });
       setIsDischargeDialogOpen(false);
       setSelectedAdmission(null);
-      setDischargeData({ discharge_type: 'Normal', discharge_summary: '' });
+      setDischargeData({ discharge_type: 'Normal', discharge_summary: '', discharge_date_local: '' });
       mutate();
     } catch (error: any) {
       toast({
@@ -505,6 +514,17 @@ export default function Admissions() {
             </div>
 
             <div className="grid gap-2">
+              <Label htmlFor="discharge_date">Discharge Date & Time (Optional)</Label>
+              <Input
+                id="discharge_date"
+                type="datetime-local"
+                value={dischargeData.discharge_date_local}
+                onChange={(e) => setDischargeData({ ...dischargeData, discharge_date_local: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">Leave empty to use current time</p>
+            </div>
+
+            <div className="grid gap-2">
               <Label htmlFor="discharge_summary">Discharge Summary</Label>
               <Textarea
                 id="discharge_summary"
@@ -520,7 +540,7 @@ export default function Admissions() {
             <Button variant="outline" onClick={() => {
               setIsDischargeDialogOpen(false);
               setSelectedAdmission(null);
-              setDischargeData({ discharge_type: 'Normal', discharge_summary: '' });
+              setDischargeData({ discharge_type: 'Normal', discharge_summary: '', discharge_date_local: '' });
             }}>
               Cancel
             </Button>

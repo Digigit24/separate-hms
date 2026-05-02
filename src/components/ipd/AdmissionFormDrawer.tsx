@@ -4,6 +4,7 @@ import { AdmissionFormData } from '@/types/ipd.types';
 import { PatientSelect } from '@/components/form/PatientSelect';
 import { DoctorSelect } from '@/components/form/DoctorSelect';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -29,9 +30,15 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
     doctor_id: '',
     ward: 0,
     bed: null,
+    admission_date: '',
+    discharge_date: null,
     reason: '',
     provisional_diagnosis: '',
   });
+
+  // Local state for datetime-local input (which uses local timezone)
+  const [admissionDateLocal, setAdmissionDateLocal] = useState('');
+  const [dischargeDateLocal, setDischargeDateLocal] = useState('');
 
   // Sync defaultPatientId when drawer opens
   useEffect(() => {
@@ -54,9 +61,13 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
       doctor_id: '',
       ward: 0,
       bed: null,
+      admission_date: '',
+      discharge_date: null,
       reason: '',
       provisional_diagnosis: '',
     });
+    setAdmissionDateLocal('');
+    setDischargeDateLocal('');
   };
 
   const handleSubmit = async () => {
@@ -88,6 +99,15 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
       return;
     }
 
+    if (!admissionDateLocal) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please enter admission date and time',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!formData.reason.trim()) {
       toast({
         title: 'Validation Error',
@@ -97,8 +117,29 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
       return;
     }
 
+    // Validate discharge_date >= admission_date if discharge_date is provided
+    if (dischargeDateLocal) {
+      const admissionDate = new Date(admissionDateLocal);
+      const dischargeDate = new Date(dischargeDateLocal);
+      if (dischargeDate < admissionDate) {
+        toast({
+          title: 'Validation Error',
+          description: 'Discharge date cannot be before admission date',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     try {
-      await createAdmission(formData);
+      // Convert datetime-local to ISO 8601 format
+      const submissionData: AdmissionFormData = {
+        ...formData,
+        admission_date: new Date(admissionDateLocal).toISOString(),
+        discharge_date: dischargeDateLocal ? new Date(dischargeDateLocal).toISOString() : null,
+      };
+
+      await createAdmission(submissionData);
       toast({
         title: 'Success',
         description: 'Patient admitted successfully',
@@ -193,6 +234,27 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="admission_date">Admission Date & Time *</Label>
+          <Input
+            id="admission_date"
+            type="datetime-local"
+            value={admissionDateLocal}
+            onChange={(e) => setAdmissionDateLocal(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="discharge_date">Expected Discharge Date & Time (Optional)</Label>
+          <Input
+            id="discharge_date"
+            type="datetime-local"
+            value={dischargeDateLocal}
+            onChange={(e) => setDischargeDateLocal(e.target.value)}
+          />
         </div>
 
         <div className="grid gap-2">

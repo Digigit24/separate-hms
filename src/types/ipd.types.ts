@@ -161,6 +161,7 @@ export interface AdmissionFormData {
   ward: number;
   bed?: number | null;
   admission_date?: string;
+  discharge_date?: string | null;
   reason: string;
   provisional_diagnosis?: string;
   final_diagnosis?: string;
@@ -181,6 +182,7 @@ export interface AdmissionListItem {
 export interface DischargeData {
   discharge_type: string;
   discharge_summary: string;
+  discharge_date?: string;
 }
 
 // ============================================
