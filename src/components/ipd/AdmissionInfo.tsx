@@ -1,15 +1,61 @@
 // src/components/ipd/AdmissionInfo.tsx
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Admission } from '@/types/ipd.types';
 import { format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Edit2, Check, X } from 'lucide-react';
+import { useIPD } from '@/hooks/useIPD';
+import { toast } from '@/hooks/use-toast';
 
 interface AdmissionInfoProps {
   admission: Admission;
   onUpdate: () => void;
 }
 
-export default function AdmissionInfo({ admission }: AdmissionInfoProps) {
+export default function AdmissionInfo({ admission, onUpdate }: AdmissionInfoProps) {
+  const [editingId, setEditingId] = useState(false);
+  const [newAdmissionId, setNewAdmissionId] = useState(admission.admission_id);
+  const [isSaving, setIsSaving] = useState(false);
+  const { patchAdmission } = useIPD();
+
+  const handleSaveAdmissionId = async () => {
+    if (!newAdmissionId.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Admission ID cannot be empty',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newAdmissionId === admission.admission_id) {
+      setEditingId(false);
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await patchAdmission(admission.id, { admission_id: newAdmissionId });
+      toast({
+        title: 'Success',
+        description: 'Admission ID updated successfully',
+      });
+      setEditingId(false);
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update admission ID',
+        variant: 'destructive',
+      });
+      setNewAdmissionId(admission.admission_id);
+    } finally {
+      setIsSaving(false);
+    }
+  };
   return (
     <div className="p-6 space-y-6">
       {/* Basic Information */}
@@ -22,7 +68,46 @@ export default function AdmissionInfo({ admission }: AdmissionInfoProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Admission ID</label>
-              <p className="text-sm font-mono mt-1">{admission.admission_id}</p>
+              {editingId ? (
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    value={newAdmissionId}
+                    onChange={(e) => setNewAdmissionId(e.target.value)}
+                    className="text-sm font-mono"
+                    placeholder="Enter admission ID"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleSaveAdmissionId}
+                    disabled={isSaving}
+                    variant="default"
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setEditingId(false);
+                      setNewAdmissionId(admission.admission_id);
+                    }}
+                    disabled={isSaving}
+                    variant="outline"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-sm font-mono">{admission.admission_id}</p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setEditingId(true)}
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div>

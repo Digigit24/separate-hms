@@ -160,6 +160,7 @@ export interface AdmissionFormData {
   doctor_id: string;
   ward: number;
   bed?: number | null;
+  admission_id?: string;
   admission_date?: string;
   discharge_date?: string | null;
   reason: string;

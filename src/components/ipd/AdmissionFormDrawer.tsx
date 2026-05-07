@@ -31,6 +31,7 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
     doctor_id: '',
     ward: 0,
     bed: null,
+    admission_id: '',
     admission_date: '',
     discharge_date: null,
     reason: '',
@@ -62,6 +63,7 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
       doctor_id: '',
       ward: 0,
       bed: null,
+      admission_id: '',
       admission_date: '',
       discharge_date: null,
       reason: '',
@@ -181,6 +183,19 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
           label="Patient"
           required={true}
         />
+
+        <div className="grid gap-2">
+          <Label htmlFor="admission_id">Admission Number (Optional)</Label>
+          <Input
+            id="admission_id"
+            value={formData.admission_id}
+            onChange={(e) => setFormData({ ...formData, admission_id: e.target.value })}
+            placeholder="Leave empty to auto-generate (e.g., IPD/20260507/001)"
+          />
+          <p className="text-xs text-muted-foreground">
+            If blank, system will auto-generate a unique ID
+          </p>
+        </div>
 
         <DoctorSelect
           value={formData.doctor_id || null}
