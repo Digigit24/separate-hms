@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useIPDBilling } from '@/hooks/useIPDBilling';
 import { IPDBilling, PaymentStatus } from '@/types/ipdBilling.types';
 import { format } from 'date-fns';
-import { Plus, Search, Receipt } from 'lucide-react';
+import { Plus, Search, Receipt, Loader2 } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
 import { formatPatientName } from '@/utils/nameHelpers';
@@ -282,7 +282,11 @@ export const IPDBillingListPage: React.FC = () => {
       {/* Row 2: Search + filters */}
       <div className="flex gap-2 items-center flex-wrap">
         <div className="relative w-full sm:w-52">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          {isLoading ? (
+            <Loader2 className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground animate-spin" />
+          ) : (
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          )}
           <Input
             placeholder="Search by bill number, patient..."
             value={search}

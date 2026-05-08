@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import { useDoctor } from '@/hooks/useDoctor';
 
 interface DoctorSelectProps {
@@ -36,7 +36,7 @@ export function DoctorSelect({
   returnUserId = false,
 }: DoctorSelectProps) {
   const { useDoctors } = useDoctor();
-  const { data: doctorsData } = useDoctors({ page_size: 1000 });
+  const { data: doctorsData, isLoading: doctorsLoading } = useDoctors({ page_size: 1000 });
 
   const doctors = doctorsData?.results || [];
 
@@ -91,7 +91,11 @@ export function DoctorSelect({
           {/* Search Box */}
           <div className="p-2 border-b sticky top-0 bg-background z-10">
             <div className="relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              {doctorsLoading ? (
+                <Loader2 className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+              ) : (
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              )}
               <Input
                 placeholder="Search doctors..."
                 value={searchTerm}

@@ -406,7 +406,11 @@ export const Appointments: React.FC = () => {
       {/* Search + filters */}
       <div className="flex gap-2 items-center flex-wrap">
         <div className="relative w-full sm:w-52">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          {appointmentsLoading ? (
+            <Loader2 className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground animate-spin" />
+          ) : (
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          )}
           <Input
             placeholder="Search..."
             value={searchTerm}

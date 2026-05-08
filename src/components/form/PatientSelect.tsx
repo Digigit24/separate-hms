@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { UserPlus, Edit2, X, Search } from 'lucide-react';
+import { UserPlus, Edit2, X, Search, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePatient } from '@/hooks/usePatient';
 import type { PatientCreateData } from '@/types/patient.types';
@@ -41,7 +41,7 @@ export function PatientSelect({
   placeholder = 'Select a patient',
 }: PatientSelectProps) {
   const { usePatients, createPatient } = usePatient();
-  const { data: patientsData, mutate: mutatePatients } = usePatients({ page_size: 1000 });
+  const { data: patientsData, mutate: mutatePatients, isLoading: patientsLoading } = usePatients({ page_size: 1000 });
 
   const patients = patientsData?.results || [];
 
@@ -159,7 +159,11 @@ export function PatientSelect({
             {/* Search Box */}
             <div className="p-2 border-b sticky top-0 bg-background z-10">
               <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                {patientsLoading ? (
+                  <Loader2 className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+                ) : (
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                )}
                 <Input
                   placeholder="Search patients..."
                   value={searchTerm}

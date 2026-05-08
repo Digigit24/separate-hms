@@ -8,7 +8,7 @@ import { DrawerMode } from '@/components/SideDrawer';
 import { PharmacyProduct } from '@/types/pharmacy';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, ShoppingCart, Search, Filter } from 'lucide-react';
+import { PlusCircle, ShoppingCart, Search, Filter, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { addItemToCart, useCart } from '@/hooks/usePharmacy';
 import { toast } from 'sonner';
@@ -156,7 +156,11 @@ export const PharmacyPage: React.FC = () => {
       <div className="mb-6 space-y-3">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            {productsLoading ? (
+              <Loader2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+            ) : (
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            )}
             <Input
               placeholder="Search by name, company, or batch..."
               value={searchQuery}
