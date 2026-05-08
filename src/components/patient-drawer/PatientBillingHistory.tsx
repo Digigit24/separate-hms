@@ -61,7 +61,7 @@ export default function PatientBillingHistory({ patientId }: PatientBillingHisto
         <div className="flex flex-col">
           <span className="font-medium font-mono text-sm">{bill.bill_number}</span>
           <span className="text-xs text-muted-foreground">
-            {format(new Date(bill.bill_date), 'MMM dd, yyyy')}
+            {format(new Date(bill.bill_date), 'MMM dd, yyyy HH:mm')}
           </span>
         </div>
       ),
@@ -136,7 +136,7 @@ export default function PatientBillingHistory({ patientId }: PatientBillingHisto
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-base font-mono">{bill.bill_number}</h3>
             <p className="text-sm text-muted-foreground">
-              {format(new Date(bill.bill_date), 'MMM dd, yyyy')}
+              {format(new Date(bill.bill_date), 'MMM dd, yyyy HH:mm')}
             </p>
           </div>
           {statusConfig && (

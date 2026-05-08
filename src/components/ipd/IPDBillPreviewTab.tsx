@@ -144,7 +144,7 @@ export const IPDBillPreviewTab = forwardRef<HTMLDivElement, IPDBillPreviewTabPro
                   Bill No / Date
                 </span>
                 <span style={{ color: '#000000' }}>
-                  {billingFormData.billNumber || 'N/A'} • {billingFormData.billDate ? format(new Date(billingFormData.billDate), 'dd/MM/yyyy') : 'N/A'}
+                  {billingFormData.billNumber || 'N/A'} • {billingFormData.billDate ? format(new Date(billingFormData.billDate), 'dd/MM/yyyy HH:mm') : 'N/A'}
                 </span>
               </div>
             </div>
