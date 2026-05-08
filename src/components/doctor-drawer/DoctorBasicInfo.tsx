@@ -44,8 +44,8 @@ const createDoctorSchema = z.object({
 });
 
 const updateDoctorSchema = z.object({
-  first_name: z.string().min(1, 'First name is required').optional(),
-  last_name: z.string().min(1, 'Last name is required').optional(),
+  first_name: z.string().optional(),
+  last_name: z.string().optional(),
   email: z.string().email('Invalid email address').optional(),
   medical_license_number: z.string().optional(),
   license_issuing_authority: z.string().optional(),
