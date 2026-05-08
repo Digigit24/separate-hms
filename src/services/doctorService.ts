@@ -1,6 +1,7 @@
 // src/services/doctorService.ts
 import { hmsClient } from '@/lib/client';
 import { API_CONFIG, buildQueryString } from '@/lib/apiConfig';
+import { extractErrorMessage } from '@/lib/errorHandler';
 import {
   Doctor,
   Specialty,
@@ -24,10 +25,7 @@ class DoctorService {
       );
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 
-                     error.response?.data?.message || 
-                     'Failed to fetch doctors';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 
@@ -40,10 +38,7 @@ class DoctorService {
       // API returns {success: true, data: {...}}, so we need to unwrap it
       return response.data?.data || response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error ||
-                     error.response?.data?.message ||
-                     'Failed to fetch doctor';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 
@@ -57,10 +52,7 @@ class DoctorService {
       // API returns {success: true, data: {...}}, so we need to unwrap it
       return response.data?.data || response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error ||
-                     error.response?.data?.message ||
-                     'Failed to create doctor';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 
@@ -74,10 +66,7 @@ class DoctorService {
       // API returns {success: true, data: {...}}, so we need to unwrap it
       return response.data?.data || response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error ||
-                     error.response?.data?.message ||
-                     'Failed to register doctor';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 
@@ -91,10 +80,7 @@ class DoctorService {
       // API returns {success: true, data: {...}}, so we need to unwrap it
       return response.data?.data || response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error ||
-                     error.response?.data?.message ||
-                     'Failed to update doctor';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 
@@ -108,10 +94,7 @@ class DoctorService {
       // API returns {success: true, data: {...}}, so we need to unwrap it
       return response.data?.data || response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error ||
-                     error.response?.data?.message ||
-                     'Failed to update doctor';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 
@@ -122,10 +105,7 @@ class DoctorService {
         API_CONFIG.HMS.DOCTORS.PROFILE_DELETE.replace(':id', id.toString())
       );
     } catch (error: any) {
-      const message = error.response?.data?.error || 
-                     error.response?.data?.message || 
-                     'Failed to delete doctor';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 
@@ -139,10 +119,7 @@ class DoctorService {
       );
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 
-                     error.response?.data?.message || 
-                     'Failed to fetch doctor availability';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 
@@ -155,10 +132,7 @@ class DoctorService {
       );
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 
-                     error.response?.data?.message || 
-                     'Failed to set doctor availability';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 
@@ -172,10 +146,7 @@ class DoctorService {
       );
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 
-                     error.response?.data?.message || 
-                     'Failed to fetch doctor statistics';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 
@@ -190,10 +161,7 @@ class DoctorService {
       );
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 
-                     error.response?.data?.message || 
-                     'Failed to fetch specialties';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 
@@ -205,10 +173,7 @@ class DoctorService {
       );
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 
-                     error.response?.data?.message || 
-                     'Failed to fetch specialty';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 
@@ -221,10 +186,7 @@ class DoctorService {
       );
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 
-                     error.response?.data?.message || 
-                     'Failed to create specialty';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 
@@ -237,10 +199,7 @@ class DoctorService {
       );
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 
-                     error.response?.data?.message || 
-                     'Failed to update specialty';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 
@@ -251,10 +210,7 @@ class DoctorService {
         API_CONFIG.HMS.DOCTORS.SPECIALTY_DELETE.replace(':id', id.toString())
       );
     } catch (error: any) {
-      const message = error.response?.data?.error || 
-                     error.response?.data?.message || 
-                     'Failed to delete specialty';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 }
