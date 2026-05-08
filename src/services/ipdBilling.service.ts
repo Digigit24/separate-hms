@@ -1,6 +1,7 @@
 // src/services/ipdBilling.service.ts
 import { hmsClient } from '@/lib/client';
 import { API_CONFIG, buildQueryString } from '@/lib/apiConfig';
+import { extractErrorMessage } from '@/lib/errorHandler';
 import type {
   IPDBilling,
   IPDBillingCreateData,
@@ -32,11 +33,7 @@ class IPDBillingService {
       );
       return response.data;
     } catch (error: any) {
-      const message =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        'Failed to fetch IPD bills';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 
@@ -48,11 +45,7 @@ class IPDBillingService {
       );
       return response.data;
     } catch (error: any) {
-      const message =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        'Failed to fetch IPD bill';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 
@@ -66,11 +59,7 @@ class IPDBillingService {
       // Handle both wrapped and direct responses
       return response.data.data || response.data;
     } catch (error: any) {
-      const message =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        'Failed to create IPD bill';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 

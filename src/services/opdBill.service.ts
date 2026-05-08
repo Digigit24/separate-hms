@@ -1,6 +1,7 @@
 // src/services/opdBill.service.ts
 import { hmsClient } from '@/lib/client';
 import { API_CONFIG, buildQueryString } from '@/lib/apiConfig';
+import { extractErrorMessage } from '@/lib/errorHandler';
 import type {
   OPDBill,
   OPDBillCreateData,
@@ -34,11 +35,7 @@ class OPDBillService {
       );
       return response.data;
     } catch (error: any) {
-      const message =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        'Failed to fetch OPD bills';
-      throw new Error(message);
+      throw new Error(extractErrorMessage(error));
     }
   }
 

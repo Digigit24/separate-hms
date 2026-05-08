@@ -1,10 +1,11 @@
 // src/components/ipd/IPDBillingTab.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { DateTimePicker } from '@/components/ui/datetime-picker';
 import type { Admission } from '@/types/ipdBilling.types';
 import { format } from 'date-fns';
 
@@ -19,13 +20,26 @@ interface IPDBillingTabProps {
   formData: IPDBillingFormData;
   admission: Admission;
   onInputChange: (field: string, value: string) => void;
+  onBillDateChange?: (date: Date | undefined) => void;
 }
 
 export const IPDBillingTab: React.FC<IPDBillingTabProps> = ({
   formData,
   admission,
   onInputChange,
+  onBillDateChange,
 }) => {
+  const [billDate, setBillDate] = useState<Date | undefined>();
+
+  useEffect(() => {
+    if (formData.billDate) {
+      try {
+        setBillDate(new Date(formData.billDate));
+      } catch {
+        setBillDate(undefined);
+      }
+    }
+  }, []);
   // Calculate length of stay
   const calculateLengthOfStay = () => {
     const admissionDate = new Date(admission.admission_date);
@@ -115,14 +129,19 @@ export const IPDBillingTab: React.FC<IPDBillingTabProps> = ({
           />
         </div>
 
-        {/* Bill Date */}
+        {/* Bill Date & Time */}
         <div className="space-y-2">
-          <Label htmlFor="billDate">Bill Date</Label>
-          <Input
-            id="billDate"
-            type="date"
-            value={formData.billDate}
-            onChange={(e) => onInputChange('billDate', e.target.value)}
+          <Label>Bill Date & Time</Label>
+          <DateTimePicker
+            date={billDate}
+            onDateTimeChange={(date) => {
+              setBillDate(date);
+              if (date) {
+                onInputChange('billDate', date.toISOString());
+                onBillDateChange?.(date);
+              }
+            }}
+            placeholder="Select bill date and time"
           />
         </div>
 
