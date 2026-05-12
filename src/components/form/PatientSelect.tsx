@@ -1,5 +1,5 @@
 // src/components/form/PatientSelect.tsx
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -54,7 +54,22 @@ export function PatientSelect({
     last_name: '',
     gender: '' as 'male' | 'female' | 'other' | '',
     mobile_primary: '',
+    date_of_birth: '',
   });
+
+  // Calculate age from date of birth
+  const calculatedAge = useMemo(() => {
+    if (!inlineData.date_of_birth) return null;
+    const today = new Date();
+    const birthDate = new Date(inlineData.date_of_birth);
+    if (isNaN(birthDate.getTime())) return null;
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  }, [inlineData.date_of_birth]);
 
   // State for patient drawer (full form edit)
   const [patientDrawerOpen, setPatientDrawerOpen] = useState(false);
@@ -99,6 +114,7 @@ export function PatientSelect({
         last_name: inlineData.last_name.trim() || undefined,
         gender: inlineData.gender,
         mobile_primary: inlineData.mobile_primary.trim(),
+        date_of_birth: inlineData.date_of_birth || undefined,
       } as PatientCreateData);
 
       toast.success('Patient created successfully');
@@ -106,7 +122,7 @@ export function PatientSelect({
       onChange(newPatient.id);
 
       // Reset and hide form
-      setInlineData({ first_name: '', middle_name: '', last_name: '', gender: '', mobile_primary: '' });
+      setInlineData({ first_name: '', middle_name: '', last_name: '', gender: '', mobile_primary: '', date_of_birth: '' });
       setShowInlineForm(false);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to create patient');
@@ -246,7 +262,7 @@ export function PatientSelect({
                 size="icon"
                 onClick={() => {
                   setShowInlineForm(false);
-                  setInlineData({ first_name: '', middle_name: '', last_name: '', gender: '', mobile_primary: '' });
+                  setInlineData({ first_name: '', middle_name: '', last_name: '', gender: '', mobile_primary: '', date_of_birth: '' });
                 }}
               >
                 <X className="h-4 w-4" />
@@ -310,6 +326,24 @@ export function PatientSelect({
                 placeholder="Enter mobile number"
               />
             </div>
+
+            <div>
+              <Label htmlFor="inline_dob">Date of Birth</Label>
+              <Input
+                id="inline_dob"
+                type="date"
+                value={inlineData.date_of_birth}
+                onChange={(e) => setInlineData({ ...inlineData, date_of_birth: e.target.value })}
+              />
+            </div>
+
+            {calculatedAge !== null && (
+              <div className="bg-blue-50 dark:bg-blue-950 p-2 rounded border border-blue-200 dark:border-blue-800">
+                <p className="text-sm font-medium">
+                  Age: <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculatedAge} years</span>
+                </p>
+              </div>
+            )}
 
             <Button
               type="button"
