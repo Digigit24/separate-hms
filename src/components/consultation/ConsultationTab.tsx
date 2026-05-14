@@ -70,6 +70,92 @@ interface ConsultationTabProps {
   onVisitUpdate?: () => void;
 }
 
+// --- Field config helpers — no backend changes, all metadata lives in help_text JSON ---
+
+function parseFieldConfig(helpText?: string): Record<string, any> | null {
+  if (!helpText?.trim().startsWith('{')) return null;
+  try { return JSON.parse(helpText) as Record<string, any>; } catch { return null; }
+}
+
+function isSectionMarker(f: { field_name: string }) { return f.field_name.startsWith('__sec_'); }
+function isSubsectionMarker(f: { field_name: string }) { return f.field_name.startsWith('__sub_'); }
+function isStructural(f: { field_name: string }) { return isSectionMarker(f) || isSubsectionMarker(f); }
+
+function usesPerOptionNotes(field: { field_type: string; field_label: string }, cfg: Record<string, any> | null): boolean {
+  if (field.field_type !== 'multiselect' && field.field_type !== 'checkbox') return false;
+  if (cfg?.widget !== 'multiselect_with_option_notes') return false;
+  if (cfg?.allow_notes) console.warn(`[ConsultationTab] "${field.field_label}" has both widget and allow_notes; widget wins`);
+  return true;
+}
+
+// json field_type where options are defined in help_text.options[]
+// Options may be plain strings OR { label, value } objects.
+// Stored as value_json = { selections: string[], notes: { [value]: string } }
+
+type JsonOpt = string | { label: string; value: string };
+function optLabel(o: JsonOpt) { return typeof o === 'string' ? o : o.label; }
+function optValue(o: JsonOpt) { return typeof o === 'string' ? o : o.value; }
+
+function isJsonMultiselectWidget(field: { field_type: string }, cfg: Record<string, any> | null): boolean {
+  return field.field_type === 'json'
+    && cfg?.widget === 'multiselect_with_option_notes'
+    && Array.isArray(cfg?.options)
+    && (cfg.options as unknown[]).length > 0;
+}
+
+type FieldBucket = {
+  section: TemplateField | null;
+  sectionConfig: Record<string, any>;
+  subsections: { sub: TemplateField; subConfig: Record<string, any>; fields: TemplateField[] }[];
+  orphanFields: TemplateField[];
+};
+
+function groupFieldsBySection(fields: TemplateField[]): FieldBucket[] {
+  const sorted = [...fields].sort((a, b) => a.display_order - b.display_order);
+  const buckets: FieldBucket[] = [];
+  let cur: FieldBucket = { section: null, sectionConfig: {}, subsections: [], orphanFields: [] };
+  let curSub: FieldBucket['subsections'][0] | null = null;
+
+  for (const f of sorted) {
+    if (isSectionMarker(f)) {
+      buckets.push(cur);
+      cur = { section: f, sectionConfig: parseFieldConfig(f.help_text) ?? {}, subsections: [], orphanFields: [] };
+      curSub = null;
+    } else if (isSubsectionMarker(f)) {
+      curSub = { sub: f, subConfig: parseFieldConfig(f.help_text) ?? {}, fields: [] };
+      cur.subsections.push(curSub);
+    } else {
+      if (curSub) curSub.fields.push(f);
+      else cur.orphanFields.push(f);
+    }
+  }
+  buckets.push(cur);
+  return buckets.filter(b => b.section !== null || b.orphanFields.length > 0 || b.subsections.length > 0);
+}
+
+// Page-split helper — rough mm estimate per bucket (for multi-page preview)
+function estimateBucketMm(bucket: FieldBucket, formData: Record<string, any>): number {
+  const allFields = [...bucket.orphanFields, ...bucket.subsections.flatMap(s => s.fields)];
+  const hasContent = allFields.some(f => {
+    const v = formData[String(f.id)];
+    return v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0) && v !== false;
+  });
+  if (!hasContent) return 0;
+
+  const sH = bucket.section ? 9 : 0;
+  const fieldMm = (f: TemplateField) => {
+    if (f.field_type === 'textarea') return 14;
+    if (f.field_type === 'json') return ((parseFieldConfig(f.help_text)?.options as unknown[] ?? []).length) * 5 + 5;
+    if (f.field_type === 'multiselect' || f.field_type === 'checkbox') return (f.options?.length ?? 2) * 5 + 4;
+    return 5;
+  };
+  if (bucket.subsections.length > 0) {
+    const colH = bucket.subsections.map(sub => (sub.subConfig.hide_label ? 0 : 7) + sub.fields.reduce((a, f) => a + fieldMm(f), 0));
+    return sH + Math.max(...colH, 0) + 8;
+  }
+  return sH + bucket.orphanFields.reduce((a, f) => a + fieldMm(f), 0) + 8;
+}
+
 export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisitUpdate }) => {
   const {
     useTemplates,
@@ -190,6 +276,27 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
     selectedResponse?.template || null
   );
   const fieldsData = useMemo(() => templateData?.fields || [], [templateData]);
+  const fieldBuckets = useMemo(() => groupFieldsBySection(fieldsData), [fieldsData]);
+
+  // Split buckets into A4 pages for the multi-page preview
+  const printPages = useMemo<FieldBucket[][]>(() => {
+    const FIRST_MM  = 204; // 297 - 50 (header) - 26 (patient row) - 12 (footer) - 5 (padding)
+    const OTHER_MM  = 228; // 297 - 50 (header) - 12 (footer) - 7 (padding)
+    const pages: FieldBucket[][] = [[]];
+    let used = 0;
+    for (const bucket of fieldBuckets) {
+      const h = estimateBucketMm(bucket, formData);
+      if (h === 0) continue;
+      const limit = pages.length === 1 ? FIRST_MM : OTHER_MM;
+      if (used + h > limit && pages[pages.length - 1].length > 0) {
+        pages.push([]);
+        used = 0;
+      }
+      pages[pages.length - 1].push(bucket);
+      used += h;
+    }
+    return pages.filter(p => p.length > 0);
+  }, [fieldBuckets, formData]);
 
   // Populate form data when response is loaded
   useEffect(() => {
@@ -204,8 +311,26 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
 
       const fieldId = String(fieldResp.field);
 
-      if (field.field_type === 'multiselect' || (field.field_type === 'checkbox' && field.options?.length)) {
-        populatedData[fieldId] = fieldResp.selected_options || [];
+      if (field.field_type === 'json') {
+        const jCfg = parseFieldConfig(field.help_text) ?? {};
+        if (isJsonMultiselectWidget(field, jCfg)) {
+          const vj = fieldResp.value_json;
+          populatedData[fieldId] = vj?.selections ?? [];
+          populatedData[fieldId + '_option_notes'] = vj?.notes ?? {};
+        }
+        // other json fields (canvas etc.) are handled by their own mechanisms
+      } else if (field.field_type === 'multiselect' || (field.field_type === 'checkbox' && field.options?.length)) {
+        const mCfg = parseFieldConfig(field.help_text) ?? {};
+        if (usesPerOptionNotes(field, mCfg)) {
+          const vj = fieldResp.value_json;
+          populatedData[fieldId] = vj?.selections ?? fieldResp.selected_options ?? [];
+          populatedData[fieldId + '_option_notes'] = vj?.notes ?? {};
+        } else {
+          populatedData[fieldId] = fieldResp.selected_options || [];
+          if (mCfg.allow_notes && fieldResp.value_text !== null) {
+            populatedData[fieldId + '_notes'] = fieldResp.value_text;
+          }
+        }
       } else if (field.field_type === 'select' || field.field_type === 'radio') {
         populatedData[fieldId] = fieldResp.selected_options?.[0] || null;
       } else if (fieldResp.value_text !== null) {
@@ -235,8 +360,16 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
     setFormData({});
   }, []);
 
-  const handleFieldChange = useCallback((fieldId: number, value: any) => {
-    setFormData(prev => ({ ...prev, [fieldId]: value }));
+  const handleFieldChange = useCallback((fieldId: number, value: any, isNotes = false) => {
+    const key = isNotes ? String(fieldId) + '_notes' : String(fieldId);
+    setFormData(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const updateOptionNote = useCallback((fieldId: number, optionId: number, text: string) => {
+    setFormData(prev => {
+      const key = String(fieldId) + '_option_notes';
+      return { ...prev, [key]: { ...(prev[key] || {}), [String(optionId)]: text } };
+    });
   }, []);
 
   const handleSave = async () => {
@@ -249,7 +382,7 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
 
     setIsSaving(true);
     try {
-      const nonCanvasFields = fieldsData.filter(f => f.field_type !== 'json' && f.field_type !== 'canvas');
+      const nonCanvasFields = fieldsData.filter(f => f.field_type !== 'canvas' && !isStructural(f));
 
       const field_responses: FieldResponsePayload[] = nonCanvasFields.map((field) => {
         const fieldValue = formData[String(field.id)];
@@ -270,20 +403,49 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
             break;
           }
           case 'boolean': response.value_boolean = Boolean(fieldValue); break;
+          case 'select': case 'radio':
+            response.selected_options = fieldValue ? [Number(fieldValue)] : undefined;
+            break;
           case 'checkbox':
+          case 'multiselect': {
             if (field.options?.length) {
               const opts = Array.isArray(fieldValue) ? fieldValue.map(Number) : [];
-              response.selected_options = opts.length > 0 ? opts : undefined;
+              const mCfg = parseFieldConfig(field.help_text) ?? {};
+              if (usesPerOptionNotes(field, mCfg)) {
+                const notesObj = (formData[String(field.id) + '_option_notes'] || {}) as Record<string, string>;
+                const cleanedNotes = Object.fromEntries(
+                  Object.entries(notesObj)
+                    .filter(([id]) => opts.includes(Number(id)))
+                    .map(([id, txt]) => [String(id), String(txt ?? '')])
+                );
+                response.value_json = { selections: opts, notes: cleanedNotes };
+                response.selected_options = undefined;
+                response.value_text = null;
+              } else {
+                response.selected_options = opts.length > 0 ? opts : undefined;
+                if (mCfg.allow_notes) {
+                  response.value_text = formData[String(field.id) + '_notes'] || null;
+                }
+              }
             } else {
               response.value_boolean = Boolean(fieldValue);
             }
             break;
-          case 'select': case 'radio':
-            response.selected_options = fieldValue ? [Number(fieldValue)] : undefined;
-            break;
-          case 'multiselect': {
-            const opts = Array.isArray(fieldValue) ? fieldValue.map(Number) : [];
-            response.selected_options = opts.length > 0 ? opts : undefined;
+          }
+          case 'json': {
+            const jCfg = parseFieldConfig(field.help_text) ?? {};
+            if (isJsonMultiselectWidget(field, jCfg)) {
+              const selections = Array.isArray(fieldValue) ? (fieldValue as string[]) : [];
+              const notesObj = (formData[String(field.id) + '_option_notes'] || {}) as Record<string, string>;
+              // Only keep notes for currently-selected values; coerce to string
+              const cleanedNotes = Object.fromEntries(
+                Object.entries(notesObj)
+                  .filter(([v]) => selections.includes(v))
+                  .map(([v, txt]) => [v, String(txt ?? '')])
+              );
+              response.value_json = { selections, notes: cleanedNotes };
+            }
+            // other json fields (e.g. canvas handled separately): emit nothing
             break;
           }
           default: response.value_text = fieldValue ? String(fieldValue) : null;
@@ -501,137 +663,30 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
           <title>Consultation - ${patient?.full_name || 'Patient'}</title>
           <meta charset="UTF-8">
           <style>
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
-
-            body {
-              font-family: Arial, sans-serif;
-              margin: 0;
-              padding: 0;
-              background: white;
-            }
-
-            .preview-container {
-              background-color: #ffffff !important;
-              color: #000000 !important;
-              width: 210mm;
-              min-height: 297mm;
-              margin: 0 auto;
-              display: flex;
-              flex-direction: column;
-            }
-
-            .preview-container * {
-              color: inherit;
-            }
-
-            .preview-container .text-gray-700 { color: #374151 !important; }
-            .preview-container .text-gray-600 { color: #4b5563 !important; }
-            .preview-container .text-gray-400 { color: #9ca3af !important; }
-
-            .preview-container .border-t,
-            .preview-container .border-b { border-color: #e5e7eb !important; }
-
-            .preview-container .border-dotted { border-color: #9ca3af !important; }
-
-            .flex { display: flex; }
-            .flex-col { flex-direction: column; }
-            .flex-1 { flex: 1; }
-            .flex-shrink-0 { flex-shrink: 0; }
-            .items-start { align-items: flex-start; }
-            .items-center { align-items: center; }
-            .items-end { align-items: flex-end; }
-            .items-baseline { align-items: baseline; }
-            .justify-between { justify-content: space-between; }
-            .gap-1 { gap: 0.25rem; }
-            .gap-2 { gap: 0.5rem; }
-            .gap-4 { gap: 1rem; }
-            .gap-x-4 { column-gap: 1rem; }
-            .gap-x-8 { column-gap: 2rem; }
-            .gap-y-1 { row-gap: 0.25rem; }
-            .gap-y-2 { row-gap: 0.5rem; }
-            .space-y-2 > * + * { margin-top: 0.5rem; }
-            .grid { display: grid; }
-            .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
-            .col-span-3 { grid-column: span 3 / span 3; }
-            .col-span-4 { grid-column: span 4 / span 4; }
-            .col-span-6 { grid-column: span 6 / span 6; }
-            .col-span-12 { grid-column: span 12 / span 12; }
-            .px-8 { padding-left: 2rem; padding-right: 2rem; }
-            .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-            .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
-            .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
-            .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
-            .pb-0\\.5 { padding-bottom: 0.125rem; }
-            .pb-1 { padding-bottom: 0.25rem; }
-            .ml-2 { margin-left: 0.5rem; }
-            .mb-2 { margin-bottom: 0.5rem; }
-            .mb-3 { margin-bottom: 0.75rem; }
-            .mt-1 { margin-top: 0.25rem; }
-            .max-w-md { max-width: 28rem; }
-            .min-w-0 { min-width: 0; }
-            .min-h-\\[32px\\] { min-height: 32px; }
-            .w-28 { width: 7rem; }
-            .h-16 { height: 4rem; }
-            .w-16 { width: 4rem; }
-            .text-xs { font-size: 0.75rem; line-height: 1rem; }
-            .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
-            .text-base { font-size: 1rem; line-height: 1.5rem; }
-            .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
-            .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
-            .font-bold { font-weight: 700; }
-            .font-semibold { font-weight: 600; }
-            .text-center { text-align: center; }
-            .text-right { text-align: right; }
-            .leading-tight { line-height: 1.25; }
-            .whitespace-pre-wrap { white-space: pre-wrap; }
-            .break-words { word-wrap: break-word; }
-            .border-b { border-bottom-width: 1px; }
-            .border-t { border-top-width: 1px; }
-            .border-b-4 { border-bottom-width: 4px; }
-            .border-t-4 { border-top-width: 4px; }
-            .border-dotted { border-style: dotted; }
-            .border-gray-400 { border-color: #9ca3af; }
-            .opacity-90 { opacity: 0.9; }
-            .overflow-auto { overflow: auto; }
-            .object-contain { object-fit: contain; }
-
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; background: white; }
+            .preview-container { background: #fff; width: 210mm; margin: 0 auto; position: relative; }
+            table { width: 100%; border-collapse: collapse; }
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
+            tbody { display: table-row-group; }
             @media print {
-              @page {
-                size: A4;
-                margin: 0;
-              }
-
+              @page { size: A4; margin: 0; }
               * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 color-adjust: exact !important;
               }
-
-              body {
-                margin: 0 !important;
-                padding: 0 !important;
-              }
-
-              .preview-container {
-                width: 210mm !important;
-                margin: 0 !important;
-                box-shadow: none !important;
-              }
+              body { margin: 0 !important; padding: 0 !important; }
+              .preview-container { width: 210mm !important; margin: 0 !important; box-shadow: none !important; }
+              .section-block { break-inside: avoid; page-break-inside: avoid; }
             }
           </style>
         </head>
         <body>
           ${previewRef.current.outerHTML}
           <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(() => window.close(), 100);
-            };
+            window.onload = function() { window.print(); setTimeout(() => window.close(), 100); };
           </script>
         </body>
       </html>
@@ -697,17 +752,120 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
       handleFieldChange(field.id, newValue);
     };
 
-    if (field.field_type === 'json' || field.field_type === 'canvas') {
+    if (field.field_type === 'canvas' || isStructural(field)) {
       return null;
     }
+
+    const cfg = parseFieldConfig(field.help_text) ?? {};
+
+    // ── JSON multiselect widget — options from help_text.options[] ──────────
+    if (field.field_type === 'json') {
+      if (!isJsonMultiselectWidget(field, cfg)) return null;
+      const options = cfg.options as JsonOpt[];
+      const hideLabel = !!cfg.hide_label;
+      const selectedValues = new Set(Array.isArray(value) ? value as string[] : []);
+      const optionNotes = (formData[fieldId + '_option_notes'] || {}) as Record<string, string>;
+      return (
+        <div key={field.id} className="space-y-1.5 min-w-0">
+          {!hideLabel && (
+            <Label className="text-xs font-medium text-foreground/80">{field.field_label}</Label>
+          )}
+          <div className="flex flex-col gap-1 min-w-0">
+            {options.map((opt) => {
+              const val = optValue(opt);
+              const lbl = optLabel(opt);
+              const isChecked = selectedValues.has(val);
+              return (
+                <div
+                  key={val}
+                  className={`rounded-lg border overflow-hidden transition-all duration-150 min-w-0 ${
+                    isChecked
+                      ? 'border-primary/30 bg-primary/[0.04] dark:bg-primary/10'
+                      : 'border-border/50 hover:border-border hover:bg-muted/20'
+                  }`}
+                >
+                  <label
+                    htmlFor={`${fieldId}-${val}`}
+                    className="flex items-center gap-2.5 px-2.5 py-1.5 cursor-pointer"
+                  >
+                    <Checkbox
+                      id={`${fieldId}-${val}`}
+                      checked={isChecked}
+                      className="shrink-0"
+                      onCheckedChange={(checked) => {
+                        const newSel = new Set(selectedValues);
+                        if (checked) {
+                          newSel.add(val);
+                          setFormData(prev => ({ ...prev, [fieldId]: Array.from(newSel) }));
+                        } else {
+                          newSel.delete(val);
+                          setFormData(prev => {
+                            const notesKey = fieldId + '_option_notes';
+                            const n = { ...(prev[notesKey] || {}) };
+                            delete n[val];
+                            return { ...prev, [fieldId]: Array.from(newSel), [notesKey]: n };
+                          });
+                        }
+                      }}
+                    />
+                    <span className={`text-xs flex-1 min-w-0 leading-snug ${isChecked ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+                      {lbl}
+                    </span>
+                  </label>
+                  {isChecked && (
+                    <div className="px-2.5 pb-2">
+                      <Input
+                        key={`${fieldId}-${val}-note`}
+                        placeholder="Add a note..."
+                        className="h-7 text-xs w-full bg-background/60 border-border/50 focus-visible:border-primary/40"
+                        value={optionNotes[val] ?? ''}
+                        onChange={(e) => {
+                          const text = e.target.value;
+                          setFormData(prev => {
+                            const notesKey = fieldId + '_option_notes';
+                            return { ...prev, [notesKey]: { ...(prev[notesKey] || {}), [val]: text } };
+                          });
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+    const isInline = !!cfg.inline_label;
+    const isCompact = !!cfg.compact;
+    const allowNotes = !!cfg.allow_notes;
+    const prefix = cfg.prefix as string | undefined;
+    const hideLabel = !!cfg.hide_label;
+    const notesValue = formData[fieldId + '_notes'] || '';
 
     switch (field.field_type) {
       case 'text':
       case 'number':
       case 'decimal':
+        if (isInline) {
+          return (
+            <div key={field.id} className={`flex items-baseline gap-1.5 ${isCompact ? 'py-0.5' : 'py-1'}`}>
+              {prefix && <span className="text-xs text-muted-foreground shrink-0">{prefix}</span>}
+              {!hideLabel && <span className="text-xs font-medium shrink-0">{field.field_label}:</span>}
+              <Input
+                id={fieldId}
+                type={field.field_type === 'text' ? 'text' : 'number'}
+                placeholder={field.placeholder}
+                value={value || ''}
+                onChange={(e) => handleChange(e.target.value)}
+                className="h-6 text-xs border-0 border-b border-input rounded-none px-0 focus-visible:ring-0 flex-1 min-w-0"
+              />
+            </div>
+          );
+        }
         return (
-          <div key={field.id} className="space-y-2">
-            <Label htmlFor={fieldId}>{field.field_label}</Label>
+          <div key={field.id} className="space-y-1.5">
+            {!hideLabel && <Label htmlFor={fieldId}>{field.field_label}</Label>}
             <Input
               id={fieldId}
               type={field.field_type === 'text' ? 'text' : 'number'}
@@ -715,13 +873,28 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
               value={value || ''}
               onChange={(e) => handleChange(e.target.value)}
             />
-            {field.help_text && <p className="text-sm text-muted-foreground">{field.help_text}</p>}
           </div>
         );
       case 'textarea':
+        if (isInline) {
+          return (
+            <div key={field.id} className="flex items-start gap-1.5 py-1">
+              {prefix && <span className="text-xs text-muted-foreground shrink-0 pt-1">{prefix}</span>}
+              {!hideLabel && <span className="text-xs font-medium shrink-0 pt-1">{field.field_label}:</span>}
+              <Textarea
+                id={fieldId}
+                placeholder={field.placeholder}
+                value={value || ''}
+                onChange={(e) => handleChange(e.target.value)}
+                rows={2}
+                className="text-xs flex-1 min-w-0"
+              />
+            </div>
+          );
+        }
         return (
-          <div key={field.id} className="space-y-2">
-            <Label htmlFor={fieldId}>{field.field_label}</Label>
+          <div key={field.id} className="space-y-1.5">
+            {!hideLabel && <Label htmlFor={fieldId}>{field.field_label}</Label>}
             <Textarea
               id={fieldId}
               placeholder={field.placeholder}
@@ -729,7 +902,6 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
               onChange={(e) => handleChange(e.target.value)}
               rows={4}
             />
-            {field.help_text && <p className="text-sm text-muted-foreground">{field.help_text}</p>}
           </div>
         );
       case 'boolean':
@@ -740,33 +912,47 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
               checked={!!value}
               onCheckedChange={handleChange}
             />
-            <Label htmlFor={fieldId}>{field.field_label}</Label>
+            {!hideLabel && <Label htmlFor={fieldId}>{field.field_label}</Label>}
           </div>
         );
       case 'date':
       case 'datetime':
-      case 'time':
-        // Map field_type to valid HTML input types
+      case 'time': {
         const htmlInputType = field.field_type === 'datetime' ? 'datetime-local' : field.field_type;
+        if (isInline) {
+          return (
+            <div key={field.id} className={`flex items-baseline gap-1.5 ${isCompact ? 'py-0.5' : 'py-1'}`}>
+              {prefix && <span className="text-xs text-muted-foreground shrink-0">{prefix}</span>}
+              {!hideLabel && <span className="text-xs font-medium shrink-0">{field.field_label}:</span>}
+              <Input
+                id={fieldId}
+                type={htmlInputType}
+                value={value || ''}
+                onChange={(e) => handleChange(e.target.value)}
+                className="h-6 text-xs border-0 border-b border-input rounded-none px-0 focus-visible:ring-0 flex-1 min-w-0"
+              />
+            </div>
+          );
+        }
         return (
-          <div key={field.id} className="space-y-2">
-            <Label htmlFor={fieldId}>{field.field_label}</Label>
+          <div key={field.id} className="space-y-1.5">
+            {!hideLabel && <Label htmlFor={fieldId}>{field.field_label}</Label>}
             <Input
               id={fieldId}
               type={htmlInputType}
               value={value || ''}
               onChange={(e) => handleChange(e.target.value)}
             />
-            {field.help_text && <p className="text-sm text-muted-foreground">{field.help_text}</p>}
           </div>
         );
+      }
       case 'select':
       case 'radio':
         if (!field.options) return null;
         if (field.field_type === 'radio') {
           return (
-            <div key={field.id} className="space-y-2">
-              <Label>{field.field_label}</Label>
+            <div key={field.id} className="space-y-1.5">
+              {!hideLabel && <Label>{field.field_label}</Label>}
               <RadioGroup
                 value={String(value)}
                 onValueChange={(val) => handleChange(Number(val))}
@@ -780,13 +966,32 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
                   ))}
                 </div>
               </RadioGroup>
-              {field.help_text && <p className="text-sm text-muted-foreground">{field.help_text}</p>}
+            </div>
+          );
+        }
+        if (isInline) {
+          return (
+            <div key={field.id} className={`flex items-baseline gap-1.5 ${isCompact ? 'py-0.5' : 'py-1'}`}>
+              {prefix && <span className="text-xs text-muted-foreground shrink-0">{prefix}</span>}
+              {!hideLabel && <span className="text-xs font-medium shrink-0">{field.field_label}:</span>}
+              <Select value={String(value)} onValueChange={(val) => handleChange(Number(val))}>
+                <SelectTrigger className="h-6 text-xs flex-1">
+                  <SelectValue placeholder={field.placeholder || 'Select...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {field.options.map((option) => (
+                    <SelectItem key={option.id} value={String(option.id)}>
+                      {option.option_label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           );
         }
         return (
-          <div key={field.id} className="space-y-2">
-            <Label>{field.field_label}</Label>
+          <div key={field.id} className="space-y-1.5">
+            {!hideLabel && <Label>{field.field_label}</Label>}
             <Select
               value={String(value)}
               onValueChange={(val) => handleChange(Number(val))}
@@ -802,42 +1007,273 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
                 ))}
               </SelectContent>
             </Select>
-            {field.help_text && <p className="text-sm text-muted-foreground">{field.help_text}</p>}
           </div>
         );
       case 'multiselect':
-      case 'checkbox':
+      case 'checkbox': {
         if (!field.options) return null;
         const selectedValues = new Set(Array.isArray(value) ? value : []);
+        const perOptionNotes = usesPerOptionNotes(field, cfg);
+        const optionNotes = (formData[fieldId + '_option_notes'] || {}) as Record<string, string>;
+        const orientation = cfg.orientation === 'vertical'
+          ? 'flex flex-col gap-1'
+          : `grid ${getGridColumns(field.options.length)} gap-2`;
         return (
-          <div key={field.id} className="space-y-2">
-            <Label>{field.field_label}</Label>
-            <div className={`grid ${getGridColumns(field.options.length)} gap-4`}>
-              {field.options.map((option) => (
-                <div key={option.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`${fieldId}-${option.id}`}
-                    checked={selectedValues.has(option.id)}
-                    onCheckedChange={(checked) => {
-                      const newValues = new Set(selectedValues);
-                      if (checked) {
-                        newValues.add(option.id);
-                      } else {
-                        newValues.delete(option.id);
-                      }
-                      handleChange(Array.from(newValues));
-                    }}
-                  />
-                  <Label htmlFor={`${fieldId}-${option.id}`}>{option.option_label}</Label>
-                </div>
-              ))}
-            </div>
-            {field.help_text && <p className="text-sm text-muted-foreground">{field.help_text}</p>}
+          <div key={field.id} className="space-y-1.5 min-w-0">
+            {!hideLabel && <Label className="text-xs font-medium text-foreground/80">{field.field_label}</Label>}
+            {perOptionNotes ? (
+              // Card design — note input is inside the card, zero overflow risk
+              <div className="flex flex-col gap-1 min-w-0">
+                {field.options.map((option) => {
+                  const isChecked = selectedValues.has(option.id);
+                  return (
+                    <div
+                      key={option.id}
+                      className={`rounded-lg border overflow-hidden transition-all duration-150 min-w-0 ${
+                        isChecked
+                          ? 'border-primary/30 bg-primary/[0.04] dark:bg-primary/10'
+                          : 'border-border/50 hover:border-border hover:bg-muted/20'
+                      }`}
+                    >
+                      <label
+                        htmlFor={`${fieldId}-${option.id}`}
+                        className="flex items-center gap-2.5 px-2.5 py-1.5 cursor-pointer"
+                      >
+                        <Checkbox
+                          id={`${fieldId}-${option.id}`}
+                          checked={isChecked}
+                          className="shrink-0"
+                          onCheckedChange={(checked) => {
+                            const newValues = new Set(selectedValues);
+                            if (checked) {
+                              newValues.add(option.id);
+                              handleChange(Array.from(newValues));
+                            } else {
+                              newValues.delete(option.id);
+                              setFormData(prev => {
+                                const notesKey = fieldId + '_option_notes';
+                                const n = { ...(prev[notesKey] || {}) };
+                                delete n[String(option.id)];
+                                return { ...prev, [fieldId]: Array.from(newValues), [notesKey]: n };
+                              });
+                            }
+                          }}
+                        />
+                        <span className={`text-xs flex-1 min-w-0 leading-snug ${isChecked ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+                          {option.option_label}
+                        </span>
+                      </label>
+                      {isChecked && (
+                        <div className="px-2.5 pb-2">
+                          <Input
+                            key={`${fieldId}-${option.id}-note`}
+                            placeholder="Add a note..."
+                            className="h-7 text-xs w-full bg-background/60 border-border/50 focus-visible:border-primary/40"
+                            value={optionNotes[String(option.id)] ?? ''}
+                            onChange={(e) => updateOptionNote(field.id, option.id, e.target.value)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              // Plain compact checkboxes
+              <div className={orientation}>
+                {field.options.map((option) => {
+                  const isChecked = selectedValues.has(option.id);
+                  return (
+                    <label
+                      key={option.id}
+                      htmlFor={`${fieldId}-${option.id}`}
+                      className="flex items-center gap-2 py-0.5 cursor-pointer group/opt"
+                    >
+                      <Checkbox
+                        id={`${fieldId}-${option.id}`}
+                        checked={isChecked}
+                        className="shrink-0"
+                        onCheckedChange={(checked) => {
+                          const newValues = new Set(selectedValues);
+                          checked ? newValues.add(option.id) : newValues.delete(option.id);
+                          handleChange(Array.from(newValues));
+                        }}
+                      />
+                      <span className={`text-xs leading-snug ${isChecked ? 'font-medium text-foreground' : 'text-muted-foreground group-hover/opt:text-foreground/80'}`}>
+                        {option.option_label}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+            {allowNotes && !perOptionNotes && (
+              <Textarea
+                placeholder="Add notes..."
+                value={notesValue}
+                rows={2}
+                className="text-xs resize-none bg-muted/20"
+                onChange={(e) => handleFieldChange(field.id, e.target.value, true)}
+              />
+            )}
           </div>
         );
+      }
       default:
         return null;
     }
+  };
+
+  // Read-only renderer — ALL styles are inline so they survive the print-popup outerHTML copy
+  const renderPrintField = (field: TemplateField) => {
+    if (isStructural(field)) return null;
+    const cfg = parseFieldConfig(field.help_text) ?? {};
+    const value = formData[String(field.id)];
+    const hideLabel = !!cfg.hide_label;
+    const perOptionNotes = usesPerOptionNotes(field, cfg);
+
+    const hasValue = value !== null && value !== undefined && value !== ''
+      && !(Array.isArray(value) && value.length === 0) && value !== false;
+    if (!hasValue) return null;
+
+    // shared inline style fragments
+    const lbl: React.CSSProperties = { fontSize: '7.5pt', fontWeight: '600', color: '#374151', flexShrink: 0, whiteSpace: 'nowrap' };
+    const val: React.CSSProperties = { flex: 1, borderBottom: '1px dotted #9ca3af', paddingBottom: '1px', fontSize: '8pt', color: '#111827', minWidth: 0 };
+    const row: React.CSSProperties = { display: 'flex', alignItems: 'baseline', gap: '4px', paddingTop: '2px', paddingBottom: '2px' };
+    const optList: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '4px' };
+
+    // ── JSON multiselect (options from help_text) ───────────────────
+    if (field.field_type === 'json') {
+      if (!isJsonMultiselectWidget(field, cfg)) return null;
+      const options = cfg.options as JsonOpt[];
+      const sel = new Set(Array.isArray(value) ? value as string[] : []);
+      const notes = (formData[String(field.id) + '_option_notes'] || {}) as Record<string, string>;
+      if (sel.size === 0) return null;
+      return (
+        <div key={field.id} style={{ paddingTop: '2px', paddingBottom: '4px' }}>
+          {!hideLabel && <div style={{ ...lbl, display: 'block', marginBottom: '2px' }}>{field.field_label}:</div>}
+          <div style={optList}>
+            {options.map(opt => {
+              const v = optValue(opt), l = optLabel(opt), s = sel.has(v), n = notes[v];
+              return (
+                <span key={v} style={{ fontSize: '8pt', lineHeight: '1.4', color: s ? '#111827' : '#9ca3af' }}>
+                  {s ? '☑' : '☐'}{' '}{l}
+                  {s && n && <span style={{ color: '#6b7280' }}> — <span style={{ fontStyle: 'italic', color: '#374151' }}>{n}</span></span>}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // ── SELECT / RADIO ──────────────────────────────────────────────
+    if ((field.field_type === 'select' || field.field_type === 'radio') && field.options?.length) {
+      const optId = typeof value === 'number' ? value : Number(value);
+      const label = field.options.find(o => o.id === optId)?.option_label ?? String(value);
+      return (
+        <div key={field.id} style={row}>
+          {!hideLabel && <span style={lbl}>{field.field_label}:</span>}
+          <span style={val}>{label}</span>
+        </div>
+      );
+    }
+
+    // ── MULTISELECT — per-option notes (DB options) ─────────────────
+    if (perOptionNotes && field.options?.length) {
+      const selSet = new Set(value as number[]);
+      const notes = (formData[String(field.id) + '_option_notes'] || {}) as Record<string, string>;
+      return (
+        <div key={field.id} style={{ paddingTop: '2px', paddingBottom: '4px' }}>
+          {!hideLabel && <div style={{ ...lbl, display: 'block', marginBottom: '2px' }}>{field.field_label}:</div>}
+          <div style={optList}>
+            {field.options.map(opt => {
+              const s = selSet.has(opt.id), n = notes[String(opt.id)];
+              return (
+                <span key={opt.id} style={{ fontSize: '8pt', lineHeight: '1.4', color: s ? '#111827' : '#9ca3af' }}>
+                  {s ? '☑' : '☐'}{' '}{opt.option_label}
+                  {s && n && <span style={{ color: '#6b7280' }}> — <span style={{ fontStyle: 'italic', color: '#374151' }}>{n}</span></span>}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // ── MULTISELECT — regular ───────────────────────────────────────
+    if ((field.field_type === 'multiselect' || field.field_type === 'checkbox') && field.options?.length) {
+      const selSet = new Set(value as number[]);
+      const horizontal = cfg.orientation === 'horizontal';
+      const notesValue = formData[String(field.id) + '_notes'];
+      return (
+        <div key={field.id} style={{ paddingTop: '2px', paddingBottom: '4px' }}>
+          {!hideLabel && <div style={{ ...lbl, display: 'block', marginBottom: '2px' }}>{field.field_label}:</div>}
+          <div style={{ display: 'flex', flexDirection: horizontal ? 'row' : 'column', flexWrap: horizontal ? 'wrap' : undefined, gap: horizontal ? '0 10px' : '2px', paddingLeft: '4px' } as React.CSSProperties}>
+            {field.options.map(opt => {
+              const s = selSet.has(opt.id);
+              return (
+                <span key={opt.id} style={{ fontSize: '8pt', lineHeight: '1.4', color: s ? '#111827' : '#9ca3af' }}>
+                  {s ? '☑' : '☐'}{' '}{opt.option_label}
+                </span>
+              );
+            })}
+          </div>
+          {cfg.allow_notes && notesValue && (
+            <div style={{ fontSize: '7.5pt', color: '#6b7280', fontStyle: 'italic', marginTop: '2px', paddingLeft: '4px' }}>{notesValue}</div>
+          )}
+        </div>
+      );
+    }
+
+    // ── TEXTAREA — always full-width, own block ─────────────────────
+    if (field.field_type === 'textarea') {
+      return (
+        <div key={field.id} style={{ paddingTop: '2px', paddingBottom: '4px', width: '100%' }}>
+          {!hideLabel && <div style={{ ...lbl, display: 'block', marginBottom: '2px' }}>{field.field_label}:</div>}
+          <div style={{ borderBottom: '1px dotted #9ca3af', minHeight: '18px', paddingBottom: '2px' }}>
+            <span style={{ fontSize: '8pt', color: '#111827', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{String(value)}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // ── BOOLEAN ─────────────────────────────────────────────────────
+    if (field.field_type === 'boolean') {
+      return (
+        <div key={field.id} style={row}>
+          {!hideLabel && <span style={lbl}>{field.field_label}:</span>}
+          <span style={{ fontSize: '8pt' }}>{value ? '☑ Yes' : '☐ No'}</span>
+        </div>
+      );
+    }
+
+    // ── DATE / DATETIME ─────────────────────────────────────────────
+    if (field.field_type === 'date' || field.field_type === 'datetime' || field.field_type === 'time') {
+      let display = String(value);
+      try {
+        const d = new Date(String(value));
+        if (!isNaN(d.getTime())) {
+          display = field.field_type === 'datetime'
+            ? d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+            : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+      } catch { /* keep raw */ }
+      return (
+        <div key={field.id} style={row}>
+          {!hideLabel && <span style={lbl}>{field.field_label}:</span>}
+          <span style={val}>{display}</span>
+        </div>
+      );
+    }
+
+    // ── DEFAULT (text, number, etc.) ────────────────────────────────
+    return (
+      <div key={field.id} style={row}>
+        {!hideLabel && <span style={lbl}>{field.field_label}:</span>}
+        <span style={val}>{String(value)}</span>
+      </div>
+    );
   };
 
   return (
@@ -967,232 +1403,256 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
                     Save
                   </Button>
                 </div>
-                <div className="grid grid-cols-1 gap-3">
-                  {fieldsData.map(renderField)}
+                <div className="space-y-5">
+                  {fieldBuckets.map((bucket, bi) => {
+                    const sCfg = bucket.sectionConfig;
+                    const autoCol = bucket.subsections.length > 0
+                      ? Math.min(bucket.subsections.length, 3)
+                      : 1;
+                    const columns = (sCfg.columns as number) ?? autoCol;
+                    const colWidths = sCfg.column_widths
+                      ? (sCfg.column_widths as string[]).join(' ')
+                      : `repeat(${columns}, minmax(0,1fr))`;
+                    return (
+                      <div key={bi}>
+                        {bucket.section && !sCfg.hide_label && (
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-0.5 h-4 rounded-full bg-primary/50 shrink-0" />
+                            <span className="text-xs font-semibold text-foreground/75 tracking-wide shrink-0">
+                              {bucket.section.field_label}
+                            </span>
+                            <div className="flex-1 h-px bg-border" />
+                          </div>
+                        )}
+                        {bucket.subsections.length > 0 ? (
+                          <div className="grid gap-3" style={{ gridTemplateColumns: colWidths }}>
+                            {bucket.subsections.map((sub, si) => (
+                              <div
+                                key={si}
+                                className="min-w-0 overflow-hidden"
+                                style={{ gridRow: sub.subConfig.row_span ? `span ${sub.subConfig.row_span}` : undefined }}
+                              >
+                                {!sub.subConfig.hide_label && (
+                                  <div className="flex items-center gap-1.5 mb-2">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
+                                    <p className="text-[11px] font-semibold text-muted-foreground">
+                                      {sub.sub.field_label}
+                                    </p>
+                                  </div>
+                                )}
+                                <div className="space-y-1.5">
+                                  {sub.fields.map(renderField)}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (() => {
+                          const shortFields = bucket.orphanFields.filter(f => f.field_type !== 'textarea');
+                          const longFields  = bucket.orphanFields.filter(f => f.field_type === 'textarea');
+                          return (
+                            <>
+                              {shortFields.length > 0 && (
+                                <div className="grid gap-3" style={{ gridTemplateColumns: colWidths }}>
+                                  {shortFields.map(renderField)}
+                                </div>
+                              )}
+                              {longFields.length > 0 && (
+                                <div className="space-y-3 mt-3">
+                                  {longFields.map(renderField)}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
             {/* Preview Tab */}
             {activeSubTab === 'preview' && selectedResponse && (
-              <div className="space-y-4 pt-4">
+              <div className="space-y-3 pt-3">
+                {/* Controls */}
                 <div className="flex justify-between items-center gap-2 print:hidden">
                   <div className="flex gap-2">
-                    <Button
-                      variant={showLetterhead ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setShowLetterhead(true)}
-                    >
-                      <FileImage className="h-4 w-4 mr-2" />
-                      With Letterhead
+                    <Button variant={showLetterhead ? 'default' : 'outline'} size="sm" onClick={() => setShowLetterhead(true)}>
+                      <FileImage className="h-4 w-4 mr-2" />With Letterhead
                     </Button>
-                    <Button
-                      variant={!showLetterhead ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setShowLetterhead(false)}
-                    >
-                      <FileX className="h-4 w-4 mr-2" />
-                      Without Letterhead
+                    <Button variant={!showLetterhead ? 'default' : 'outline'} size="sm" onClick={() => setShowLetterhead(false)}>
+                      <FileX className="h-4 w-4 mr-2" />Without Letterhead
                     </Button>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-muted-foreground">{printPages.length} page{printPages.length !== 1 ? 's' : ''}</span>
                     <Button variant="outline" size="sm" onClick={handlePrint}>
-                      <Printer className="h-4 w-4 mr-2" />
-                      Print
+                      <Printer className="h-4 w-4 mr-2" />Print
                     </Button>
                     <Button variant="outline" size="sm" onClick={handleDownload}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download PDF
+                      <Download className="h-4 w-4 mr-2" />PDF
                     </Button>
                   </div>
                 </div>
 
-                <div className="overflow-auto">
-                  <div
-                    ref={previewRef}
-                    className="preview-container mx-auto bg-white shadow-lg print:shadow-none flex flex-col"
-                    style={{ width: '210mm', minHeight: '297mm' }}
-                  >
-                    {/* Letterhead Header */}
-                    {showLetterhead && (
-                    <div
-                      className="border-b-4 py-8"
-                      style={{
-                        borderColor: tenantSettings.header_bg_color || '#3b82f6',
-                        background: tenantSettings.header_bg_color || '#3b82f6',
-                        color: tenantSettings.header_text_color || '#ffffff'
-                      }}
-                    >
-                      <div className="flex justify-between items-start px-8">
-                        <div className="flex items-start gap-4">
-                          {tenantSettings.logo && (
-                            <div className="flex-shrink-0">
-                              <img
-                                src={tenantSettings.logo}
-                                alt="Logo"
-                                className="h-16 w-16 object-contain"
-                              />
+                {/* ── Multi-page A4 preview ────────────────────────────────── */}
+                <div className="overflow-auto" ref={previewRef}>
+                  {(printPages.length > 0 ? printPages : [[]]).map((pageBuckets, pageIndex) => {
+                    const hBg  = tenantSettings.header_bg_color  || '#1e3a5f';
+                    const hFg  = tenantSettings.header_text_color || '#ffffff';
+                    const fBg  = tenantSettings.footer_bg_color  || '#1e3a5f';
+                    const fFg  = tenantSettings.footer_text_color || '#ffffff';
+
+                    return (
+                      <div
+                        key={pageIndex}
+                        className="preview-container"
+                        style={{
+                          width: '210mm', height: '297mm',
+                          background: '#ffffff', color: '#111827',
+                          fontFamily: 'Arial, sans-serif',
+                          display: 'flex', flexDirection: 'column',
+                          position: 'relative', overflow: 'hidden',
+                          boxShadow: '0 2px 16px rgba(0,0,0,0.14)',
+                          marginBottom: pageIndex < (printPages.length || 1) - 1 ? '10px' : 0,
+                          breakAfter: 'page', pageBreakAfter: 'always',
+                        }}
+                      >
+                        {/* Faded watermark */}
+                        {showLetterhead && tenantSettings.logo && (
+                          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
+                            <img src={tenantSettings.logo} alt="" style={{ width: '60%', objectFit: 'contain', opacity: 0.045 }} />
+                          </div>
+                        )}
+
+                        {/* Content above watermark */}
+                        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+
+                          {/* ── Header (every page) ── */}
+                          {showLetterhead && (
+                            <div style={{ background: hBg, color: hFg, padding: '12px 22px 10px', flexShrink: 0 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                                  {tenantSettings.logo && (
+                                    <img src={tenantSettings.logo} alt="Logo" style={{ height: '46px', width: '46px', objectFit: 'contain', flexShrink: 0 }} />
+                                  )}
+                                  <div>
+                                    <div style={{ fontSize: '14pt', fontWeight: '700', lineHeight: 1.2 }}>{tenantData?.name || 'Medical Center'}</div>
+                                    {tenantSettings.address && (
+                                      <div style={{ fontSize: '7pt', marginTop: '3px', opacity: 0.9, whiteSpace: 'pre-wrap', maxWidth: '230px' }}>{tenantSettings.address}</div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div style={{ textAlign: 'right', fontSize: '7.5pt' }}>
+                                  {tenantSettings.contact_phone && <div style={{ fontWeight: '600' }}>Ph: {tenantSettings.contact_phone}</div>}
+                                  {tenantSettings.contact_email && <div style={{ opacity: 0.9 }}>{tenantSettings.contact_email}</div>}
+                                  {tenantSettings.website_url && <div style={{ opacity: 0.9 }}>{tenantSettings.website_url}</div>}
+                                </div>
+                              </div>
                             </div>
                           )}
-                          <div className="max-w-md">
-                            <h1 className="text-xl font-bold">
-                              {tenantData?.name || 'Medical Center'}
-                            </h1>
-                            <p className="text-sm mt-1 opacity-90 whitespace-pre-wrap break-words">
-                              {tenantSettings.address || 'Excellence in Healthcare'}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right text-sm">
-                          <p className="font-semibold">Contact Information</p>
-                          {tenantSettings.contact_phone && (
-                            <p className="opacity-90">Phone: {tenantSettings.contact_phone}</p>
+
+                          {/* ── Patient info (first page only) ── */}
+                          {pageIndex === 0 && (
+                            <div style={{ padding: '6px 22px 7px', borderBottom: '1.5px solid #e5e7eb', background: '#f9fafb', flexShrink: 0 }}>
+                              <div style={{ fontSize: '9pt', fontWeight: '700', textAlign: 'center', letterSpacing: '0.07em', textTransform: 'uppercase', color: '#1f2937', marginBottom: '5px' }}>
+                                Consultation Record
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '2px 14px', fontSize: '7.5pt' }}>
+                                {([
+                                  ['Name', visit.patient_details?.full_name],
+                                  ['Age / Sex', `${visit.patient_details?.age || ''}${visit.patient_details?.gender ? ' / ' + visit.patient_details.gender : ''}`],
+                                  ['Date', visit.visit_date],
+                                  ['Patient ID', visit.patient_details?.patient_id],
+                                  ['Doctor', visit.doctor_details?.full_name],
+                                  ['Visit #', visit.visit_number],
+                                ] as [string, string | undefined][]).map(([l, v]) => (
+                                  <div key={l} style={{ display: 'flex', alignItems: 'baseline', gap: '3px' }}>
+                                    <span style={{ fontWeight: '600', whiteSpace: 'nowrap', color: '#374151', flexShrink: 0 }}>{l}:</span>
+                                    <span style={{ flex: 1, borderBottom: '1px dotted #9ca3af', paddingBottom: '1px', color: '#111827' }}>{v || ''}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           )}
-                          {tenantSettings.contact_email && (
-                            <p className="opacity-90">Email: {tenantSettings.contact_email}</p>
-                          )}
-                          {tenantSettings.website_url && (
-                            <p className="opacity-90">{tenantSettings.website_url}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    )}
 
-                    {/* Patient & Visit Information */}
-                    <div className="px-8 py-4 border-t border-b flex-shrink-0">
-                      <h2 className="text-lg font-bold mb-3 text-center">CONSULTATION RECORD</h2>
-                      <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
-                        <div className="flex items-end">
-                          <span className="font-semibold w-28 flex-shrink-0">Patient Name:</span>
-                          <span className="flex-1 border-b border-dotted border-gray-400 print:border-0 pb-0.5 ml-2">{visit.patient_details?.full_name || 'N/A'}</span>
-                        </div>
-                        <div className="flex items-end">
-                          <span className="font-semibold w-28 flex-shrink-0">Patient ID:</span>
-                          <span className="flex-1 border-b border-dotted border-gray-400 print:border-0 pb-0.5 ml-2">{visit.patient_details?.patient_id || 'N/A'}</span>
-                        </div>
-                        <div className="flex items-end">
-                          <span className="font-semibold w-28 flex-shrink-0">Age/Gender:</span>
-                          <span className="flex-1 border-b border-dotted border-gray-400 print:border-0 pb-0.5 ml-2">
-                            {visit.patient_details?.age || 'N/A'} years / {visit.patient_details?.gender || 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex items-end">
-                          <span className="font-semibold w-28 flex-shrink-0">Visit Date:</span>
-                          <span className="flex-1 border-b border-dotted border-gray-400 print:border-0 pb-0.5 ml-2">{visit.visit_date || 'N/A'}</span>
-                        </div>
-                        <div className="flex items-end">
-                          <span className="font-semibold w-28 flex-shrink-0">Doctor:</span>
-                          <span className="flex-1 border-b border-dotted border-gray-400 print:border-0 pb-0.5 ml-2">{visit.doctor_details?.full_name || 'N/A'}</span>
-                        </div>
-                        <div className="flex items-end">
-                          <span className="font-semibold w-28 flex-shrink-0">Visit Number:</span>
-                          <span className="flex-1 border-b border-dotted border-gray-400 print:border-0 pb-0.5 ml-2">{visit.visit_number || 'N/A'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Form Fields Content */}
-                    <div className="px-8 py-4 flex-1 overflow-auto border-b">
-                      {selectedResponse && fieldsData && fieldsData.length > 0 ? (
-                        <div className="space-y-2">
-                          <h3 className="text-base font-bold pb-1 mb-2">
-                            {templatesData?.results.find(t => t.id === selectedResponse.template)?.name}
-                          </h3>
-                          <div className="grid grid-cols-12 gap-x-4 gap-y-1">
-                            {fieldsData
-                              .sort((a, b) => a.display_order - b.display_order)
-                              .map((field) => {
-                                const value = formData[field.id];
-                                if (!value || (Array.isArray(value) && value.length === 0) || value === false) return null;
-
-                                let colSpan = 'col-span-6';
-                                if (field.field_type === 'textarea' || (typeof value === 'string' && value.length > 50)) {
-                                  colSpan = 'col-span-12';
-                                } else if (
-                                  field.field_type === 'number' ||
-                                  field.field_type === 'date' ||
-                                  field.field_type === 'datetime' ||
-                                  field.field_label.toLowerCase().includes('age') ||
-                                  (typeof value === 'string' && value.length <= 10)
-                                ) {
-                                  colSpan = 'col-span-3';
-                                } else if (typeof value === 'string' && value.length <= 25) {
-                                  colSpan = 'col-span-4';
-                                }
-
-                                let displayValue = value;
-                                if (Array.isArray(value) && field.options && field.options.length > 0) {
-                                  const labels = value
-                                    .map((id: number) => {
-                                      const option = field.options?.find(opt => opt.id === id);
-                                      return option ? option.option_label : String(id);
-                                    })
-                                    .filter(Boolean);
-                                  displayValue = labels.join(', ');
-                                } else if (typeof value === 'number' && field.options && field.options.length > 0) {
-                                  const option = field.options.find(opt => opt.id === value);
-                                  displayValue = option ? option.option_label : String(value);
-                                } else if (typeof value === 'boolean') {
-                                  displayValue = value ? '✓ Yes' : 'No';
-                                }
+                          {/* ── Clinical content (flex-1 fills space between header and footer) ── */}
+                          <div style={{ flex: 1, padding: showLetterhead ? '7px 22px 6px' : '100px 22px 50px', overflow: 'hidden' }}>
+                            {pageBuckets.length === 0 && pageIndex === 0 ? (
+                              <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af', fontSize: '9pt' }}>No data recorded</div>
+                            ) : (
+                              pageBuckets.map((bucket, bi) => {
+                                const sCfg = bucket.sectionConfig;
+                                const autoCol = bucket.subsections.length > 0 ? Math.min(bucket.subsections.length, 3) : 1;
+                                const columns = (sCfg.columns as number) ?? autoCol;
+                                const colWidths = sCfg.column_widths
+                                  ? (sCfg.column_widths as string[]).join(' ')
+                                  : `repeat(${columns}, minmax(0,1fr))`;
+                                const orphanShort = bucket.orphanFields.filter(f => f.field_type !== 'textarea');
+                                const orphanLong  = bucket.orphanFields.filter(f => f.field_type === 'textarea');
 
                                 return (
-                                  <div key={field.id} className={`${colSpan} flex items-baseline gap-1 py-1`}>
-                                    <span className="text-xs font-semibold text-gray-700 flex-shrink-0">
-                                      {field.field_label}:
-                                    </span>
-                                    <span className={`flex-1 border-b border-dotted border-gray-400 print:border-0 text-sm min-w-0 leading-tight ${colSpan === 'col-span-12' ? 'min-h-[32px]' : ''}`}>
-                                      {displayValue}
-                                    </span>
+                                  <div key={bi} style={{ marginBottom: '7px', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                                    {/* Section heading */}
+                                    {bucket.section && !sCfg.hide_label && (
+                                      <div style={{ borderBottom: '1.5px solid #1f2937', marginBottom: '4px', paddingBottom: '1px' }}>
+                                        <span style={{ fontSize: '8.5pt', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.07em', color: '#111827' }}>
+                                          {bucket.section.field_label}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {bucket.subsections.length > 0 ? (
+                                      <div style={{ display: 'grid', gridTemplateColumns: colWidths, columnGap: '12px' }}>
+                                        {bucket.subsections.map((sub, si) => {
+                                          const subHasContent = sub.fields.some(f => {
+                                            const v = formData[String(f.id)];
+                                            return v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0) && v !== false;
+                                          });
+                                          if (!subHasContent) return null;
+                                          const subShort = sub.fields.filter(f => f.field_type !== 'textarea');
+                                          const subLong  = sub.fields.filter(f => f.field_type === 'textarea');
+                                          return (
+                                            <div key={si} style={{ gridRow: sub.subConfig.row_span ? `span ${sub.subConfig.row_span}` : undefined, minWidth: 0, overflow: 'hidden' }}>
+                                              {!sub.subConfig.hide_label && (
+                                                <div style={{ fontSize: '7.5pt', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#4b5563', borderBottom: '1px dashed #d1d5db', paddingBottom: '2px', marginBottom: '3px' }}>
+                                                  {sub.sub.field_label}
+                                                </div>
+                                              )}
+                                              {subShort.map(renderPrintField)}
+                                              {subLong.map(renderPrintField)}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : (
+                                      <>
+                                        {orphanShort.length > 0 && (
+                                          <div style={{ display: 'grid', gridTemplateColumns: colWidths, columnGap: '12px' }}>
+                                            {orphanShort.map(renderPrintField)}
+                                          </div>
+                                        )}
+                                        {/* Textarea always full-width separate row */}
+                                        {orphanLong.map(renderPrintField)}
+                                      </>
+                                    )}
                                   </div>
                                 );
-                              })}
+                              })
+                            )}
                           </div>
-                          {fieldsData.every(field => {
-                            const value = formData[field.id];
-                            return !value || (Array.isArray(value) && value.length === 0) || value === false;
-                          }) && (
-                            <div className="text-center py-8 text-gray-400">
-                              <p className="text-sm">No data recorded</p>
+
+                          {/* ── Footer (every page) ── */}
+                          {showLetterhead && (
+                            <div style={{ background: fBg, color: fFg, padding: '5px 22px', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '7pt' }}>
+                              <span style={{ fontWeight: '600' }}>{tenantData?.name || 'Medical Center'}{tenantSettings.contact_phone ? `  ·  Ph: ${tenantSettings.contact_phone}` : ''}</span>
+                              <span style={{ opacity: 0.9 }}>Page {pageIndex + 1}{printPages.length > 1 ? ` / ${printPages.length}` : ''}  ·  {new Date().toLocaleDateString()}  ·  Confidential</span>
                             </div>
                           )}
                         </div>
-                      ) : (
-                        <div className="text-center py-8 text-gray-400">
-                          <p className="text-sm">No template selected</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Letterhead Footer */}
-                    <div
-                      className="border-t-4 py-6 flex-shrink-0"
-                      style={{
-                        borderColor: tenantSettings.footer_bg_color || '#3b82f6',
-                        background: tenantSettings.footer_bg_color || '#3b82f6',
-                        color: tenantSettings.footer_text_color || '#ffffff'
-                      }}
-                    >
-                      <div className="flex justify-between items-center text-xs px-8">
-                        <div>
-                          <p className="font-semibold">{tenantData?.name || 'Medical Center'}</p>
-                          {tenantSettings.address && (
-                            <>
-                              {tenantSettings.address.split('\n').map((line: string, index: number) => (
-                                <p key={index} className="opacity-90">{line}</p>
-                              ))}
-                            </>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="opacity-90">This is an official medical document</p>
-                          <p className="opacity-90">Generated on: {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}</p>
-                          <p className="font-semibold mt-1">Confidential Medical Record</p>
-                        </div>
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

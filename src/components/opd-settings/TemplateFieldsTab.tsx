@@ -35,7 +35,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { GripVertical, Plus, Settings, Trash2, Save, RefreshCw, Check, X } from 'lucide-react';
+import { GripVertical, Plus, Settings, Trash2, Save, RefreshCw, Check, X, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import type { TemplateField, CreateTemplateFieldPayload, FieldType, TemplateFieldOption } from '@/types/opdTemplate.types';
 import { Label } from '@/components/ui/label';
@@ -275,7 +275,7 @@ function DraftFieldEditor({
   );
 }
 
-// Sortable Field Row Component with Inline Editing
+// Sortable Field Row Component — renders sections, subsections, and regular fields differently
 function SortableFieldRow({
   field,
   onEdit,
@@ -294,37 +294,123 @@ function SortableFieldRow({
   });
 
   const [isEditingLabel, setIsEditingLabel] = useState(false);
-  const [isEditingPlaceholder, setIsEditingPlaceholder] = useState(false);
   const [labelValue, setLabelValue] = useState(field.field_label);
+  const [isEditingPlaceholder, setIsEditingPlaceholder] = useState(false);
   const [placeholderValue, setPlaceholderValue] = useState(field.placeholder || '');
   const labelInputRef = useRef<HTMLInputElement>(null);
   const placeholderInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    setLabelValue(field.field_label);
-    setPlaceholderValue(field.placeholder || '');
-  }, [field.field_label, field.placeholder]);
+  const isSection = field.field_name.startsWith('__sec_');
+  const isSubsection = field.field_name.startsWith('__sub_');
 
-  useEffect(() => {
-    if (isEditingLabel && labelInputRef.current) {
-      labelInputRef.current.focus();
-      labelInputRef.current.select();
+  useEffect(() => { setLabelValue(field.field_label); }, [field.field_label]);
+  useEffect(() => { setPlaceholderValue(field.placeholder || ''); }, [field.placeholder]);
+  useEffect(() => { if (isEditingLabel) labelInputRef.current?.focus(); }, [isEditingLabel]);
+  useEffect(() => { if (isEditingPlaceholder) placeholderInputRef.current?.focus(); }, [isEditingPlaceholder]);
+
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+
+  const handleLabelSave = () => {
+    if (labelValue.trim() && labelValue !== field.field_label) {
+      onUpdate({ field_label: labelValue.trim() });
     }
-  }, [isEditingLabel]);
-
-  useEffect(() => {
-    if (isEditingPlaceholder && placeholderInputRef.current) {
-      placeholderInputRef.current.focus();
-      placeholderInputRef.current.select();
-    }
-  }, [isEditingPlaceholder]);
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    setIsEditingLabel(false);
   };
 
+  const handlePlaceholderSave = () => {
+    if (placeholderValue !== field.placeholder) {
+      onUpdate({ placeholder: placeholderValue.trim() });
+    }
+    setIsEditingPlaceholder(false);
+  };
+
+  const labelInput = (size: 'lg' | 'sm' = 'lg') => (
+    isEditingLabel ? (
+      <Input
+        ref={labelInputRef}
+        value={labelValue}
+        onChange={(e) => setLabelValue(e.target.value)}
+        onBlur={handleLabelSave}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleLabelSave();
+          if (e.key === 'Escape') { setLabelValue(field.field_label); setIsEditingLabel(false); }
+        }}
+        className={size === 'lg' ? 'h-7 font-bold text-sm w-48' : 'h-6 text-xs w-36'}
+        onClick={(e) => e.stopPropagation()}
+      />
+    ) : (
+      <span
+        className="cursor-pointer hover:underline underline-offset-2 decoration-dotted"
+        onClick={() => setIsEditingLabel(true)}
+        title="Click to rename"
+      >
+        {field.field_label}
+      </span>
+    )
+  );
+
+  const deleteBtn = (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={onDelete}
+      className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity shrink-0"
+      title="Delete"
+    >
+      <Trash2 className="h-3.5 w-3.5" />
+    </Button>
+  );
+
+  const dragHandle = (
+    <div
+      {...attributes}
+      {...listeners}
+      className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0"
+    >
+      <GripVertical className="h-4 w-4" />
+    </div>
+  );
+
+  // ── SECTION ROW ──────────────────────────────────────────────────
+  if (isSection) {
+    return (
+      <div ref={setNodeRef} style={style} className="group flex items-center gap-2 py-1">
+        {dragHandle}
+        <div className="flex-1 flex items-center gap-2 bg-foreground/5 dark:bg-foreground/10 border border-border rounded-lg px-3 py-2">
+          <div className="w-1 h-4 rounded-full bg-primary shrink-0" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-primary/70 shrink-0">
+            Section
+          </span>
+          <div className="flex-1 h-px bg-border mx-1" />
+          <span className="font-semibold text-sm">
+            {labelInput('lg')}
+          </span>
+        </div>
+        {deleteBtn}
+      </div>
+    );
+  }
+
+  // ── SUBSECTION ROW ────────────────────────────────────────────────
+  if (isSubsection) {
+    return (
+      <div ref={setNodeRef} style={style} className="group flex items-center gap-2 py-0.5 pl-6">
+        {dragHandle}
+        <div className="flex items-center gap-1.5 border border-dashed border-border rounded-md px-2.5 py-1.5 flex-1 bg-muted/30">
+          <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground shrink-0">
+            Subsection
+          </span>
+          <span className="text-xs font-medium">
+            {labelInput('sm')}
+          </span>
+        </div>
+        {deleteBtn}
+      </div>
+    );
+  }
+
+  // ── REGULAR FIELD ROW ─────────────────────────────────────────────
   const getFieldTypeBadge = (fieldType: string) => {
     const colors: Record<string, string> = {
       text: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-blue-200',
@@ -346,32 +432,12 @@ function SortableFieldRow({
       json: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       canvas: 'bg-violet-100 text-violet-800 border-violet-200',
     };
-
     const icon = FIELD_TYPE_OPTIONS.find(opt => opt.value === fieldType)?.icon || '📝';
-
     return (
-      <Badge
-        variant="outline"
-        className={`${colors[fieldType] || 'bg-gray-100 text-gray-800 border-gray-200'} font-medium`}
-      >
-        <span className="mr-1">{icon}</span>
-        {fieldType}
+      <Badge variant="outline" className={`${colors[fieldType] || 'bg-gray-100 text-gray-800 border-gray-200'} font-medium shrink-0`}>
+        <span className="mr-1">{icon}</span>{fieldType}
       </Badge>
     );
-  };
-
-  const handleLabelSave = () => {
-    if (labelValue.trim() && labelValue !== field.field_label) {
-      onUpdate({ field_label: labelValue.trim() });
-    }
-    setIsEditingLabel(false);
-  };
-
-  const handlePlaceholderSave = () => {
-    if (placeholderValue !== field.placeholder) {
-      onUpdate({ placeholder: placeholderValue.trim() });
-    }
-    setIsEditingPlaceholder(false);
   };
 
   const needsPlaceholder = !['select', 'multiselect', 'radio', 'checkbox', 'boolean', 'canvas', 'json'].includes(field.field_type);
@@ -380,27 +446,17 @@ function SortableFieldRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="group relative border-2 rounded-xl bg-gradient-to-br from-background to-muted/20 hover:shadow-lg transition-all duration-200 overflow-hidden"
+      className="group relative border rounded-lg bg-background hover:shadow-sm transition-all duration-150 overflow-hidden pl-8"
     >
-      {/* Drag Indicator Bar */}
-      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-primary/40 via-primary/60 to-primary/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-border group-hover:bg-primary/40 transition-colors" />
 
-      <div className="flex items-center gap-3 p-4">
-        {/* Drag Handle */}
-        <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-primary transition-colors"
-        >
-          <GripVertical className="h-5 w-5" />
-        </div>
+      <div className="flex items-center gap-3 px-3 py-2.5">
+        {dragHandle}
 
-        {/* Main Content */}
-        <div className="flex-1 min-w-0 space-y-2">
-          {/* Top Row: Label, Type, Actions */}
-          <div className="flex items-center gap-3">
-            {/* Editable Label */}
-            <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            {/* Editable label */}
+            <div className="flex-1 min-w-0 flex items-center gap-1.5">
               {isEditingLabel ? (
                 <Input
                   ref={labelInputRef}
@@ -409,64 +465,37 @@ function SortableFieldRow({
                   onBlur={handleLabelSave}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleLabelSave();
-                    if (e.key === 'Escape') {
-                      setLabelValue(field.field_label);
-                      setIsEditingLabel(false);
-                    }
+                    if (e.key === 'Escape') { setLabelValue(field.field_label); setIsEditingLabel(false); }
                   }}
-                  className="h-8 font-semibold text-base"
+                  className="h-7 font-medium text-sm"
                 />
               ) : (
-                <div
-                  className="flex items-center gap-2 cursor-pointer group/label"
+                <span
+                  className="font-medium text-sm cursor-pointer hover:text-primary transition-colors truncate"
                   onClick={() => setIsEditingLabel(true)}
+                  title="Click to rename"
                 >
-                  <span className="font-semibold text-base group-hover/label:text-primary transition-colors">
-                    {field.field_label}
-                  </span>
-                  {field.is_required && (
-                    <Badge variant="destructive" className="h-5 text-xs">
-                      Required
-                    </Badge>
-                  )}
-                  {!field.is_active && (
-                    <Badge variant="secondary" className="h-5 text-xs">
-                      Inactive
-                    </Badge>
-                  )}
-                </div>
+                  {field.field_label}
+                </span>
               )}
+              {field.is_required && <Badge variant="destructive" className="h-4 text-[10px] px-1 shrink-0">req</Badge>}
+              {!field.is_active && <Badge variant="secondary" className="h-4 text-[10px] px-1 shrink-0">off</Badge>}
             </div>
 
-            {/* Field Type Badge */}
-            <div>{getFieldTypeBadge(field.field_type)}</div>
+            {getFieldTypeBadge(field.field_type)}
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onOpenConfig}
-                className="h-8 w-8 p-0"
-                title="Advanced Settings"
-              >
-                <Settings className="h-4 w-4" />
+            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button variant="ghost" size="sm" onClick={onOpenConfig} className="h-7 w-7 p-0" title="Settings">
+                <Settings className="h-3.5 w-3.5" />
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onDelete}
-                className="h-8 w-8 p-0 hover:text-destructive"
-                title="Delete Field"
-              >
-                <Trash2 className="h-4 w-4" />
+              <Button variant="ghost" size="sm" onClick={onDelete} className="h-7 w-7 p-0 hover:text-destructive" title="Delete">
+                <Trash2 className="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
 
-          {/* Bottom Row: Placeholder and Field Key */}
-          <div className="flex items-center gap-4 text-sm">
-            {/* Editable Placeholder */}
+          {/* Placeholder + field key row */}
+          <div className="flex items-center gap-3 mt-1">
             {needsPlaceholder && (
               <div className="flex-1 min-w-0">
                 {isEditingPlaceholder ? (
@@ -477,35 +506,24 @@ function SortableFieldRow({
                     onBlur={handlePlaceholderSave}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handlePlaceholderSave();
-                      if (e.key === 'Escape') {
-                        setPlaceholderValue(field.placeholder || '');
-                        setIsEditingPlaceholder(false);
-                      }
+                      if (e.key === 'Escape') { setPlaceholderValue(field.placeholder || ''); setIsEditingPlaceholder(false); }
                     }}
-                    className="h-7 text-sm"
-                    placeholder="Add placeholder..."
+                    className="h-6 text-xs"
+                    placeholder="Placeholder text..."
                   />
                 ) : (
-                  <div
-                    className="cursor-pointer group/placeholder"
+                  <span
+                    className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                     onClick={() => setIsEditingPlaceholder(true)}
                   >
-                    <span className="text-muted-foreground group-hover/placeholder:text-foreground transition-colors">
-                      {field.placeholder || (
-                        <span className="italic opacity-60">Click to add placeholder</span>
-                      )}
-                    </span>
-                  </div>
+                    {field.placeholder || <span className="italic opacity-50">+ placeholder</span>}
+                  </span>
                 )}
               </div>
             )}
-
-            {/* Field Key */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground font-mono bg-muted/50 px-2 py-0.5 rounded">
-                {field.field_key}
-              </span>
-            </div>
+            <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-1.5 py-0.5 rounded shrink-0">
+              {field.field_name}
+            </span>
           </div>
         </div>
       </div>
@@ -629,18 +647,20 @@ export function TemplateFieldsTab() {
     }
   }, [fieldsData]);
 
-  // Handle inline field update
+  // Handle inline field update — optimistic: apply immediately, revert on failure
   const handleInlineFieldUpdate = useCallback(
     async (fieldId: number, updates: Partial<TemplateField>) => {
+      const snapshot = localFields;
+      setLocalFields(prev => prev.map(f => f.id === fieldId ? { ...f, ...updates } : f));
       try {
         await updateTemplateField(fieldId, updates);
-        toast.success('Field updated');
-        mutate(); // Refresh the list
+        mutate();
       } catch (error: any) {
+        setLocalFields(snapshot);
         toast.error(error.message || 'Failed to update field');
       }
     },
-    [updateTemplateField, mutate]
+    [localFields, updateTemplateField, mutate]
   );
 
   // Handle create field from field type selection (optimistic)

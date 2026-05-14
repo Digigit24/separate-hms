@@ -289,6 +289,7 @@ export interface FieldResponsePayload {
   value_boolean?: boolean | null;
   selected_options?: number[];
   full_canvas_json?: any | null;
+  value_json?: Record<string, any> | null;
 }
 
 export interface CreateTemplateResponsePayload {
@@ -350,6 +351,9 @@ export interface TemplateFieldResponse {
   full_canvas_json: any | null; // Stores Excalidraw JSON
   canvas_thumbnail: string | null; // URL to a generated thumbnail
   canvas_version_history: any[]; // Tracks changes to the canvas JSON
+
+  // Structured JSON value (used by multiselect_with_option_notes widget)
+  value_json?: Record<string, any> | null;
 
   created_at: string;
   updated_at: string;

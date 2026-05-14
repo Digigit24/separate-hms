@@ -17,7 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Save, Printer, Plus, FileText } from 'lucide-react';
-import { format } from 'date-fns';
+
 import { Admission } from '@/types/ipd.types';
 import { toast } from 'sonner';
 import { useOPDTemplate } from '@/hooks/useOPDTemplate';
@@ -144,10 +144,12 @@ export const IPDConsultationTab: React.FC<IPDConsultationTabProps> = ({ admissio
 
     setIsSaving(true);
     try {
-      const fieldResponses: FieldResponsePayload[] = templateFields.map((field) => ({
-        field: field.id,
-        response_value: formData[field.id.toString()] || '',
-      }));
+      const fieldResponses: FieldResponsePayload[] = templateFields
+        .filter(f => !f.field_name.startsWith('__sec_') && !f.field_name.startsWith('__sub_'))
+        .map((field) => ({
+          field: field.id,
+          response_value: formData[field.id.toString()] || '',
+        }));
 
       await updateTemplateResponse(selectedResponse.id, {
         field_responses: fieldResponses,
@@ -195,6 +197,9 @@ export const IPDConsultationTab: React.FC<IPDConsultationTabProps> = ({ admissio
 
   // Render field based on type
   const renderField = useCallback((field: TemplateField) => {
+    // Skip section/subsection marker fields — they define layout, not data
+    if (field.field_name.startsWith('__sec_') || field.field_name.startsWith('__sub_')) return null;
+
     const fieldValue = formData[field.id.toString()] || '';
 
     switch (field.field_type) {
@@ -380,7 +385,9 @@ export const IPDConsultationTab: React.FC<IPDConsultationTabProps> = ({ admissio
                         <div className="flex-1">
                           <h4 className="font-medium text-sm">{response.template_name}</h4>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {format(new Date(response.created_at), 'MMM dd, yyyy • hh:mm a')}
+                            {response.created_at
+                              ? format(new Date(response.created_at), 'MMM dd, yyyy • hh:mm a')
+                              : '—'}
                           </p>
                         </div>
                         <FileText className="h-4 w-4 text-muted-foreground" />
