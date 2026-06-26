@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useOpdVisit } from '@/hooks/useOpdVisit';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ import {
   ArrowLeft, Loader2, Phone,
   PlusCircle, Eye, ChevronLeft, ChevronRight, Play, CheckCircle, CalendarPlus, X
 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { ConsultationTab } from '@/components/consultation/ConsultationTab';
 import { OPDBillingContent } from '@/components/opd/OPDBillingContent';
@@ -68,6 +69,7 @@ export const OPDConsultation: React.FC = () => {
   };
 
   const [activeTab, setActiveTab] = useState(getInitialTab());
+  const [isTabSwitching, setIsTabSwitching] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [activeResponse, setActiveResponse] = useState<TemplateResponse | null>(null);
   const [showNewResponseDialog, setShowNewResponseDialog] = useState(false);
@@ -75,6 +77,11 @@ export const OPDConsultation: React.FC = () => {
   const [newResponseReason, setNewResponseReason] = useState('');
   const [isDefaultTemplateApplied, setIsDefaultTemplateApplied] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  // Sync guard: prevent concurrent auto-creates (ref so it's synchronously reliable)
+  const isAutoCreatingRef = useRef(false);
+  // Stable ref to handleAddNewResponse — lets the auto-create effect call it
+  // without adding it to the effect's dependency array (breaks circular dep).
+  const handleAddNewResponseRef = useRef<((isAutoCreation?: boolean, forceCreate?: boolean) => Promise<void>) | null>(null);
   const [completeNote, setCompleteNote] = useState('');
   const [followupDate, setFollowupDate] = useState<Date | undefined>(undefined);
   const [followupNotes, setFollowupNotes] = useState('');
@@ -83,6 +90,10 @@ export const OPDConsultation: React.FC = () => {
 
   // Update URL hash when tab changes
   const handleTabChange = (tab: string) => {
+    if (tab !== activeTab) {
+      setIsTabSwitching(true);
+      setTimeout(() => setIsTabSwitching(false), 300);
+    }
     setActiveTab(tab);
     navigate(`#${tab}`, { replace: true });
   };
@@ -98,14 +109,44 @@ export const OPDConsultation: React.FC = () => {
   // Fetch current visit
   const { data: visit, isLoading, error, mutate: mutateVisit } = useOpdVisitById(visitId ? parseInt(visitId) : null);
 
-  // Get visit IDs from navigation state (passed from visits list) or fallback to today's visits
+  // Auto-start consultation when the page opens for a waiting visit
+  const [autoStarted, setAutoStarted] = useState(false);
+  useEffect(() => {
+    if (visit && visit.status === 'waiting' && !autoStarted && !isSaving) {
+      setAutoStarted(true);
+      // Fire-and-forget: start consultation silently
+      const startTime = new Date().toISOString();
+      mutateVisit(
+        async () => {
+          const updated = await patchOpdVisit(visit.id, {
+            status: 'in_consultation',
+            consultation_start_time: startTime,
+          });
+          return updated;
+        },
+        {
+          optimisticData: { ...visit, status: 'in_consultation' as const, consultation_start_time: startTime },
+          rollbackOnError: true,
+          revalidate: true,
+        }
+      ).catch(() => {
+        // If auto-start fails silently, doctor can click Start manually
+        setAutoStarted(false);
+      });
+    }
+  }, [visit?.id, visit?.status, autoStarted]);
+
+  // Get visit IDs from navigation state (passed from visits list)
   const visitIdsFromState = (location.state as any)?.visitIds as number[] | undefined;
 
-  // Fetch context for navigation (Today's visits) - only as fallback
-  const { data: todayVisitsData } = useTodayVisits({ page_size: 100 });
+  // Only fetch today's visits when state doesn't carry IDs (e.g. direct URL access).
+  // Passing undefined as params causes SWR to skip the request entirely.
+  const { data: todayVisitsData } = useTodayVisits(
+    visitIdsFromState ? undefined : { page_size: 100 }
+  );
   const todayVisits = todayVisitsData?.results || [];
 
-  // Use visitIds from state if available, otherwise use today's visits
+  // Use visitIds from state if available, otherwise fall back to today's visits
   const visitIds = visitIdsFromState || todayVisits.map(v => v.id);
 
   // Determine Prev/Next IDs
@@ -124,13 +165,13 @@ export const OPDConsultation: React.FC = () => {
   };
 
   const handlePrevVisit = () => {
-    if (prevVisitId) navigate(`/opd/consultation/${prevVisitId}`, {
+    if (prevVisitId) navigate(`/opd/consultation/${prevVisitId}#${activeTab}`, {
       state: { visitIds, from: (location.state as any)?.from || '/opd/visits' }
     });
   };
 
   const handleNextVisit = () => {
-    if (nextVisitId) navigate(`/opd/consultation/${nextVisitId}`, {
+    if (nextVisitId) navigate(`/opd/consultation/${nextVisitId}#${activeTab}`, {
       state: { visitIds, from: (location.state as any)?.from || '/opd/visits' }
     });
   };
@@ -138,13 +179,23 @@ export const OPDConsultation: React.FC = () => {
   const handleStartConsultation = async () => {
     if (!visit) return;
     setIsSaving(true);
+    const startTime = new Date().toISOString();
     try {
-      await patchOpdVisit(visit.id, {
-        status: 'in_consultation',
-        started_at: new Date().toISOString()
-      });
+      await mutateVisit(
+        async () => {
+          const updated = await patchOpdVisit(visit.id, {
+            status: 'in_consultation',
+            consultation_start_time: startTime,
+          });
+          return updated;
+        },
+        {
+          optimisticData: { ...visit, status: 'in_consultation' as const, consultation_start_time: startTime },
+          rollbackOnError: true,
+          revalidate: true,
+        }
+      );
       toast.success('Consultation started');
-      mutateVisit();
     } catch (err: any) {
       toast.error(err.message || 'Failed to start consultation');
     } finally {
@@ -156,13 +207,38 @@ export const OPDConsultation: React.FC = () => {
     if (!visit) return;
     setIsSaving(true);
     try {
-      await completeOpdVisit(visit.id, {
-        diagnosis: completeNote || 'Completed',
-        notes: completeNote
-      });
+      await mutateVisit(
+        async () => {
+          const updated = await completeOpdVisit(visit.id, {
+            diagnosis: completeNote || 'Completed',
+            notes: completeNote,
+          });
+          // If a follow-up date was set in the dialog, save it too
+          if (followupDate) {
+            await patchOpdVisit(visit.id, {
+              follow_up_required: true,
+              follow_up_date: format(followupDate, 'yyyy-MM-dd'),
+              follow_up_notes: followupNotes || null,
+            });
+          }
+          return updated;
+        },
+        {
+          optimisticData: {
+            ...visit,
+            status: 'completed' as const,
+            ...(followupDate && {
+              follow_up_required: true,
+              follow_up_date: format(followupDate, 'yyyy-MM-dd'),
+              follow_up_notes: followupNotes || null,
+            }),
+          },
+          rollbackOnError: true,
+          revalidate: true,
+        }
+      );
       toast.success('Consultation completed');
       setShowCompleteDialog(false);
-      mutateVisit();
     } catch (err: any) {
       toast.error(err.message || 'Failed to complete consultation');
     } finally {
@@ -185,15 +261,25 @@ export const OPDConsultation: React.FC = () => {
   const handleSaveFollowup = async () => {
     if (!visit) return;
     setIsSavingFollowup(true);
+    const patch = {
+      follow_up_required: !!followupDate,
+      follow_up_date: followupDate ? format(followupDate, 'yyyy-MM-dd') : null,
+      follow_up_notes: followupNotes || null,
+    };
     try {
-      await patchOpdVisit(visit.id, {
-        follow_up_required: !!followupDate,
-        follow_up_date: followupDate ? format(followupDate, 'yyyy-MM-dd') : null,
-        follow_up_notes: followupNotes || null,
-      });
+      await mutateVisit(
+        async () => {
+          const updated = await patchOpdVisit(visit.id, patch);
+          return updated;
+        },
+        {
+          optimisticData: { ...visit, ...patch },
+          rollbackOnError: true,
+          revalidate: true,
+        }
+      );
       toast.success(followupDate ? 'Follow-up scheduled' : 'Follow-up cleared');
       setIsFollowupOpen(false);
-      mutateVisit();
     } catch (err: any) {
       toast.error(err.message || 'Failed to save follow-up');
     } finally {
@@ -208,10 +294,13 @@ export const OPDConsultation: React.FC = () => {
 
   const { data: templatesData, isLoading: isLoadingTemplates } = useTemplates({ is_active: true });
 
-  const { data: responsesData, isLoading: isLoadingResponses, mutate: mutateResponses } = useTemplateResponses({
-    visit: visit?.id,
-    template: selectedTemplate ? parseInt(selectedTemplate) : undefined,
-  });
+  // Gate on both visit.id AND selectedTemplate being ready — pass null to skip until then.
+  // Using null (not undefined) so SWR skips the fetch entirely rather than fetching all responses.
+  const { data: responsesData, isLoading: isLoadingResponses, isValidating: isValidatingResponses, mutate: mutateResponses } = useTemplateResponses(
+    visit?.id && selectedTemplate
+      ? { object_id: visit.id, encounter_type: 'visit', template: parseInt(selectedTemplate) }
+      : null
+  );
 
   const templateResponses = useMemo(() => responsesData?.results || [], [responsesData]);
 
@@ -249,13 +338,20 @@ export const OPDConsultation: React.FC = () => {
     setActiveResponse(response);
   }, []);
 
-  const handleAddNewResponse = useCallback(async (isAutoCreation = false) => {
+  // forceCreate=true is used by the dialog's Create button to skip the "open dialog" guard
+  const handleAddNewResponse = useCallback(async (isAutoCreation = false, forceCreate = false) => {
     if (!selectedTemplate || !visit?.id) return;
 
-    if (!isAutoCreation && templateResponses.length > 0) {
+    // If this is a manual action AND there are existing responses AND we're not already
+    // confirming in the dialog → show the dialog first so the doctor can add a reason.
+    if (!isAutoCreation && !forceCreate && templateResponses.length > 0) {
         setShowNewResponseDialog(true);
         return;
     }
+
+    // Synchronous guard: if an auto-create is already in flight, don't fire another.
+    if (isAutoCreation && isAutoCreatingRef.current) return;
+    if (isAutoCreation) isAutoCreatingRef.current = true;
 
     setIsSaving(true);
     try {
@@ -266,20 +362,31 @@ export const OPDConsultation: React.FC = () => {
         doctor_switched_reason: !isAutoCreation && newResponseReason ? newResponseReason : undefined,
       };
       const newResponse = await createTemplateResponse(payload);
-      await mutateResponses();
+      // Optimistically set the response immediately so the effect won't re-fire
       handleViewResponse(newResponse);
-      toast.success('New consultation form ready.');
+      // Then revalidate SWR in background (no await — avoids re-triggering the effect)
+      mutateResponses();
+      if (!isAutoCreation) {
+        toast.success('New consultation note added.');
+      }
       setShowNewResponseDialog(false);
       setNewResponseReason('');
     } catch (error: any) {
       toast.error(error.message || 'Failed to create new response.');
     } finally {
       setIsSaving(false);
+      if (isAutoCreation) isAutoCreatingRef.current = false;
     }
   }, [selectedTemplate, visit?.id, newResponseReason, templateResponses, createTemplateResponse, mutateResponses, handleViewResponse]);
 
+  // Keep the stable ref in sync with the latest callback every render.
+  // This lets the effect below call it without listing it as a dep (breaks circular dep).
+  handleAddNewResponseRef.current = handleAddNewResponse;
+
   useEffect(() => {
-    if (!selectedTemplate || isLoadingResponses || !visit) {
+    // isValidating guards against keepPreviousData races: even when isLoadingResponses is
+    // false, isValidating is true while the new key is fetching — so we must wait for both.
+    if (!selectedTemplate || isLoadingResponses || isValidatingResponses || !visit) {
       return;
     }
 
@@ -289,10 +396,16 @@ export const OPDConsultation: React.FC = () => {
         handleViewResponse(sortedResponses[0]);
       }
     } else {
+      // If activeResponse is already set (e.g. ConsultationBoard just created a note and
+      // called onViewResponse), don't clobber it — SWR just hasn't caught up yet.
+      if (activeResponse) return;
       setActiveResponse(null);
-      handleAddNewResponse(true);
+      // Call via stable ref so this effect doesn't depend on handleAddNewResponse
+      // (which itself depends on templateResponses — the circular dep that caused double POSTs).
+      handleAddNewResponseRef.current?.(true);
     }
-  }, [selectedTemplate, templateResponses, isLoadingResponses, activeResponse, handleAddNewResponse, handleViewResponse, visit]);
+  }, [selectedTemplate, templateResponses, isLoadingResponses, isValidatingResponses, activeResponse, handleViewResponse, visit]);
+  // ↑ handleAddNewResponse intentionally NOT in deps — use the ref above instead
 
   if (isLoading) {
     return (
@@ -398,7 +511,13 @@ export const OPDConsultation: React.FC = () => {
             )}
 
             {visit.status === 'in_consultation' && (
-              <Button size="sm" onClick={() => setShowCompleteDialog(true)} disabled={isSaving} className="h-7 text-xs px-3 gap-1.5 bg-foreground hover:bg-foreground/90 text-background">
+              <Button size="sm" onClick={() => {
+                // Reset follow-up state to current visit values before opening
+                setFollowupDate(visit.follow_up_date ? new Date(visit.follow_up_date) : undefined);
+                setFollowupNotes(visit.follow_up_notes || '');
+                setCompleteNote('');
+                setShowCompleteDialog(true);
+              }} disabled={isSaving} className="h-7 text-xs px-3 gap-1.5 bg-foreground hover:bg-foreground/90 text-background">
                 {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
                 Complete
               </Button>
@@ -481,17 +600,28 @@ export const OPDConsultation: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <div className="w-full px-4 py-3">
-          {activeTab === 'consultation' && (
-            <ConsultationTab visit={visit} onVisitUpdate={() => mutateVisit()} />
-          )}
-          {activeTab === 'billing' && (
-            <OPDBillingContent visit={visit} />
-          )}
-          {activeTab === 'history' && (
-            <HistoryTab patientId={visit.patient} />
-          )}
-          {activeTab === 'profile' && (
-            <ProfileTab patientId={visit.patient} />
+          {isTabSwitching ? (
+            <div className="space-y-3 pt-1">
+              <Skeleton className="h-8 w-full rounded-md" />
+              <Skeleton className="h-24 w-full rounded-md" />
+              <Skeleton className="h-8 w-3/4 rounded-md" />
+              <Skeleton className="h-32 w-full rounded-md" />
+            </div>
+          ) : (
+            <>
+              {activeTab === 'consultation' && (
+                <ConsultationTab visit={visit} onVisitUpdate={() => mutateVisit()} />
+              )}
+              {activeTab === 'billing' && (
+                <OPDBillingContent visit={visit} />
+              )}
+              {activeTab === 'history' && (
+                <HistoryTab patientId={visit.patient} />
+              )}
+              {activeTab === 'profile' && (
+                <ProfileTab patientId={visit.patient} />
+              )}
+            </>
           )}
         </div>
       </div>
@@ -519,7 +649,7 @@ export const OPDConsultation: React.FC = () => {
             <Button variant="ghost" size="sm" onClick={() => setShowNewResponseDialog(false)}>
               Cancel
             </Button>
-            <Button size="sm" onClick={() => handleAddNewResponse(false)} disabled={isSaving} className="bg-foreground hover:bg-foreground/90 text-background">
+            <Button size="sm" onClick={() => handleAddNewResponse(false, true)} disabled={isSaving} className="bg-foreground hover:bg-foreground/90 text-background">
               {isSaving && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />} Create
             </Button>
           </DialogFooter>
@@ -586,23 +716,53 @@ export const OPDConsultation: React.FC = () => {
       </Dialog>
 
       {/* Complete Consultation Dialog */}
-      <Dialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
+      <Dialog open={showCompleteDialog} onOpenChange={(open) => { setShowCompleteDialog(open); if (!open) { setCompleteNote(''); setFollowupDate(visit?.follow_up_date ? new Date(visit.follow_up_date) : undefined); setFollowupNotes(visit?.follow_up_notes || ''); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold">Complete Consultation</DialogTitle>
             <DialogDescription className="text-xs">
-              Finalize this visit and move the patient to completed.
+              Finalize this visit. Optionally schedule a follow-up below.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 py-2">
-            <Label htmlFor="complete-note" className="text-xs">Final Diagnosis / Notes</Label>
-            <Input
-              id="complete-note"
-              placeholder="Enter diagnosis or completion summary..."
-              value={completeNote}
-              onChange={(e) => setCompleteNote(e.target.value)}
-              className="h-8 text-sm"
-            />
+          <div className="space-y-3 py-2">
+            <div>
+              <Label htmlFor="complete-note" className="text-xs">Final Diagnosis / Notes</Label>
+              <Textarea
+                id="complete-note"
+                placeholder="Enter diagnosis or completion summary..."
+                value={completeNote}
+                onChange={(e) => setCompleteNote(e.target.value)}
+                className="mt-1 h-16 resize-none text-sm"
+              />
+            </div>
+            <div className="border-t pt-3">
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-xs font-medium flex items-center gap-1.5">
+                  <CalendarPlus className="h-3.5 w-3.5 text-muted-foreground" />
+                  Schedule Follow-up <span className="text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                {followupDate && (
+                  <button onClick={() => { setFollowupDate(undefined); setFollowupNotes(''); }} className="text-[10px] text-muted-foreground hover:text-destructive flex items-center gap-0.5">
+                    <X className="h-3 w-3" /> Clear
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  type="date"
+                  value={followupDate ? format(followupDate, 'yyyy-MM-dd') : ''}
+                  min={format(new Date(), 'yyyy-MM-dd')}
+                  onChange={(e) => setFollowupDate(e.target.value ? new Date(e.target.value) : undefined)}
+                  className="h-8 text-sm flex-1"
+                />
+                <Input
+                  placeholder="Instructions..."
+                  value={followupNotes}
+                  onChange={(e) => setFollowupNotes(e.target.value)}
+                  className="h-8 text-sm flex-1"
+                />
+              </div>
+            </div>
           </div>
           <DialogFooter className="gap-2">
             <Button variant="ghost" size="sm" onClick={() => setShowCompleteDialog(false)}>

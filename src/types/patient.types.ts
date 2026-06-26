@@ -74,6 +74,23 @@ export interface Patient {
   updated_at: string;
 }
 
+export interface PatientExportParams {
+  format?: 'csv' | 'xlsx';
+  columns?: string; // comma-separated column keys
+  status?: PatientStatus;
+  gender?: Gender;
+  blood_group?: BloodGroup;
+  city?: string;
+  state?: string;
+  age_min?: number;
+  age_max?: number;
+  has_insurance?: boolean;
+  date_from?: string;
+  date_to?: string;
+  search?: string;
+  [key: string]: string | number | boolean | undefined;
+}
+
 export interface PatientListParams {
   gender?: Gender;
   blood_group?: BloodGroup;

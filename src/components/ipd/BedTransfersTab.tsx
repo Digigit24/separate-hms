@@ -79,15 +79,40 @@ export default function BedTransfersTab({ admissionId }: BedTransfersTabProps) {
   }
 
   const handleCreate = async () => {
+    const fromBedInfo = allBeds.find((b: any) => b.id === formData.from_bed)?.bed_number || String(formData.from_bed);
+    const toBedInfo = allBeds.find((b: any) => b.id === formData.to_bed)?.bed_number || String(formData.to_bed);
+    const optimisticTransfer = {
+      id: Date.now(), // temporary ID
+      admission: formData.admission,
+      from_bed: formData.from_bed,
+      to_bed: formData.to_bed,
+      from_bed_info: fromBedInfo,
+      to_bed_info: toBedInfo,
+      reason: formData.reason,
+      transfer_date: new Date().toISOString(),
+    };
     try {
-      await createBedTransfer(formData);
+      await mutate(
+        async (current: any) => {
+          const created = await createBedTransfer(formData);
+          const currentResults = current?.results || [];
+          return { ...current, results: [created, ...currentResults], count: (current?.count || 0) + 1 };
+        },
+        {
+          optimisticData: (current: any) => {
+            const currentResults = current?.results || [];
+            return { ...current, results: [optimisticTransfer, ...currentResults], count: (current?.count || 0) + 1 };
+          },
+          rollbackOnError: true,
+          revalidate: true,
+        }
+      );
       toast({
         title: 'Success',
         description: 'Bed transfer recorded successfully',
       });
       setIsCreateDialogOpen(false);
       resetForm();
-      mutate();
     } catch (error: any) {
       toast({
         title: 'Error',

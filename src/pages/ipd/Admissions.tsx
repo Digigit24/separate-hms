@@ -1,9 +1,9 @@
 // src/pages/ipd/Admissions.tsx
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
 import { useIPD } from '@/hooks/useIPD';
-import { Admission, AdmissionStatus, ADMISSION_STATUS_LABELS } from '@/types/ipd.types';
+import { Admission, AdmissionStatus, ADMISSION_STATUS_LABELS, CLAIM_STATUS_LABELS, ClaimStatus } from '@/types/ipd.types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +45,8 @@ export default function Admissions() {
   const [selectedAdmission, setSelectedAdmission] = useState<Admission | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<AdmissionStatus | ''>('');
+  const [claimStatusFilter, setClaimStatusFilter] = useState<ClaimStatus | ''>('');
+  const [mediclaimFilter, setMediclaimFilter] = useState<'all' | 'yes'>('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const [dischargeData, setDischargeData] = useState({
@@ -53,44 +55,23 @@ export default function Admissions() {
   });
   const [dischargeDate, setDischargeDate] = useState<Date | undefined>();
 
-  const { useAdmissions, dischargePatient } = useIPD();
+  const { useAdmissions, useAdmissionStatistics, dischargePatient } = useIPD();
 
   const { data: admissionsData, isLoading, error: fetchError, mutate } = useAdmissions({
     search: searchQuery || undefined,
     status: statusFilter || undefined,
+    has_mediclaim: mediclaimFilter === 'yes' ? true : undefined,
+    claim_status: claimStatusFilter || undefined,
     admission_date__gte: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
     admission_date__lte: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
   });
 
-  const rawAdmissions = admissionsData?.results || [];
+  const { data: statsData } = useAdmissionStatistics();
 
-  // Client-side filtering for status and date range
-  // (applied as fallback in case backend doesn't support these filters)
-  const admissions = useMemo(() => {
-    return rawAdmissions.filter((admission) => {
-      // Status filter
-      if (statusFilter && admission.status !== statusFilter) {
-        return false;
-      }
-      // Date range filter
-      if (dateRange?.from) {
-        const admDate = new Date(admission.admission_date);
-        const fromDate = new Date(dateRange.from);
-        fromDate.setHours(0, 0, 0, 0);
-        if (admDate < fromDate) return false;
-      }
-      if (dateRange?.to) {
-        const admDate = new Date(admission.admission_date);
-        const toDate = new Date(dateRange.to);
-        toDate.setHours(23, 59, 59, 999);
-        if (admDate > toDate) return false;
-      }
-      return true;
-    });
-  }, [rawAdmissions, statusFilter, dateRange]);
+  const admissions = admissionsData?.results || [];
 
   // Check if any filter is applied
-  const hasFiltersApplied = !!(searchQuery || statusFilter || dateRange?.from);
+  const hasFiltersApplied = !!(searchQuery || statusFilter || claimStatusFilter || mediclaimFilter !== 'all' || dateRange?.from);
 
   // Show error state if data fetch fails
   if (fetchError && !isLoading && admissions.length === 0) {
@@ -214,6 +195,18 @@ export default function Admissions() {
             <span className="text-muted-foreground">Length of Stay:</span>
             <span>{row.length_of_stay} days</span>
           </div>
+
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Mediclaim:</span>
+            <span>{row.has_mediclaim ? row.tpa_name || 'Yes' : 'No'}</span>
+          </div>
+
+          {row.has_mediclaim && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Claim:</span>
+              <span>{CLAIM_STATUS_LABELS[row.claim_status || 'not_started']}</span>
+            </div>
+          )}
         </div>
 
         {/* Quick Action Buttons */}
@@ -332,6 +325,33 @@ export default function Admissions() {
       ),
     },
     {
+      header: 'Mediclaim',
+      key: 'has_mediclaim',
+      sortable: true,
+      accessor: (row) => row.has_mediclaim ? 'Yes' : 'No',
+      cell: (row) => (
+        <div className="flex flex-col gap-1">
+          <Badge variant={row.has_mediclaim ? 'default' : 'outline'} className="w-fit">
+            {row.has_mediclaim ? 'Mediclaim' : 'Cash'}
+          </Badge>
+          {row.has_mediclaim && row.tpa_name && (
+            <span className="text-[11px] text-muted-foreground">{row.tpa_name}</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: 'Claim',
+      key: 'claim_status',
+      sortable: true,
+      accessor: (row) => row.claim_status || 'not_applicable',
+      cell: (row) => (
+        <span className="text-xs text-muted-foreground">
+          {row.has_mediclaim ? CLAIM_STATUS_LABELS[row.claim_status || 'not_started'] : '-'}
+        </span>
+      ),
+    },
+    {
       header: 'Status',
       key: 'status',
       sortable: true,
@@ -355,21 +375,11 @@ export default function Admissions() {
     },
   ];
 
-  // Calculate statistics from admissions data
+  // Statistics from backend aggregate endpoint (accurate across all pages)
   const totalAdmissions = admissionsData?.count || 0;
-  const activeAdmissions = admissions.filter(a => a.status === 'admitted').length;
-  const dischargedToday = admissions.filter(a => {
-    if (a.status === 'discharged' && a.discharge_date) {
-      try {
-        const dischargeDate = new Date(a.discharge_date);
-        const today = new Date();
-        return dischargeDate.toDateString() === today.toDateString();
-      } catch {
-        return false;
-      }
-    }
-    return false;
-  }).length;
+  const activeAdmissions = statsData?.data?.active ?? 0;
+  const dischargedToday = statsData?.data?.discharged_today ?? 0;
+  const avgLengthOfStay = statsData?.data?.avg_length_of_stay_days ?? null;
 
   return (
     <div className="p-4 md:p-5 w-full space-y-3">
@@ -384,7 +394,7 @@ export default function Admissions() {
             <span className="text-border">|</span>
             <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> <span className="font-semibold text-foreground">{dischargedToday}</span> discharged today</span>
             <span className="text-border">|</span>
-            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> avg <span className="font-semibold text-foreground">{admissions.length > 0 ? Math.round(admissions.reduce((sum, a) => sum + (a.length_of_stay || 0), 0) / admissions.length) : 0}</span> days</span>
+            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> avg <span className="font-semibold text-foreground">{avgLengthOfStay !== null ? avgLengthOfStay : '—'}</span> days</span>
           </div>
         </div>
         <Button onClick={() => setIsCreateDrawerOpen(true)} size="sm" className="w-full sm:w-auto h-7 text-[12px]">
@@ -435,6 +445,34 @@ export default function Admissions() {
             </Button>
           ))}
         </div>
+        <div className="flex gap-1 flex-wrap">
+          <Button
+            variant={mediclaimFilter === 'yes' ? 'default' : 'outline'}
+            size="sm"
+            className="h-7 text-[11px] px-2"
+            onClick={() => setMediclaimFilter(mediclaimFilter === 'yes' ? 'all' : 'yes')}
+          >
+            Mediclaim
+          </Button>
+          {[
+            { value: '' as const, label: 'All Claims' },
+            { value: 'documents_pending' as const, label: 'Docs Pending' },
+            { value: 'submitted' as const, label: 'Submitted' },
+            { value: 'under_review' as const, label: 'Review' },
+            { value: 'approved' as const, label: 'Approved' },
+            { value: 'settled' as const, label: 'Settled' },
+          ].map((f) => (
+            <Button
+              key={f.value}
+              variant={claimStatusFilter === f.value ? 'default' : 'outline'}
+              size="sm"
+              className="h-7 text-[11px] px-2"
+              onClick={() => setClaimStatusFilter(f.value)}
+            >
+              {f.label}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {/* Row 3: Date range filter + clear */}
@@ -452,6 +490,8 @@ export default function Admissions() {
             onClick={() => {
               setSearchQuery('');
               setStatusFilter('');
+              setClaimStatusFilter('');
+              setMediclaimFilter('all');
               setDateRange(undefined);
             }}
           >

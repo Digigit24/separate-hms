@@ -7,6 +7,7 @@ import { useProcedurePackage } from '@/hooks/useProcedurePackage';
 import { useDiagnostics } from '@/hooks/useDiagnostics';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenant } from '@/hooks/useTenant';
+import { useOpdVisit } from '@/hooks/useOpdVisit';
 import { opdBillService } from '@/services/opdBill.service';
 import { formatLocalDate } from '@/lib/utils';
 import { procedurePackageService } from '@/services/procedurePackage.service';
@@ -14,7 +15,9 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Receipt,
   Package,
@@ -22,6 +25,7 @@ import {
   FlaskConical,
   Download,
   Trash2,
+  CheckCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ProcedureBillingTab, type ProcedureItem } from './ProcedureBillingTab';
@@ -62,6 +66,7 @@ type BillingDetailsPanelProps = {
   onChange: (field: string, value: string) => void;
   onFormatReceived: () => void;
   onSave: () => void;
+  onUpdateClick?: () => void;
   isEditMode?: boolean;
 };
 
@@ -71,6 +76,7 @@ const BillingDetailsPanel = memo(function BillingDetailsPanel({
   onChange,
   onFormatReceived,
   onSave,
+  onUpdateClick,
   isEditMode = false,
 }: BillingDetailsPanelProps) {
   return (
@@ -151,8 +157,13 @@ const BillingDetailsPanel = memo(function BillingDetailsPanel({
         </div>
       </div>
 
-      {/* Save */}
-      <Button variant="default" className="w-full h-8 text-xs" size="sm" onClick={onSave}>
+      {/* Save / Update */}
+      <Button
+        variant="default"
+        className="w-full h-8 text-xs"
+        size="sm"
+        onClick={isEditMode && onUpdateClick ? onUpdateClick : onSave}
+      >
         <Receipt className="mr-1.5 h-3.5 w-3.5" />
         {isEditMode ? 'Update Bill' : 'Save Bill'}
       </Button>
@@ -240,6 +251,15 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
 
   // State to control showing create bill button vs form
   const [showBillingForm, setShowBillingForm] = useState(false);
+
+  // Update Bill dialog state
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+  const [updateDialogAmount, setUpdateDialogAmount] = useState('');
+  const [markConsultationComplete, setMarkConsultationComplete] = useState(false);
+  const [isSavingUpdate, setIsSavingUpdate] = useState(false);
+
+  // patchOpdVisit for marking visit complete
+  const { patchOpdVisit } = useOpdVisit();
 
   // Track which requisitions have been notified to avoid duplicate toasts
   const [notifiedRequisitions, setNotifiedRequisitions] = useState<Set<number>>(new Set());
@@ -1093,6 +1113,49 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
     }
   };
 
+  // Open the Update Bill dialog (edit mode only) pre-filled with current received amount
+  const handleOpenUpdateDialog = () => {
+    if (billItems.length === 0) {
+      toast.error('Add at least one item to the bill');
+      return;
+    }
+    setUpdateDialogAmount(billingData.receivedAmount || '0');
+    setMarkConsultationComplete(false);
+    setShowUpdateDialog(true);
+  };
+
+  // Confirm update: save bill with the entered amount, optionally complete the visit
+  const handleConfirmUpdate = async () => {
+    if (!visit) return;
+    setIsSavingUpdate(true);
+    try {
+      // Sync received amount into billingData so handleSaveBill picks it up
+      setBillingData(prev => {
+        const recv = parseFloat(updateDialogAmount) || 0;
+        const total = parseFloat(prev.totalAmount) || 0;
+        const discount = parseFloat(prev.discount) || 0;
+        const balance = Math.max(0, total - discount - recv).toFixed(2);
+        return { ...prev, receivedAmount: recv.toFixed(2), balanceAmount: balance };
+      });
+      // Small tick to let setState flush before save
+      await new Promise(r => setTimeout(r, 0));
+      await handleSaveBill();
+
+      if (markConsultationComplete && visit.status !== 'completed') {
+        await patchOpdVisit(visit.id, {
+          status: 'completed',
+          consultation_end_time: new Date().toISOString(),
+        });
+        toast.success('Visit marked as completed');
+      }
+      setShowUpdateDialog(false);
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update bill');
+    } finally {
+      setIsSavingUpdate(false);
+    }
+  };
+
   const handleSaveBill = async () => {
     if (!visit) return;
 
@@ -1512,6 +1575,7 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
               if (!isNaN(num)) setBillingData((prev) => ({ ...prev, receivedAmount: num.toFixed(2) }));
             }}
             onSave={handleSaveBill}
+            onUpdateClick={handleOpenUpdateDialog}
             isEditMode={isEditMode}
           />
         </div>
@@ -1542,10 +1606,68 @@ export const OPDBillingContent: React.FC<OPDBillingContentProps> = ({ visit }) =
               if (!isNaN(num)) setBillingData((prev) => ({ ...prev, receivedAmount: num.toFixed(2) }));
             }}
             onSave={handleSaveBill}
+            onUpdateClick={handleOpenUpdateDialog}
             isEditMode={isEditMode}
           />
         </div>
       )}
+
+      {/* Update Bill Dialog */}
+      <Dialog open={showUpdateDialog} onOpenChange={setShowUpdateDialog}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold">Update Bill</DialogTitle>
+            <DialogDescription className="text-xs">
+              Enter the amount received from the patient.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="text-xs font-medium">Received Amount (₹)</Label>
+              <Input
+                type="number"
+                className="mt-1 h-9 text-sm font-semibold text-green-600"
+                placeholder="0.00"
+                value={updateDialogAmount}
+                onChange={(e) => setUpdateDialogAmount(e.target.value)}
+                autoFocus
+              />
+              {existingBill && (
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Total: ₹{billingData.totalAmount} · Currently received: ₹{existingBill.received_amount || '0'}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 border rounded-md px-3 py-2.5">
+              <Checkbox
+                id="mark-complete"
+                checked={markConsultationComplete}
+                onCheckedChange={(checked) => setMarkConsultationComplete(!!checked)}
+              />
+              <Label htmlFor="mark-complete" className="text-xs cursor-pointer leading-snug">
+                <span className="font-medium">Mark consultation as complete</span>
+                <br />
+                <span className="text-muted-foreground">Changes visit status to Completed</span>
+              </Label>
+              <CheckCircle className={`h-4 w-4 ml-auto shrink-0 transition-colors ${markConsultationComplete ? 'text-emerald-500' : 'text-muted-foreground/30'}`} />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setShowUpdateDialog(false)} disabled={isSavingUpdate}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleConfirmUpdate}
+              disabled={isSavingUpdate}
+              className="bg-foreground hover:bg-foreground/90 text-background"
+            >
+              {isSavingUpdate ? <Receipt className="mr-1.5 h-3 w-3 animate-pulse" /> : <Receipt className="mr-1.5 h-3 w-3" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialogs */}
       <Dialog open={isInvestigationsModalOpen} onOpenChange={setIsInvestigationsModalOpen}>

@@ -1,6 +1,7 @@
 // src/services/roleService.ts
 import { authClient } from '@/lib/client';
 import { API_CONFIG, buildQueryString } from '@/lib/apiConfig';
+import { authService } from '@/services/authService';
 import {
   Role,
   RoleListParams,
@@ -66,6 +67,7 @@ class RoleService {
         API_CONFIG.AUTH.ROLES.CREATE,
         roleData
       );
+      await authService.refreshCurrentSession().catch(() => null);
       return response.data;
     } catch (error: any) {
       const message = error.response?.data?.error ||
@@ -82,6 +84,7 @@ class RoleService {
         API_CONFIG.AUTH.ROLES.UPDATE.replace(':id', id),
         roleData
       );
+      await authService.refreshCurrentSession().catch(() => null);
       return response.data;
     } catch (error: any) {
       const message = error.response?.data?.error ||
@@ -98,6 +101,7 @@ class RoleService {
         API_CONFIG.AUTH.ROLES.UPDATE.replace(':id', id),
         roleData
       );
+      await authService.refreshCurrentSession().catch(() => null);
       return response.data;
     } catch (error: any) {
       const message = error.response?.data?.error ||
@@ -113,6 +117,7 @@ class RoleService {
       await authClient.delete(
         API_CONFIG.AUTH.ROLES.DELETE.replace(':id', id)
       );
+      await authService.refreshCurrentSession().catch(() => null);
     } catch (error: any) {
       const message = error.response?.data?.error ||
                      error.response?.data?.message ||

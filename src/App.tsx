@@ -1,5 +1,5 @@
 // src/App.tsx - HMS Application
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { SWRConfig } from "swr";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -12,9 +12,10 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ModuleProtectedRoute } from "@/components/ModuleProtectedRoute";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { swrConfig } from "@/lib/swrConfig";
-import { authService } from "@/services/authService";
+import { useAuth } from "@/hooks/useAuth";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import DoctorDashboard from "./pages/DoctorDashboard";
 import NotFound from "./pages/NotFound";
 import { Doctors } from "./pages/Doctors";
 import DoctorTest from "./pages/doctor";
@@ -33,7 +34,6 @@ import VisitFindings from "./pages/opd-production/VisitFindings";
 import FollowUps from "./pages/opd-production/FollowUps";
 import ProcedureMasters from "./pages/opd-production/ProcedureMasters";
 import ProcedurePackages from "./pages/opd-production/ProcedurePackages";
-import ProcedureBills from "./pages/opd-production/ProcedureBills";
 import { OPDSettings } from "./pages/OPDSettings";
 import { Users } from "./pages/Users";
 import { Roles } from "./pages/Roles";
@@ -48,6 +48,7 @@ import ProductsPage from "./pages/pharmacy/ProductsPage";
 import POSPage from "./pages/pharmacy/POSPage";
 import Wards from "./pages/ipd/Wards";
 import Beds from "./pages/ipd/Beds";
+import IPDDashboard from "./pages/ipd/IPDDashboard";
 import Admissions from "./pages/ipd/Admissions";
 import AdmissionDetails from "./pages/ipd/AdmissionDetails";
 import { IPDBillingListPage } from "./pages/ipd-billing/IPDBillingListPage";
@@ -92,6 +93,7 @@ const AppLayout = () => {
           <main className="flex-1 overflow-auto">
             <Routes>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/doctor-dashboard" element={<ModuleProtectedRoute requiredModule="opd"><DoctorDashboard /></ModuleProtectedRoute>} />
 
               {/* HMS Routes */}
               <Route path="/hms/doctors" element={<ModuleProtectedRoute requiredModule="hms"><Doctors /></ModuleProtectedRoute>} />
@@ -111,11 +113,11 @@ const AppLayout = () => {
               <Route path="/opd/findings" element={<ModuleProtectedRoute requiredModule="opd"><VisitFindings /></ModuleProtectedRoute>} />
               <Route path="/opd/procedures" element={<ModuleProtectedRoute requiredModule="opd"><ProcedureMasters /></ModuleProtectedRoute>} />
               <Route path="/opd/packages" element={<ModuleProtectedRoute requiredModule="opd"><ProcedurePackages /></ModuleProtectedRoute>} />
-              <Route path="/opd/procedure-bills" element={<ModuleProtectedRoute requiredModule="opd"><ProcedureBills /></ModuleProtectedRoute>} />
               <Route path="/opd/settings" element={<ModuleProtectedRoute requiredModule="opd"><Navigate to="/opd/settings/templates" replace /></ModuleProtectedRoute>} />
               <Route path="/opd/settings/:tab" element={<ModuleProtectedRoute requiredModule="opd"><OPDSettings /></ModuleProtectedRoute>} />
 
               {/* IPD Routes */}
+              <Route path="/ipd/dashboard" element={<ModuleProtectedRoute requiredModule="ipd"><IPDDashboard /></ModuleProtectedRoute>} />
               <Route path="/ipd/wards" element={<ModuleProtectedRoute requiredModule="ipd"><Wards /></ModuleProtectedRoute>} />
               <Route path="/ipd/beds" element={<ModuleProtectedRoute requiredModule="ipd"><Beds /></ModuleProtectedRoute>} />
               <Route path="/ipd/admissions" element={<ModuleProtectedRoute requiredModule="ipd"><Admissions /></ModuleProtectedRoute>} />
@@ -158,15 +160,13 @@ const AppLayout = () => {
   );
 };
 
+// Create a reactive login route wrapper that uses useAuth
+const LoginRoute = () => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <Navigate to="/" replace /> : <Login />;
+};
+
 const App = () => {
-  const isAuthenticated = authService.isAuthenticated();
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      authService.applyStoredPreferences();
-    }
-  }, [isAuthenticated]);
-
   return (
     <SWRConfig value={swrConfig}>
       <QueryClientProvider client={queryClient}>
@@ -176,12 +176,7 @@ const App = () => {
           <WebSocketProvider>
             <BrowserRouter>
               <Routes>
-                <Route
-                  path="/login"
-                  element={
-                    isAuthenticated ? <Navigate to="/" replace /> : <Login />
-                  }
-                />
+                <Route path="/login" element={<LoginRoute />} />
                 <Route
                   path="/*"
                   element={

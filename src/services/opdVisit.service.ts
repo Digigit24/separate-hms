@@ -193,6 +193,25 @@ class OpdVisitService {
       throw new Error(message);
     }
   }
+
+  async getDoctorStats(params?: { dateFrom?: string; dateTo?: string; date?: string }): Promise<import('@/types/opdVisit.types').DoctorStatsResponse> {
+    try {
+      const qs = new URLSearchParams();
+      if (params?.dateFrom) qs.set('date_from', params.dateFrom);
+      if (params?.dateTo)   qs.set('date_to',   params.dateTo);
+      if (params?.date && !params?.dateFrom) qs.set('date', params.date);
+      const query = qs.toString() ? `?${qs.toString()}` : '';
+      const response = await hmsClient.get<any>(
+        `${API_CONFIG.HMS.OPD.VISITS.DOCTOR_STATS}${query}`
+      );
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error ||
+        error.response?.data?.message ||
+        'Failed to fetch doctor statistics';
+      throw new Error(message);
+    }
+  }
 }
 
 export const opdVisitService = new OpdVisitService();

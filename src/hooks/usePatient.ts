@@ -8,6 +8,7 @@ import { patientService } from '@/services/patient.service';
 import {
   Patient,
   PatientListParams,
+  PatientExportParams,
   PatientCreateData,
   PatientUpdateData,
   PaginatedResponse
@@ -222,6 +223,27 @@ export const usePatient = () => {
   }, [hasHMSAccess]);
 
   /**
+   * Export patients as a downloadable CSV or XLSX file.
+   * Respects the same filter params as getPatients.
+   */
+  const exportPatients = useCallback(async (params?: PatientExportParams) => {
+    if (!hasHMSAccess) {
+      throw new Error('HMS module not enabled for this user');
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      await patientService.exportPatients(params);
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to export patients';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [hasHMSAccess]);
+
+  /**
    * Delete a patient (DELETE).
    *
    * @example
@@ -261,5 +283,6 @@ export const usePatient = () => {
     updatePatient,
     patchPatient,
     deletePatient,
+    exportPatients,
   };
 };

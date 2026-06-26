@@ -1,5 +1,6 @@
 // src/components/ProtectedRoute.tsx
-import { Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
@@ -9,8 +10,15 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Show loading spinner while checking authentication
+  useEffect(() => {
+    if (!isAuthenticated && !isLoading && location.pathname !== '/login') {
+      navigate('/login', { replace: true });
+    }
+  }, [isAuthenticated, isLoading, navigate, location.pathname]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -22,11 +30,9 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  // // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return null;
   }
 
-  // Render protected content
   return <>{children}</>;
 };

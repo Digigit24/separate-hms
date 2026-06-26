@@ -86,12 +86,12 @@ const menuItems: MenuItem[] = [
     module: "opd",
     children: [
       { id: "opd-visits", label: "Visits", icon: ClipboardPlus, path: "/opd/visits" },
+      { id: "doctor-dashboard", label: "Doctor Dashboard", icon: BarChart3, path: "/doctor-dashboard" },
       { id: "opd-bills", label: "OPD Bills", icon: FileText, path: "/opd/bills" },
       { id: "clinical-notes", label: "Follow-ups", icon: Calendar, path: "/opd/clinical-notes" },
       { id: "visit-findings", label: "Visit Findings", icon: Activity, path: "/opd/findings" },
       { id: "procedure-masters", label: "Procedures", icon: Microscope, path: "/opd/procedures" },
       { id: "procedure-packages", label: "Packages", icon: Package, path: "/opd/packages" },
-      { id: "procedure-bills", label: "Procedure Bills", icon: Receipt, path: "/opd/procedure-bills" },
       { id: "opd-settings", label: "Settings", icon: Settings2, path: "/opd/settings" },
     ],
   },
@@ -101,6 +101,7 @@ const menuItems: MenuItem[] = [
     icon: Bed,
     module: "ipd",
     children: [
+      { id: "ipd-dashboard", label: "Dashboard", icon: BarChart3, path: "/ipd/dashboard" },
       { id: "ipd-admissions", label: "Admissions", icon: UserRoundCheck, path: "/ipd/admissions" },
       { id: "ipd-wards", label: "Wards", icon: Building, path: "/ipd/wards" },
       { id: "ipd-beds", label: "Beds", icon: Bed, path: "/ipd/beds" },

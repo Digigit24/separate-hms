@@ -57,6 +57,8 @@ export interface User {
   email: string;
   tenant: Tenant;
   roles: Role[];
+  permissions?: Record<string, any>;
+  is_super_admin?: boolean;
   preferences?: UserPreferences;
 }
 

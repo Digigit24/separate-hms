@@ -416,10 +416,8 @@ class OPDTemplateService {
         `${this.baseURL}/template-responses/`,
         data
       );
-      // Handle both plain response and wrapped { data: {...} } format
-      const result = response.data;
-      const unwrapped = (result as any)?.data && (result as any).data.id ? (result as any).data : result;
-      return unwrapped;
+      // Backend now always returns full detail serializer with id on 201
+      return response.data;
     } catch (error: any) {
       const message =
         error.response?.data?.error ||

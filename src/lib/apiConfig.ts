@@ -14,7 +14,7 @@ export const API_CONFIG = {
   // to match the redirect URIs configured in Google Cloud Console
   AUTH_BASE_URL: import.meta.env.VITE_AUTH_BASE_URL || 'https://admin.celiyo.com/api',
   CRM_BASE_URL: import.meta.env.VITE_CRM_BASE_URL || 'https://crm.celiyo.com/api',
-  HMS_BASE_URL: import.meta.env.VITE_HMS_BASE_URL || 'https://hms.celiyo.com/api',
+  HMS_BASE_URL: import.meta.env.VITE_HMS_BASE_URL || 'http://127.0.0.1:8000/api',
   WHATSAPP_BASE_URL: import.meta.env.VITE_WHATSAPP_BASE_URL || 'https://whatsappapi.celiyo.com/api',
 
   // Laravel Main App URL (for web routes like templates that are in web.php, not api.php)
@@ -121,6 +121,7 @@ export const API_CONFIG = {
       PROFILE_DELETE: '/patients/profiles/:id/',
       REGISTER: '/patients/profiles/register/',
       STATISTICS: '/patients/profiles/statistics/',
+      EXPORT: '/patients/profiles/export/',
     },
     APPOINTMENTS: {
       LIST: '/appointments/',
@@ -151,6 +152,7 @@ export const API_CONFIG = {
         UPDATE: '/opd/visits/:id/',
         DELETE: '/opd/visits/:id/',
         STATISTICS: '/opd/visits/statistics/',
+        DOCTOR_STATS: '/opd/visits/doctor_stats/',
         TODAY: '/opd/visits/today/',
         QUEUE: '/opd/visits/queue/',
         CALL_NEXT: '/opd/visits/call_next/',
@@ -361,6 +363,8 @@ export const API_CONFIG = {
         DELETE: '/ipd/admissions/:id/',
         DISCHARGE: '/ipd/admissions/:id/discharge/',
         ACTIVE: '/ipd/admissions/active/',
+        STATISTICS: '/ipd/admissions/statistics/',
+        DOCTOR_STATS: '/ipd/admissions/doctor_stats/',
         SYNC_CLINICAL_CHARGES: '/ipd/admissions/:id/sync_clinical_charges/',
         UNBILLED_REQUISITIONS: '/ipd/admissions/:id/unbilled_requisitions/',
       },
@@ -381,6 +385,7 @@ export const API_CONFIG = {
         DELETE: '/ipd/billings/:id/',
         ADD_BED_CHARGES: '/ipd/billings/:id/add_bed_charges/',
         ADD_PAYMENT: '/ipd/billings/:id/add_payment/',
+        STATISTICS: '/ipd/billings/statistics/',
       },
       // Bill Items
       BILL_ITEMS: {

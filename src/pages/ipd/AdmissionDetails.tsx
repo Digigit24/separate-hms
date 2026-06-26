@@ -55,11 +55,26 @@ export default function AdmissionDetails() {
         }),
       };
 
-      await dischargePatient(admission.id, submissionData);
+      await mutateAdmission(
+        async () => {
+          const updated = await dischargePatient(admission.id, submissionData);
+          return updated;
+        },
+        {
+          optimisticData: {
+            ...admission,
+            status: 'discharged' as const,
+            discharge_date: dischargeDate ? dischargeDate.toISOString() : new Date().toISOString(),
+            discharge_type: submissionData.discharge_type,
+            discharge_summary: submissionData.discharge_summary,
+          },
+          rollbackOnError: true,
+          revalidate: true,
+        }
+      );
       toast.success('Patient discharged successfully');
       setShowDischargeDialog(false);
       setDischargeDate(undefined);
-      mutateAdmission();
     } catch (err: any) {
       toast.error(err.message || 'Failed to discharge patient');
     } finally {

@@ -1,9 +1,11 @@
 // src/components/form/PatientSelect.tsx
-import { useState, useMemo } from 'react';
+// Reusable patient selector with server-side search, quick-add inline form,
+// and a sleek Popover + list design. Used by OPD, IPD, Diagnostics, etc.
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -11,13 +13,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { UserPlus, Edit2, X, Search, Loader2 } from 'lucide-react';
+import {
+  UserPlus, Edit2, Search, Loader2, ChevronDown,
+  X, Check, User, Phone, Hash, ChevronUp,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { usePatient } from '@/hooks/usePatient';
 import type { PatientCreateData } from '@/types/patient.types';
 import PatientsFormDrawer from '@/components/PatientsFormDrawer';
+import { cn } from '@/lib/utils';
 
-interface PatientSelectProps {
+// ─── debounce hook ────────────────────────────────────────────────────────────
+function useDebounce<T>(value: T, delay = 300): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
+// ─── Props ────────────────────────────────────────────────────────────────────
+export interface PatientSelectProps {
   value?: number | null;
   onChange: (patientId: number) => void;
   disabled?: boolean;
@@ -29,6 +46,17 @@ interface PatientSelectProps {
   placeholder?: string;
 }
 
+// ─── Quick-add form state ─────────────────────────────────────────────────────
+const EMPTY_INLINE = {
+  first_name: '',
+  middle_name: '',
+  last_name: '',
+  gender: '' as 'male' | 'female' | 'other' | '',
+  mobile_primary: '',
+  date_of_birth: '',
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 export function PatientSelect({
   value,
   onChange,
@@ -38,74 +66,72 @@ export function PatientSelect({
   required = false,
   showEditButton = true,
   showAddButton = true,
-  placeholder = 'Select a patient',
+  placeholder = 'Search or select a patient…',
 }: PatientSelectProps) {
-  const { usePatients, createPatient } = usePatient();
-  const { data: patientsData, mutate: mutatePatients, isLoading: patientsLoading } = usePatients({ page_size: 1000 });
+  const { usePatients, usePatientById, createPatient } = usePatient();
 
-  const patients = patientsData?.results || [];
+  // ── search state ────────────────────────────────────────────────────────────
+  const [open, setOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const debouncedSearch = useDebounce(searchInput, 300);
+  const searchRef = useRef<HTMLInputElement>(null);
 
-  // State for inline patient creation
-  const [showInlineForm, setShowInlineForm] = useState(false);
+  // ── server-side search ──────────────────────────────────────────────────────
+  const { data: searchResults, isLoading: searching } = usePatients(
+    debouncedSearch.trim().length >= 1
+      ? { search: debouncedSearch.trim(), page_size: 30 }
+      : { page_size: 20 }
+  );
+  const patients = searchResults?.results ?? [];
+
+  // ── selected patient ────────────────────────────────────────────────────────
+  const { data: selectedPatient } = usePatientById(value ?? null);
+
+  // ── inline quick-add ────────────────────────────────────────────────────────
+  const [showAddForm, setShowAddForm] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [inlineData, setInlineData] = useState({
-    first_name: '',
-    middle_name: '',
-    last_name: '',
-    gender: '' as 'male' | 'female' | 'other' | '',
-    mobile_primary: '',
-    date_of_birth: '',
-  });
+  const [inlineData, setInlineData] = useState(EMPTY_INLINE);
 
-  // Calculate age from date of birth
-  const calculatedAge = useMemo(() => {
+  // calculated age
+  const calculatedAge = (() => {
     if (!inlineData.date_of_birth) return null;
+    const bd = new Date(inlineData.date_of_birth);
+    if (isNaN(bd.getTime())) return null;
     const today = new Date();
-    const birthDate = new Date(inlineData.date_of_birth);
-    if (isNaN(birthDate.getTime())) return null;
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
+    let age = today.getFullYear() - bd.getFullYear();
+    if (
+      today.getMonth() < bd.getMonth() ||
+      (today.getMonth() === bd.getMonth() && today.getDate() < bd.getDate())
+    ) age--;
     return age;
-  }, [inlineData.date_of_birth]);
+  })();
 
-  // State for patient drawer (full form edit)
-  const [patientDrawerOpen, setPatientDrawerOpen] = useState(false);
-  const [selectedPatientForEdit, setSelectedPatientForEdit] = useState<number | null>(null);
+  // ── patient edit drawer ─────────────────────────────────────────────────────
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
 
-  // State for dropdown
-  const [selectOpen, setSelectOpen] = useState(false);
-
-  // Search state
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // Filter patients based on search
-  const filteredPatients = patients.filter((patient) => {
-    const search = searchTerm.toLowerCase();
-    return (
-      patient.full_name?.toLowerCase().includes(search) ||
-      patient.patient_id?.toLowerCase().includes(search) ||
-      patient.mobile_primary?.toLowerCase().includes(search)
-    );
-  });
-
-  // Handle inline patient creation
-  const handleCreateInlinePatient = async () => {
-    if (!inlineData.first_name.trim()) {
-      toast.error('First name is required');
-      return;
+  // ── focus search when popover opens ────────────────────────────────────────
+  useEffect(() => {
+    if (open) {
+      const t = setTimeout(() => searchRef.current?.focus(), 60);
+      return () => clearTimeout(t);
     }
-    if (!inlineData.gender) {
-      toast.error('Gender is required');
-      return;
-    }
+  }, [open]);
+
+  // ── handlers ────────────────────────────────────────────────────────────────
+  const handleSelect = useCallback((patientId: number) => {
+    onChange(patientId);
+    setOpen(false);
+    setSearchInput('');
+    setShowAddForm(false);
+  }, [onChange]);
+
+  const handleCreatePatient = useCallback(async () => {
+    if (!inlineData.first_name.trim()) { toast.error('First name is required'); return; }
+    if (!inlineData.gender) { toast.error('Gender is required'); return; }
     if (!inlineData.mobile_primary.trim() || inlineData.mobile_primary.length < 9) {
-      toast.error('Valid mobile number is required (min 9 digits)');
-      return;
+      toast.error('Valid mobile number is required (min 9 digits)'); return;
     }
-
     setIsCreating(true);
     try {
       const newPatient = await createPatient({
@@ -116,255 +142,303 @@ export function PatientSelect({
         mobile_primary: inlineData.mobile_primary.trim(),
         date_of_birth: inlineData.date_of_birth || undefined,
       } as PatientCreateData);
-
-      toast.success('Patient created successfully');
-      await mutatePatients();
+      toast.success('Patient created and selected');
       onChange(newPatient.id);
-
-      // Reset and hide form
-      setInlineData({ first_name: '', middle_name: '', last_name: '', gender: '', mobile_primary: '', date_of_birth: '' });
-      setShowInlineForm(false);
-    } catch (error: any) {
-      toast.error(error?.message || 'Failed to create patient');
+      setInlineData(EMPTY_INLINE);
+      setShowAddForm(false);
+      setOpen(false);
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to create patient');
     } finally {
       setIsCreating(false);
     }
-  };
+  }, [inlineData, createPatient, onChange]);
 
-  // Handle edit patient
-  const handleEditPatient = () => {
-    if (value) {
-      setSelectedPatientForEdit(value);
-      setPatientDrawerOpen(true);
-    }
-  };
+  // ── selected display text ───────────────────────────────────────────────────
+  const displayName = selectedPatient
+    ? (selectedPatient.full_name || `${selectedPatient.first_name} ${selectedPatient.last_name ?? ''}`.trim())
+    : null;
 
-  // Handle patient drawer success
-  const handlePatientDrawerSuccess = async () => {
-    await mutatePatients();
-    setPatientDrawerOpen(false);
-  };
-
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {/* Label */}
       {label && (
-        <Label>
+        <Label className="text-sm font-medium">
           {label} {required && <span className="text-destructive">*</span>}
         </Label>
       )}
 
-      {/* Patient Selection with Edit Button */}
-      <div className="flex gap-2">
-        <Select
-          value={value ? String(value) : ''}
-          open={selectOpen}
-          onOpenChange={setSelectOpen}
-          onValueChange={(val) => {
-            onChange(Number(val));
-            if (showInlineForm) {
-              setShowInlineForm(false);
-            }
-          }}
-          disabled={disabled}
-        >
-          <SelectTrigger className={error ? 'border-destructive' : ''}>
-            <SelectValue placeholder={placeholder} />
-          </SelectTrigger>
-          <SelectContent>
-            {/* Search Box */}
-            <div className="p-2 border-b sticky top-0 bg-background z-10">
-              <div className="relative">
-                {patientsLoading ? (
-                  <Loader2 className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
-                ) : (
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                )}
-                <Input
-                  placeholder="Search patients..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8 h-8"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-            </div>
+      {/* Trigger row */}
+      <div className="flex gap-2 items-stretch">
+        <Popover open={open} onOpenChange={disabled ? undefined : setOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              disabled={disabled}
+              className={cn(
+                'flex-1 flex items-center gap-2 rounded-md border bg-background px-3 h-9 text-sm text-left transition-colors',
+                'hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                error ? 'border-destructive' : 'border-input',
+                disabled && 'opacity-50 cursor-not-allowed',
+                !displayName && 'text-muted-foreground',
+              )}
+            >
+              <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="flex-1 truncate">
+                {displayName ?? placeholder}
+              </span>
+              {value && selectedPatient?.patient_id && (
+                <span className="shrink-0 text-[10px] text-muted-foreground font-mono border rounded px-1 py-0.5">
+                  {selectedPatient.patient_id}
+                </span>
+              )}
+              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            </button>
+          </PopoverTrigger>
 
-            {/* Add New Patient Button */}
-            {showAddButton && (
-              <div className="p-2 border-b sticky top-[52px] bg-background z-10">
-                <Button
+          <PopoverContent
+            className="p-0 w-[var(--radix-popover-trigger-width)] min-w-[280px] max-w-[480px]"
+            align="start"
+            sideOffset={4}
+          >
+            {/* Search input */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b">
+              {searching
+                ? <Loader2 className="h-3.5 w-3.5 text-muted-foreground animate-spin shrink-0" />
+                : <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              }
+              <input
+                ref={searchRef}
+                className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                placeholder="Search by name, ID or mobile…"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              {searchInput && (
+                <button
                   type="button"
-                  variant="outline"
-                  className="w-full justify-start"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowInlineForm(!showInlineForm);
-                    setSelectOpen(false);
-                  }}
+                  onClick={() => setSearchInput('')}
+                  className="text-muted-foreground hover:text-foreground"
                 >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add New Patient
-                </Button>
-              </div>
-            )}
-
-            {/* Patient List */}
-            <div className="max-h-[300px] overflow-y-auto">
-              {filteredPatients.length === 0 ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  No patients found
-                </div>
-              ) : (
-                filteredPatients.map((patient) => (
-                  <SelectItem key={patient.id} value={String(patient.id)}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{patient.full_name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {patient.patient_id} • {patient.mobile_primary}
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))
+                  <X className="h-3.5 w-3.5" />
+                </button>
               )}
             </div>
-          </SelectContent>
-        </Select>
 
-        {/* Edit Patient Button */}
-        {showEditButton && value && (
+            {/* Patient list */}
+            <div className="max-h-[220px] overflow-y-auto">
+              {patients.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  {searching ? 'Searching…' : 'No patients found'}
+                </p>
+              ) : (
+                patients.map((patient) => {
+                  const name = patient.full_name || `${patient.first_name} ${patient.last_name ?? ''}`.trim();
+                  const isSelected = patient.id === value;
+                  return (
+                    <button
+                      key={patient.id}
+                      type="button"
+                      className={cn(
+                        'w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/50',
+                        isSelected && 'bg-primary/5',
+                      )}
+                      onClick={() => handleSelect(patient.id)}
+                    >
+                      <div className={cn(
+                        'h-7 w-7 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold',
+                        isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground',
+                      )}>
+                        {name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate leading-tight">{name}</p>
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
+                          <span className="flex items-center gap-0.5">
+                            <Hash className="h-2.5 w-2.5" />{patient.patient_id}
+                          </span>
+                          {patient.mobile_primary && (
+                            <span className="flex items-center gap-0.5">
+                              <Phone className="h-2.5 w-2.5" />{patient.mobile_primary}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Add new patient toggle */}
+            {showAddButton && (
+              <div className="border-t">
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm text-primary hover:bg-primary/5 transition-colors font-medium"
+                  onClick={() => setShowAddForm((v) => !v)}
+                >
+                  <span className="flex items-center gap-2">
+                    <UserPlus className="h-3.5 w-3.5" />
+                    Quick add new patient
+                  </span>
+                  {showAddForm
+                    ? <ChevronUp className="h-3.5 w-3.5" />
+                    : <ChevronDown className="h-3.5 w-3.5" />
+                  }
+                </button>
+
+                {/* Inline quick-add form */}
+                {showAddForm && (
+                  <div className="px-3 pb-3 space-y-2.5 border-t bg-muted/20">
+                    <p className="text-[11px] text-muted-foreground pt-2 font-medium uppercase tracking-wide">
+                      New patient details
+                    </p>
+
+                    {/* Name row */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">First name *</Label>
+                        <Input
+                          className="h-8 text-xs"
+                          placeholder="First"
+                          value={inlineData.first_name}
+                          onChange={(e) => setInlineData({ ...inlineData, first_name: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Last name</Label>
+                        <Input
+                          className="h-8 text-xs"
+                          placeholder="Last"
+                          value={inlineData.last_name}
+                          onChange={(e) => setInlineData({ ...inlineData, last_name: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Gender + Mobile */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Gender *</Label>
+                        <Select
+                          value={inlineData.gender}
+                          onValueChange={(v) => setInlineData({ ...inlineData, gender: v as any })}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Gender" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="male">Male</SelectItem>
+                            <SelectItem value="female">Female</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Mobile *</Label>
+                        <Input
+                          className="h-8 text-xs"
+                          placeholder="Mobile number"
+                          value={inlineData.mobile_primary}
+                          onChange={(e) => setInlineData({ ...inlineData, mobile_primary: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    {/* DOB */}
+                    <div className="space-y-1">
+                      <Label className="text-xs">Date of birth</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="date"
+                          className="h-8 text-xs flex-1"
+                          value={inlineData.date_of_birth}
+                          onChange={(e) => setInlineData({ ...inlineData, date_of_birth: e.target.value })}
+                        />
+                        {calculatedAge !== null && (
+                          <span className="shrink-0 text-xs font-semibold text-primary tabular-nums">
+                            {calculatedAge}y
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="w-full h-8 text-xs"
+                      onClick={handleCreatePatient}
+                      disabled={isCreating}
+                    >
+                      {isCreating && <Loader2 className="h-3 w-3 animate-spin mr-1.5" />}
+                      {isCreating ? 'Creating…' : 'Create & Select Patient'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
+
+        {/* Edit patient button */}
+        {showEditButton && value && !disabled && (
           <Button
             type="button"
             variant="outline"
             size="icon"
-            onClick={handleEditPatient}
+            className="h-9 w-9 shrink-0"
             title="Edit patient details"
-            disabled={disabled}
+            onClick={() => {
+              setEditId(value);
+              setDrawerOpen(true);
+            }}
           >
-            <Edit2 className="h-4 w-4" />
+            <Edit2 className="h-3.5 w-3.5" />
           </Button>
         )}
       </div>
 
-      {/* Error Message */}
-      {error && <p className="text-sm text-destructive">{error}</p>}
-
-      {/* Inline Patient Creation Form */}
-      {showInlineForm && (
-        <Card className="border-2 border-primary">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Quick Add Patient</CardTitle>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  setShowInlineForm(false);
-                  setInlineData({ first_name: '', middle_name: '', last_name: '', gender: '', mobile_primary: '', date_of_birth: '' });
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <Label htmlFor="inline_first_name">First Name *</Label>
-              <Input
-                id="inline_first_name"
-                value={inlineData.first_name}
-                onChange={(e) => setInlineData({ ...inlineData, first_name: e.target.value })}
-                placeholder="Enter first name"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="inline_middle_name">Middle Name</Label>
-              <Input
-                id="inline_middle_name"
-                value={inlineData.middle_name}
-                onChange={(e) => setInlineData({ ...inlineData, middle_name: e.target.value })}
-                placeholder="Enter middle name"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="inline_last_name">Last Name</Label>
-              <Input
-                id="inline_last_name"
-                value={inlineData.last_name}
-                onChange={(e) => setInlineData({ ...inlineData, last_name: e.target.value })}
-                placeholder="Enter last name"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="inline_gender">Gender *</Label>
-              <Select
-                value={inlineData.gender}
-                onValueChange={(val) => setInlineData({ ...inlineData, gender: val as any })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="inline_mobile">Mobile Number *</Label>
-              <Input
-                id="inline_mobile"
-                value={inlineData.mobile_primary}
-                onChange={(e) => setInlineData({ ...inlineData, mobile_primary: e.target.value })}
-                placeholder="Enter mobile number"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="inline_dob">Date of Birth</Label>
-              <Input
-                id="inline_dob"
-                type="date"
-                value={inlineData.date_of_birth}
-                onChange={(e) => setInlineData({ ...inlineData, date_of_birth: e.target.value })}
-              />
-            </div>
-
-            {calculatedAge !== null && (
-              <div className="bg-blue-50 dark:bg-blue-950 p-2 rounded border border-blue-200 dark:border-blue-800">
-                <p className="text-sm font-medium">
-                  Age: <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculatedAge} years</span>
-                </p>
-              </div>
-            )}
-
-            <Button
+      {/* Selected patient pill */}
+      {value && selectedPatient && (
+        <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-2.5 py-1.5 text-xs">
+          <div className="h-5 w-5 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+            {(selectedPatient.full_name || selectedPatient.first_name).charAt(0).toUpperCase()}
+          </div>
+          <span className="font-medium truncate">
+            {selectedPatient.full_name || `${selectedPatient.first_name} ${selectedPatient.last_name ?? ''}`.trim()}
+          </span>
+          {selectedPatient.mobile_primary && (
+            <span className="text-muted-foreground">{selectedPatient.mobile_primary}</span>
+          )}
+          {!disabled && (
+            <button
               type="button"
-              onClick={handleCreateInlinePatient}
-              className="w-full"
-              disabled={isCreating}
+              className="ml-auto text-muted-foreground hover:text-foreground"
+              onClick={() => setOpen(true)}
+              title="Change patient"
             >
-              {isCreating ? 'Creating...' : 'Create Patient'}
-            </Button>
-          </CardContent>
-        </Card>
+              <ChevronDown className="h-3 w-3" />
+            </button>
+          )}
+        </div>
       )}
 
-      {/* Patient Edit Drawer */}
+      {/* Error */}
+      {error && <p className="text-xs text-destructive">{error}</p>}
+
+      {/* Edit drawer */}
       <PatientsFormDrawer
-        open={patientDrawerOpen}
-        onOpenChange={setPatientDrawerOpen}
-        patientId={selectedPatientForEdit}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        patientId={editId}
         mode="edit"
-        onSuccess={handlePatientDrawerSuccess}
+        onSuccess={() => setDrawerOpen(false)}
       />
     </div>
   );
 }
+
+export default PatientSelect;

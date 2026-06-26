@@ -53,7 +53,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({ visit }) => {
                 Procedures, tests, etc.
               </p>
             </div>
-            <p className="text-lg font-semibold">₹{visit.additional_charges || '0'}</p>
+            <p className="text-lg font-semibold">₹{(visit as any).additional_charges || '0'}</p>
           </div>
 
           <Separator />

@@ -13,6 +13,7 @@ import {
   AdmissionFormData,
   AdmissionFilters,
   AdmissionListItem,
+  IPDDoctorStatsResponse,
   DischargeData,
   BedTransfer,
   BedTransferFormData,
@@ -337,6 +338,36 @@ class IPDService {
     }
   }
 
+  async getAdmissionStatistics(params?: AdmissionFilters): Promise<{ success: boolean; data: Record<string, number | null> }> {
+    try {
+      const queryString = buildQueryString(params);
+      const response = await hmsClient.get<any>(
+        `${API_CONFIG.HMS.IPD.ADMISSIONS.STATISTICS}${queryString}`
+      );
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error ||
+        error.response?.data?.message ||
+        'Failed to fetch admission statistics';
+      throw new Error(message);
+    }
+  }
+
+  async getIPDDoctorStats(params?: Pick<AdmissionFilters, 'date' | 'date_from' | 'date_to'>): Promise<IPDDoctorStatsResponse> {
+    try {
+      const queryString = buildQueryString(params);
+      const response = await hmsClient.get<IPDDoctorStatsResponse>(
+        `${API_CONFIG.HMS.IPD.ADMISSIONS.DOCTOR_STATS}${queryString}`
+      );
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error ||
+        error.response?.data?.message ||
+        'Failed to fetch IPD doctor statistics';
+      throw new Error(message);
+    }
+  }
+
   // ==================== BED TRANSFERS ====================
 
   async getBedTransfers(params?: { admission?: number }): Promise<PaginatedResponse<BedTransfer>> {
@@ -510,6 +541,21 @@ class IPDService {
       const message = error.response?.data?.error ||
         error.response?.data?.message ||
         'Failed to delete billing';
+      throw new Error(message);
+    }
+  }
+
+  async getBillingStatistics(params?: BillingFilters): Promise<{ success: boolean; data: Record<string, number | null> }> {
+    try {
+      const queryString = buildQueryString(params);
+      const response = await hmsClient.get<any>(
+        `${API_CONFIG.HMS.IPD.BILLINGS.STATISTICS}${queryString}`
+      );
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error ||
+        error.response?.data?.message ||
+        'Failed to fetch billing statistics';
       throw new Error(message);
     }
   }

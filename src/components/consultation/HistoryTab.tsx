@@ -28,7 +28,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ patientId }) => {
     () => opdVisitService.getOpdVisits({
       patient_id: patientId,
       page_size: 50,
-      ordering: '-visit_date,-visit_time'
+      ordering: '-visit_date,-entry_time'
     })
   );
 
@@ -135,14 +135,14 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ patientId }) => {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {formatDate(visit.visit_date)} {visit.doctor_details?.full_name ? `· ${visit.doctor_details.full_name}` : ''}
                     </p>
-                    {visit.chief_complaint && (
+                    {(visit as any).chief_complaint && (
                       <p className="text-xs mt-1">
-                        <span className="text-muted-foreground">CC: </span>{visit.chief_complaint}
+                        <span className="text-muted-foreground">CC: </span>{(visit as any).chief_complaint}
                       </p>
                     )}
-                    {visit.diagnosis && (
+                    {(visit as any).diagnosis && (
                       <p className="text-xs mt-0.5">
-                        <span className="text-muted-foreground">Dx: </span>{visit.diagnosis}
+                        <span className="text-muted-foreground">Dx: </span>{(visit as any).diagnosis}
                       </p>
                     )}
                   </div>

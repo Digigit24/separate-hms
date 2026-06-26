@@ -1,9 +1,10 @@
 // src/services/patient.service.ts
-import { hmsClient } from '@/lib/client';
+import { hmsClient, tokenManager } from '@/lib/client';
 import { API_CONFIG, buildQueryString } from '@/lib/apiConfig';
 import {
   Patient,
   PatientListParams,
+  PatientExportParams,
   PatientCreateData,
   PatientUpdateData,
   PaginatedResponse,
@@ -123,6 +124,74 @@ class PatientService {
       const message = error.response?.data?.error ||
                      error.response?.data?.message ||
                      'Failed to delete patient';
+      throw new Error(message);
+    }
+  }
+
+  // ==================== PATIENT EXPORT ====================
+
+  // Export patients as CSV or XLSX (binary file download)
+  async exportPatients(params?: PatientExportParams): Promise<void> {
+    try {
+      const queryString = buildQueryString(params as Record<string, string | number | boolean | undefined>);
+
+      // Build the same headers the hmsClient interceptor adds for every request
+      const token = tokenManager.getAccessToken();
+      const USER_KEY = 'celiyo_user';
+      const extraHeaders: Record<string, string> = {};
+      if (token) extraHeaders['Authorization'] = `Bearer ${token}`;
+      try {
+        const userJson = localStorage.getItem(USER_KEY);
+        if (userJson) {
+          const user = JSON.parse(userJson);
+          const tenant = user?.tenant;
+          if (tenant) {
+            const tenantId = tenant.id || tenant.tenant_id;
+            if (tenantId) {
+              extraHeaders['X-Tenant-Id'] = String(tenantId);
+              extraHeaders['tenanttoken'] = String(tenantId);
+            }
+            if (tenant.slug) extraHeaders['X-Tenant-Slug'] = tenant.slug;
+          }
+        }
+      } catch { /* ignore */ }
+
+      const response = await hmsClient.get(
+        `${API_CONFIG.HMS.PATIENTS.EXPORT}${queryString}`,
+        { responseType: 'blob', headers: extraHeaders }
+      );
+
+      // Extract filename from Content-Disposition header
+      const disposition: string = response.headers['content-disposition'] || '';
+      const match = disposition.match(/filename="?([^";\n]+)"?/);
+      const fallbackExt = params?.format === 'xlsx' ? 'xlsx' : 'csv';
+      const filename = match ? match[1].trim() : `patients_export.${fallbackExt}`;
+
+      // Trigger browser download
+      const blob = new Blob([response.data as BlobPart]);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error: any) {
+      // Error body may itself be a Blob — read it as text to extract JSON message
+      if (error.response?.data instanceof Blob) {
+        try {
+          const text = await (error.response.data as Blob).text();
+          const json = JSON.parse(text);
+          throw new Error(json.error || json.message || 'Export failed');
+        } catch (parseErr: any) {
+          if (parseErr.message && parseErr.message !== 'Export failed') throw parseErr;
+          throw new Error('Failed to export patients');
+        }
+      }
+      const message = error.response?.data?.error ||
+                     error.response?.data?.message ||
+                     'Failed to export patients';
       throw new Error(message);
     }
   }

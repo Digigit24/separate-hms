@@ -261,8 +261,8 @@ export const OPDVisits: React.FC = () => {
 
   const handleBilling = (visit: OpdVisit) => {
     const visitIds = allFetchedVisits.map(v => v.id);
-    navigate(`/opd/consultation/${visit.id}`, {
-      state: { visitIds, from: '/opd/visits', activeTab: 'billing' }
+    navigate(`/opd/consultation/${visit.id}#billing`, {
+      state: { visitIds, from: '/opd/visits' }
     });
   };
 
@@ -282,7 +282,7 @@ export const OPDVisits: React.FC = () => {
     const csvData = data.map((visit) => ({
       'Visit Number': visit.visit_number,
       'Visit Date': visit.visit_date,
-      'Visit Time': visit.visit_time,
+      'Entry Time': visit.entry_time,
       'Patient Name': visit.patient_details?.full_name || visit.patient_name || '',
       'Patient ID': visit.patient_details?.patient_id || visit.patient_id || '',
       'Patient Mobile': visit.patient_details?.mobile_primary || '',
@@ -297,7 +297,7 @@ export const OPDVisits: React.FC = () => {
       'Total Amount': visit.total_amount || '0',
       'Payment Status': visit.payment_status || '',
       'Payment Method': visit.payment_method || '',
-      'Queue Number': visit.queue_number || '',
+      'Queue Number': visit.queue_position || '',
       'Follow Up Required': visit.follow_up_required ? 'Yes' : 'No',
       'Follow Up Date': visit.follow_up_date || '',
       'Created At': visit.created_at || '',
@@ -387,13 +387,12 @@ export const OPDVisits: React.FC = () => {
     exportCancelledRef.current = true;
   }, []);
 
-  // Format date and time for display
-  const formatDateTime = (date: string, time: string) => {
+  // Format an ISO datetime string (entry_time) for display
+  const formatEntryTime = (entryTime: string) => {
     try {
-      const dateTime = new Date(`${date}T${time}`);
-      return format(dateTime, 'MMM dd, yyyy • hh:mm a');
+      return format(new Date(entryTime), 'MMM dd, yyyy • hh:mm a');
     } catch {
-      return `${date} • ${time}`;
+      return entryTime;
     }
   };
 
@@ -406,11 +405,11 @@ export const OPDVisits: React.FC = () => {
       cell: (visit) => (
         <div className="flex flex-col">
           <span className="font-medium font-mono text-sm">{visit.visit_number}</span>
-          {visit.queue_number && (
-            <Badge variant="outline" className="text-xs w-fit mt-1">Queue #{visit.queue_number}</Badge>
+          {visit.queue_position && (
+            <Badge variant="outline" className="text-xs w-fit mt-1">Queue #{visit.queue_position}</Badge>
           )}
           <span className="text-xs text-muted-foreground mt-1">
-            {formatDateTime(visit.visit_date, visit.visit_time)}
+            {formatEntryTime(visit.entry_time)}
           </span>
         </div>
       ),
@@ -491,7 +490,7 @@ export const OPDVisits: React.FC = () => {
             variant={visit.payment_status === 'paid' ? 'default' : 'secondary'}
             className={`text-xs w-fit ${visit.payment_status === 'paid' ? 'bg-neutral-900 dark:bg-neutral-200' : ''}`}
           >
-            {visit.payment_status ? visit.payment_status.replace('_', ' ').toUpperCase() : 'PENDING'}
+            {visit.payment_status ? visit.payment_status.replace('_', ' ').toUpperCase() : 'UNPAID'}
           </Badge>
         </div>
       ),
@@ -506,11 +505,11 @@ export const OPDVisits: React.FC = () => {
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-sm font-mono">{visit.visit_number}</h3>
-            {visit.queue_number && (
-              <Badge variant="outline" className="text-xs mt-1">Queue #{visit.queue_number}</Badge>
+            {visit.queue_position && (
+              <Badge variant="outline" className="text-xs mt-1">Queue #{visit.queue_position}</Badge>
             )}
             <p className="text-xs text-muted-foreground mt-1">
-              {formatDateTime(visit.visit_date, visit.visit_time)}
+              {formatEntryTime(visit.entry_time)}
             </p>
           </div>
           <Badge
@@ -558,7 +557,7 @@ export const OPDVisits: React.FC = () => {
             variant={visit.payment_status === 'paid' ? 'default' : 'secondary'}
             className={`text-xs ${visit.payment_status === 'paid' ? 'bg-neutral-900 dark:bg-neutral-200' : ''}`}
           >
-            ₹{visit.total_amount || '0'} • {visit.payment_status ? visit.payment_status.replace('_', ' ').toUpperCase() : 'PENDING'}
+            ₹{visit.total_amount || '0'} • {visit.payment_status ? visit.payment_status.replace('_', ' ').toUpperCase() : 'UNPAID'}
           </Badge>
         </div>
 

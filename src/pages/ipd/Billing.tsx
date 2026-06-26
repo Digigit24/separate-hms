@@ -141,9 +141,9 @@ export default function IPDBillingPage() {
       {
         key: 'status',
         header: 'Status',
-        accessor: (row) => (row as IPDBillingListItem).status,
+        accessor: (row) => (row as IPDBillingListItem).payment_status,
         cell: (row) => {
-          const status = (row as IPDBillingListItem).status as BillingStatus;
+          const status = (row as IPDBillingListItem).payment_status as BillingStatus;
           return <Badge className={BILL_STATUS_COLORS[status]}>{status}</Badge>;
         },
         sortable: true,
@@ -273,12 +273,35 @@ export default function IPDBillingPage() {
       return;
     }
     setIsSaving(true);
+    const amountNum = Number(paymentAmount);
     try {
-      await addPayment(selectedBillingId, { amount: paymentAmount });
+      if (billingDetail) {
+        const newReceived = (parseFloat(billingDetail.received_amount || '0') + amountNum).toFixed(2);
+        const newBalance = (parseFloat(billingDetail.balance_amount || '0') - amountNum).toFixed(2);
+        const newStatus: 'unpaid' | 'partial' | 'paid' =
+          parseFloat(newBalance) <= 0 ? 'paid' : parseFloat(newReceived) > 0 ? 'partial' : 'unpaid';
+        await mutateBillingDetail(
+          async () => {
+            const updated = await addPayment(selectedBillingId, { amount: paymentAmount });
+            return updated;
+          },
+          {
+            optimisticData: {
+              ...billingDetail,
+              received_amount: newReceived,
+              balance_amount: newBalance,
+              payment_status: newStatus,
+            },
+            rollbackOnError: true,
+            revalidate: true,
+          }
+        );
+      } else {
+        await addPayment(selectedBillingId, { amount: paymentAmount });
+      }
       toast.success('Payment added');
       setPaymentAmount('');
       mutate();
-      mutateBillingDetail();
     } catch (e: any) {
       toast.error(e?.message || 'Failed to add payment');
     } finally {
@@ -417,8 +440,8 @@ export default function IPDBillingPage() {
               </div>
               <div>
                 <Label>Status</Label>
-                <Badge className={BILL_STATUS_COLORS[billingDetail.status]}>
-                  {billingDetail.status}
+                <Badge className={BILL_STATUS_COLORS[billingDetail.payment_status]}>
+                  {billingDetail.payment_status}
                 </Badge>
               </div>
               <div>

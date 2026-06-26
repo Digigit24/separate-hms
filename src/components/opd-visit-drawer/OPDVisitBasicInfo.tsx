@@ -44,7 +44,7 @@ const createOpdVisitSchema = z.object({
   patient_id: z.coerce.number().min(1, 'Patient is required'),
   doctor_id: z.coerce.number().min(1, 'Doctor is required'),
   visit_date: z.string().min(1, 'Visit date is required'),
-  visit_time: z.string().min(1, 'Visit time is required'),
+  // visit_time removed - backend uses entry_time (auto_now_add), not a create field
   visit_type: z.enum(['new', 'follow_up', 'emergency', 'referral']),
   priority: z.enum(['low', 'normal', 'high', 'urgent']).default('normal'),
   chief_complaint: z.string().optional(),
@@ -67,7 +67,7 @@ const createOpdVisitSchema = z.object({
 
 const updateOpdVisitSchema = z.object({
   visit_date: z.string().optional(),
-  visit_time: z.string().optional(),
+  // visit_time removed - backend uses entry_time (auto_now_add)
   visit_type: z.enum(['new', 'follow_up', 'emergency', 'referral']).optional(),
   status: z.enum(['waiting', 'in_consultation', 'completed', 'cancelled', 'no_show']).optional(),
   priority: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
@@ -87,7 +87,7 @@ const updateOpdVisitSchema = z.object({
   height: z.string().optional(),
   consultation_fee: optionalNumberMin0,
   additional_charges: optionalNumberMin0,
-  payment_status: z.enum(['pending', 'paid', 'partially_paid', 'refunded']).optional(),
+  payment_status: z.enum(['unpaid', 'partial', 'paid']).optional(),
   payment_method: z.string().optional(),
   follow_up_required: z.boolean().optional(),
   follow_up_date: z.string().optional(),
@@ -123,7 +123,7 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
           patient_id: 0,
           doctor_id: 0,
           visit_date: formatLocalDate(new Date()),
-          visit_time: new Date().toTimeString().slice(0, 5),
+          // visit_time not sent to backend (auto_now_add = entry_time)
           visit_type: 'new' as const,
           priority: 'normal' as const,
           chief_complaint: '',
@@ -145,12 +145,12 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
         }
       : {
           visit_date: visit?.visit_date || '',
-          visit_time: visit?.visit_time || '',
+          // visit_time not on Visit model (backend: entry_time is auto-set)
           visit_type: visit?.visit_type || 'new',
           status: visit?.status || 'waiting',
           priority: visit?.priority || 'normal',
-          chief_complaint: visit?.chief_complaint || '',
-          symptoms: visit?.symptoms || '',
+          chief_complaint: '',  // not on Visit model, captured in ClinicalNote
+          symptoms: '',  // not on Visit model, captured in ClinicalNote
           diagnosis: visit?.diagnosis || '',
           treatment_plan: visit?.treatment_plan || '',
           prescription: visit?.prescription || '',
@@ -200,28 +200,28 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
       if (!isCreateMode && visit) {
         const formValues = {
           visit_date: visit.visit_date || '',
-          visit_time: visit.visit_time || '',
+          // visit_time not on Visit model (backend: entry_time is auto-set)
           visit_type: visit.visit_type || 'new',
           status: visit.status || 'waiting',
           priority: visit.priority || 'normal',
-          chief_complaint: visit.chief_complaint || '',
-          symptoms: visit.symptoms || '',
-          diagnosis: visit.diagnosis || '',
-          treatment_plan: visit.treatment_plan || '',
-          prescription: visit.prescription || '',
+          chief_complaint: '',  // not on Visit model
+          symptoms: '',  // not on Visit model
+          diagnosis: '',  // not on Visit model, captured in ClinicalNote
+          treatment_plan: '',  // not on Visit model, captured in ClinicalNote
+          prescription: '',  // not on Visit model, captured in ClinicalNote
           notes: visit.notes || '',
-          temperature: visit.temperature || '',
-          blood_pressure_systolic: visit.blood_pressure_systolic || undefined,
-          blood_pressure_diastolic: visit.blood_pressure_diastolic || undefined,
-          heart_rate: visit.heart_rate || undefined,
-          respiratory_rate: visit.respiratory_rate || undefined,
-          oxygen_saturation: visit.oxygen_saturation || '',
-          weight: visit.weight || '',
-          height: visit.height || '',
-          consultation_fee: visit.consultation_fee ? parseFloat(visit.consultation_fee) : 0,
-          additional_charges: visit.additional_charges ? parseFloat(visit.additional_charges) : 0,
-          payment_status: visit.payment_status || 'pending',
-          payment_method: visit.payment_method || '',
+          temperature: '',  // not on Visit model, use PatientVitals API
+          blood_pressure_systolic: undefined,  // not on Visit model, use PatientVitals API
+          blood_pressure_diastolic: undefined,  // not on Visit model, use PatientVitals API
+          heart_rate: undefined,  // not on Visit model, use PatientVitals API
+          respiratory_rate: undefined,  // not on Visit model, use PatientVitals API
+          oxygen_saturation: '',  // not on Visit model, use PatientVitals API
+          weight: '',  // not on Visit model, use PatientVitals API
+          height: '',  // not on Visit model, use PatientVitals API
+          consultation_fee: 0,  // not on Visit model
+          additional_charges: 0,  // not on Visit model
+          payment_status: visit.payment_status || 'unpaid',
+          payment_method: '',  // not on Visit model
           follow_up_required: visit.follow_up_required || false,
           follow_up_date: visit.follow_up_date || '',
           follow_up_notes: visit.follow_up_notes || '',
@@ -264,7 +264,6 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
                   patient: Number(data.patient_id),
                   doctor: Number(data.doctor_id),
                   visit_date: data.visit_date,
-                  visit_time: data.visit_time,
                   visit_type: data.visit_type,
                   priority: data.priority,
                   chief_complaint: data.chief_complaint,
@@ -297,7 +296,6 @@ const OPDVisitBasicInfo = forwardRef<OPDVisitBasicInfoHandle, OPDVisitBasicInfoP
           const data = getValues();
           const payload: OpdVisitUpdateData = {
             visit_date: data.visit_date,
-            visit_time: data.visit_time,
             visit_type: data.visit_type,
             status: data.status,
             priority: data.priority,

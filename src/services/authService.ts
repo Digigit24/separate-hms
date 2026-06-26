@@ -70,6 +70,8 @@ class AuthService {
           enabled_modules: decoded?.enabled_modules || []
         },
         roles: userData.roles || [],
+        permissions: decoded?.permissions || {},
+        is_super_admin: decoded?.is_super_admin || userData.is_super_admin || false,
         preferences: userData.preferences || {}
       };
 
@@ -236,6 +238,7 @@ class AuthService {
       if (refresh) {
         tokenManager.setRefreshToken(refresh);
       }
+      this.updateStoredClaimsFromToken(access);
 
       return access;
     } catch (error: any) {
@@ -247,6 +250,55 @@ class AuthService {
       const message = error.response?.data?.error || 'Token refresh failed';
       throw new Error(message);
     }
+  }
+
+  private updateStoredClaimsFromToken(accessToken: string): User | null {
+    const decoded: any = parseJwt(accessToken);
+    const user = this.getUser();
+
+    if (!decoded || !user) {
+      return user;
+    }
+
+    user.permissions = decoded.permissions || {};
+    user.is_super_admin = decoded.is_super_admin || false;
+
+    if (user.tenant) {
+      user.tenant = {
+        ...user.tenant,
+        id: decoded.tenant_id || user.tenant.id,
+        slug: decoded.tenant_slug || user.tenant.slug,
+        enabled_modules: Array.isArray(decoded.enabled_modules)
+          ? decoded.enabled_modules
+          : user.tenant.enabled_modules || [],
+      };
+    }
+
+    this.setUser(user);
+    return user;
+  }
+
+  async refreshCurrentSession(): Promise<User | null> {
+    const access = await this.refreshToken();
+    let updatedUser = this.updateStoredClaimsFromToken(access);
+
+    try {
+      const response = await authClient.get(API_CONFIG.AUTH.USERS.ME);
+      const currentUser = this.getUser();
+
+      if (currentUser) {
+        updatedUser = {
+          ...currentUser,
+          roles: response.data?.roles || currentUser.roles || [],
+          preferences: response.data?.preferences || currentUser.preferences || {},
+        };
+        this.setUser(updatedUser);
+      }
+    } catch (error) {
+      console.warn('Failed to refresh current user details, token claims were updated:', error);
+    }
+
+    return updatedUser;
   }
 
   // Verify token
@@ -351,10 +403,25 @@ class AuthService {
   hasModuleAccess(module: string): boolean {
     const user = this.getUser();
 
+    if (user?.is_super_admin) {
+      return true;
+    }
+
+    if (module === 'admin') {
+      return (
+        this.hasPermission('admin.full_access') ||
+        this.hasPermission('admin.full_access.enabled') ||
+        this.hasPermission('admin.users.view') ||
+        this.hasPermission('admin.roles.view')
+      );
+    }
+
     // If user object already has structured tenant with enabled_modules, use it
     const tenant: any = (user as any)?.tenant;
     if (tenant && typeof tenant === 'object' && Array.isArray(tenant.enabled_modules)) {
-      const hasAccess = tenant.enabled_modules.includes(module);
+      const hasAccess =
+        tenant.enabled_modules.includes(module) ||
+        (tenant.enabled_modules.includes('hms') && this.hasAnyHmsResourcePermission(module));
       console.log(`🔑 Module access check for "${module}":`, hasAccess ? 'Granted ✓' : 'Denied ✗');
       return hasAccess;
     }
@@ -370,10 +437,43 @@ class AuthService {
     }
 
     const enabledFromToken: string[] | undefined = decoded?.enabled_modules;
-    const hasAccess = Array.isArray(enabledFromToken) ? enabledFromToken.includes(module) : false;
+    const hasAccess = Array.isArray(enabledFromToken)
+      ? enabledFromToken.includes(module) ||
+        (enabledFromToken.includes('hms') && this.hasAnyHmsResourcePermission(module))
+      : false;
     console.log(`🔑 Module access check for "${module}":`, hasAccess ? 'Granted ✓' : 'Denied ✗');
     
     return hasAccess;
+  }
+
+  private getPermissionValue(permissionKey: string): any {
+    const user = this.getUser() as any;
+    const permissions = user?.permissions || {};
+
+    if (permissionKey in permissions) {
+      return permissions[permissionKey];
+    }
+
+    return permissionKey.split('.').reduce((current: any, part) => {
+      if (!current || typeof current !== 'object') return undefined;
+      return current[part];
+    }, permissions);
+  }
+
+  hasPermission(permissionKey: string): boolean {
+    const user = this.getUser();
+    if (user?.is_super_admin) return true;
+
+    const value = this.getPermissionValue(permissionKey);
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') return ['own', 'team', 'all'].includes(value);
+    return false;
+  }
+
+  hasAnyHmsResourcePermission(resource: string): boolean {
+    return ['view', 'create', 'edit', 'delete', 'export'].some((action) =>
+      this.hasPermission(`hms.${resource}.${action}`)
+    );
   }
 
   // Get user's tenant information

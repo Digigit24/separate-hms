@@ -34,10 +34,9 @@ import { format } from 'date-fns';
 import { OpdVisit } from '@/types/opdVisit.types';
 import { toast } from 'sonner';
 import { useOPDTemplate } from '@/hooks/useOPDTemplate';
-import { useIPD } from '@/hooks/useIPD';
 import { usePatient } from '@/hooks/usePatient';
-import { useClinicalNote } from '@/hooks/useClinicalNote';
 import { useScheduling } from '@/hooks/useScheduling';
+import { visitService } from '@/services/visit.service';
 import { templatesService } from '@/services/whatsapp/templatesService';
 import { authService } from '@/services/authService';
 import { useTenant } from '@/hooks/useTenant';
@@ -165,7 +164,6 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
     updateTemplateResponse,
   } = useOPDTemplate();
 
-  const { useAdmissions } = useIPD();
 
   const { useCurrentTenant } = useTenant();
   const { data: tenantData } = useCurrentTenant();
@@ -205,9 +203,7 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
   const previewRef = useRef<HTMLDivElement>(null);
   const [showLetterhead, setShowLetterhead] = useState(true);
 
-  // Clinical note hook for follow-up date
-  const { useClinicalNoteByVisit, updateNote, createNote } = useClinicalNote();
-  const { data: clinicalNote, mutate: mutateClinicalNote } = useClinicalNoteByVisit(visit.id);
+  // Follow-up date is now read directly from visit.follow_up_date (migrated from ClinicalNote)
 
   // Scheduling hook for follow-up reminders
   const { scheduleEvent, loading: isSchedulingReminder } = useScheduling();
@@ -216,20 +212,16 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
   const { usePatientById } = usePatient();
   const { data: patientData } = usePatientById(visit.patient);
 
-  // Fetch active admission for the patient
-  const { data: admissionsData, mutate: mutateAdmissions } = useAdmissions({
-    patient: visit.patient,
-    status: 'admitted',
-  });
-  const activeAdmission = admissionsData?.results?.[0] || null;
+  // Active IPD admission is now embedded in the visit detail response (no extra API call)
+  const activeAdmission = visit.active_ipd_admission ?? null;
 
-  // Initialize follow-up date from clinical note
+  // Initialize follow-up date from visit (canonical source after migration)
   useEffect(() => {
-    if (clinicalNote?.next_followup_date) {
-      setFollowupDate(new Date(clinicalNote.next_followup_date));
-      setSavedFollowupDate(new Date(clinicalNote.next_followup_date));
+    if (visit?.follow_up_date) {
+      setFollowupDate(new Date(visit.follow_up_date));
+      setSavedFollowupDate(new Date(visit.follow_up_date));
     }
-  }, [clinicalNote?.next_followup_date]);
+  }, [visit?.follow_up_date]);
 
   // Determine object_id based on encounter type
   const currentObjectId = encounterType === 'visit' ? visit.id : activeAdmission?.id;
@@ -247,13 +239,14 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
   const templates = useMemo(() => templatesData?.results || [], [templatesData]);
 
   // Fetch all responses for the current encounter context
+  // Pass null (not undefined) when context isn't ready so SWR skips the fetch entirely
   const { data: responsesData, isLoading: isLoadingResponses, mutate: mutateResponses } = useTemplateResponses(
     currentObjectId
       ? {
           encounter_type: encounterType,
           object_id: currentObjectId,
         }
-      : undefined
+      : null
   );
   const responses = useMemo(() => responsesData?.results || [], [responsesData]);
 
@@ -516,26 +509,17 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
     try {
       const followupDateStr = followupDate ? format(followupDate, 'yyyy-MM-dd') : null;
 
-      // Save follow-up to clinical note
-      if (clinicalNote?.id) {
-        // Update existing clinical note
-        await updateNote(clinicalNote.id, {
-          next_followup_date: followupDateStr,
-        });
-      } else {
-        // Create new clinical note with follow-up date
-        await createNote({
-          visit: visit.id,
-          next_followup_date: followupDateStr,
-        });
-      }
+      // Save follow-up directly to Visit model (single source of truth)
+      await visitService.patchVisit(visit.id, {
+        follow_up_date: followupDateStr || undefined,
+        follow_up_required: !!followupDateStr,
+      });
 
       // Update local state immediately for UI feedback
       setSavedFollowupDate(followupDate || null);
 
       setIsFollowupOpen(false);
-      mutateClinicalNote(); // Refresh clinical note data
-      onVisitUpdate?.();
+      onVisitUpdate?.(); // Refresh parent visit data
 
       // Schedule WhatsApp reminder if follow-up date is set
       if (followupDate) {
@@ -1318,14 +1302,14 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
         <button
           onClick={() => setIsFollowupOpen(true)}
           className={`h-7 px-2.5 text-xs rounded border flex items-center gap-1.5 transition-colors ${
-            (savedFollowupDate || clinicalNote?.next_followup_date)
+            (savedFollowupDate || visit?.follow_up_date)
               ? 'bg-foreground text-background border-foreground'
               : 'text-muted-foreground border-border hover:text-foreground'
           }`}
         >
           <CalendarPlus className="h-3.5 w-3.5" />
-          {(savedFollowupDate || clinicalNote?.next_followup_date)
-            ? format(savedFollowupDate || new Date(clinicalNote!.next_followup_date!), 'dd MMM')
+          {(savedFollowupDate || visit?.follow_up_date)
+            ? format(savedFollowupDate || new Date(visit!.follow_up_date!), 'dd MMM')
             : 'Follow-up'}
         </button>
       </div>
@@ -1723,7 +1707,7 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
             </div>
           </div>
           <DialogFooter className="gap-2">
-            {(followupDate || clinicalNote?.next_followup_date) && (
+            {(followupDate || visit?.follow_up_date) && (
               <Button variant="outline" size="sm" onClick={() => { handleClearFollowup(); handleSaveFollowup(); }} className="text-destructive hover:text-destructive">
                 Clear
               </Button>
@@ -1837,7 +1821,8 @@ export const ConsultationTab: React.FC<ConsultationTabProps> = ({ visit, onVisit
         onOpenChange={setAdmissionDrawerOpen}
         defaultPatientId={visit.patient}
         onSuccess={() => {
-          mutateAdmissions();
+          // Refresh visit detail so active_ipd_admission updates automatically
+          onVisitUpdate?.();
           setEncounterType('admission');
         }}
       />

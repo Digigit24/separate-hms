@@ -61,7 +61,7 @@ export const OPDPatientQuickInfo: React.FC<OPDPatientQuickInfoProps> = ({ visit,
             <div className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">Chief Complaint</span>
               <span className="font-medium truncate text-muted-foreground">
-                {visit.chief_complaint || 'Not recorded'}
+                {(visit as any).chief_complaint || 'Not recorded'}
               </span>
             </div>
           </div>

@@ -43,8 +43,15 @@ const RoleBasicInfo = forwardRef<RoleBasicInfoHandle, RoleBasicInfoProps>(
           is_active: role.is_active ?? true,
           permissions: role.permissions || {},
         });
+      } else if (mode === 'create') {
+        setFormData({
+          name: '',
+          description: '',
+          is_active: true,
+          permissions: {},
+        });
       }
-    }, [role]);
+    }, [role, mode]);
 
     useImperativeHandle(ref, () => ({
       getFormValues: async () => {

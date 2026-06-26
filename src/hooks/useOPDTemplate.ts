@@ -52,7 +52,7 @@ export const useOPDTemplate = () => {
   // ==================== TEMPLATE GROUPS HOOKS ====================
 
   const useTemplateGroups = (params?: TemplateGroupsQueryParams) => {
-    const key = ['template-groups', params];
+    const key = params ? `template-groups-${JSON.stringify(params)}` : 'template-groups';
 
     return useSWR<TemplateGroupsResponse>(
       key,
@@ -61,6 +61,7 @@ export const useOPDTemplate = () => {
         revalidateOnFocus: false,
         revalidateOnReconnect: true,
         shouldRetryOnError: false,
+        keepPreviousData: true,
         onError: (err) => {
           console.error('Failed to fetch template groups:', err);
           setError(err.message || 'Failed to fetch template groups');
@@ -143,7 +144,7 @@ export const useOPDTemplate = () => {
   // ==================== TEMPLATES HOOKS ====================
 
   const useTemplates = (params?: TemplatesQueryParams) => {
-    const key = ['templates', params];
+    const key = params ? `templates-${JSON.stringify(params)}` : 'templates';
 
     return useSWR<TemplatesResponse>(
       key,
@@ -152,6 +153,7 @@ export const useOPDTemplate = () => {
         revalidateOnFocus: false,
         revalidateOnReconnect: true,
         shouldRetryOnError: false,
+        keepPreviousData: true,
         onError: (err) => {
           console.error('Failed to fetch templates:', err);
           setError(err.message || 'Failed to fetch templates');
@@ -246,7 +248,7 @@ export const useOPDTemplate = () => {
   // ==================== TEMPLATE FIELDS HOOKS ====================
 
   const useTemplateFields = (params?: TemplateFieldsQueryParams) => {
-    const key = ['template-fields', params];
+    const key = params ? `template-fields-${JSON.stringify(params)}` : 'template-fields';
 
     return useSWR<TemplateFieldsResponse>(
       key,
@@ -255,6 +257,7 @@ export const useOPDTemplate = () => {
         revalidateOnFocus: false,
         revalidateOnReconnect: true,
         shouldRetryOnError: false,
+        keepPreviousData: true,
         onError: (err) => {
           console.error('Failed to fetch template fields:', err);
           setError(err.message || 'Failed to fetch template fields');
@@ -337,7 +340,7 @@ export const useOPDTemplate = () => {
   // ==================== TEMPLATE FIELD OPTIONS HOOKS ====================
 
   const useTemplateFieldOptions = (params?: TemplateFieldOptionsQueryParams) => {
-    const key = ['template-field-options', params];
+    const key = params ? `template-field-options-${JSON.stringify(params)}` : 'template-field-options';
 
     return useSWR<TemplateFieldOptionsResponse>(
       key,
@@ -346,6 +349,7 @@ export const useOPDTemplate = () => {
         revalidateOnFocus: false,
         revalidateOnReconnect: true,
         shouldRetryOnError: false,
+        keepPreviousData: true,
         onError: (err) => {
           console.error('Failed to fetch template field options:', err);
           setError(err.message || 'Failed to fetch template field options');
@@ -430,14 +434,23 @@ export const useOPDTemplate = () => {
 
   // ==================== TEMPLATE RESPONSES HOOKS ====================
 
-  const useTemplateResponses = (params?: TemplateResponsesQueryParams) => {
-    const key = params ? ['template-responses', ...Object.values(params)] : ['template-responses'];
+  const useTemplateResponses = (params?: TemplateResponsesQueryParams | null) => {
+    // null = explicitly skip; undefined = fetch all (no filter)
+    const key = params === null
+      ? null
+      : params
+        ? `template-responses-${JSON.stringify(params)}`
+        : 'template-responses';
 
     return useSWR<TemplateResponsesResponse>(
       key,
-      () => opdTemplateService.getTemplateResponses(params),
+      () => opdTemplateService.getTemplateResponses(params!),
       {
         revalidateOnFocus: false,
+        // keepPreviousData intentionally disabled — it causes stale data from a
+        // previous visit/template key to remain visible during revalidation, which
+        // triggers the auto-creation effect incorrectly on every navigation.
+        keepPreviousData: false,
         onError: (err) => {
           console.error('Failed to fetch template responses:', err);
           setError(err.message || 'Failed to fetch template responses');
@@ -582,13 +595,14 @@ export const useOPDTemplate = () => {
   // ==================== TEMPLATE FIELD RESPONSES HOOKS ====================
 
   const useTemplateFieldResponses = (params?: TemplateFieldResponsesQueryParams) => {
-    const key = ['template-field-responses', params];
+    const key = params ? `template-field-responses-${JSON.stringify(params)}` : 'template-field-responses';
 
     return useSWR<TemplateFieldResponsesResponse>(
       key,
       () => opdTemplateService.getTemplateFieldResponses(params),
       {
         revalidateOnFocus: false,
+        keepPreviousData: true,
         onError: (err) => {
           console.error('Failed to fetch template field responses:', err);
           setError(err.message || 'Failed to fetch template field responses');
@@ -672,24 +686,26 @@ export const useOPDTemplate = () => {
   // ==================== RESPONSE TEMPLATES HOOKS (for Copy-Paste) ====================
 
   const useResponseTemplates = (params?: ResponseTemplatesQueryParams) => {
-    const key = ['response-templates', params];
+    const key = params ? `response-templates-${JSON.stringify(params)}` : 'response-templates';
     return useSWR<ResponseTemplatesResponse>(
       key,
       () => opdTemplateService.getResponseTemplates(params),
       {
         revalidateOnFocus: false,
+        keepPreviousData: true,
         onError: (err) => setError(err.message || 'Failed to fetch reusable templates'),
       }
     );
   };
 
   const useMyResponseTemplates = (params?: ResponseTemplatesQueryParams) => {
-    const key = ['my-response-templates', params];
+    const key = params ? `my-response-templates-${JSON.stringify(params)}` : 'my-response-templates';
     return useSWR<ResponseTemplatesResponse>(
       key,
       () => opdTemplateService.getMyResponseTemplates(params),
       {
         revalidateOnFocus: false,
+        keepPreviousData: true,
         onError: (err) => setError(err.message || 'Failed to fetch your reusable templates'),
       }
     );

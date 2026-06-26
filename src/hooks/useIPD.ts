@@ -17,6 +17,7 @@ import {
   AdmissionFormData,
   AdmissionFilters,
   AdmissionListItem,
+  IPDDoctorStatsResponse,
   DischargeData,
   BedTransfer,
   BedTransferFormData,
@@ -45,7 +46,7 @@ export const useIPD = () => {
    * Fetch list of wards with filters.
    */
   const useWards = (params?: WardFilters) => {
-    const key = ['wards', params];
+    const key = params ? `wards-${JSON.stringify(params)}` : 'wards';
 
     return useSWR<PaginatedResponse<Ward>>(
       key,
@@ -181,7 +182,7 @@ export const useIPD = () => {
    * Fetch list of beds with filters.
    */
   const useBeds = (params?: BedFilters) => {
-    const key = ['beds', params];
+    const key = params ? `beds-${JSON.stringify(params)}` : 'beds';
 
     return useSWR<PaginatedResponse<Bed | BedListItem>>(
       key,
@@ -203,7 +204,7 @@ export const useIPD = () => {
    * Fetch available beds.
    */
   const useAvailableBeds = () => {
-    const key = ['beds', 'available'];
+    const key = 'beds-available';
 
     return useSWR<BedListItem[]>(
       key,
@@ -338,7 +339,7 @@ export const useIPD = () => {
    * Fetch list of admissions with filters.
    */
   const useAdmissions = (params?: AdmissionFilters) => {
-    const key = ['admissions', params];
+    const key = params ? `admissions-${JSON.stringify(params)}` : 'admissions';
 
     return useSWR<PaginatedResponse<Admission | AdmissionListItem>>(
       key,
@@ -360,7 +361,7 @@ export const useIPD = () => {
    * Fetch active admissions.
    */
   const useActiveAdmissions = () => {
-    const key = ['admissions', 'active'];
+    const key = 'admissions-active';
 
     return useSWR<AdmissionListItem[]>(
       key,
@@ -372,6 +373,49 @@ export const useIPD = () => {
         onError: (err) => {
           console.error('Failed to fetch active admissions:', err);
           setError(err.message || 'Failed to fetch active admissions');
+        }
+      }
+    );
+  };
+
+  /**
+   * Fetch admission statistics from backend aggregate endpoint.
+   * Returns total, active, discharged_today, avg_length_of_stay_days etc.
+   */
+  const useAdmissionStatistics = (params?: AdmissionFilters) => {
+    const key = params ? `admission-stats-${JSON.stringify(params)}` : 'admission-stats';
+    return useSWR<{ success: boolean; data: Record<string, number | null> }>(
+      key,
+      () => ipdService.getAdmissionStatistics(params),
+      {
+        revalidateOnFocus: false,
+        revalidateOnReconnect: true,
+        shouldRetryOnError: false,
+        refreshInterval: 60000,
+        onError: (err) => {
+          console.error('Failed to fetch admission statistics:', err);
+          setError(err.message || 'Failed to fetch admission statistics');
+        }
+      }
+    );
+  };
+
+  /**
+   * Fetch per-doctor IPD admission statistics for the IPD dashboard.
+   */
+  const useIPDDoctorStats = (params?: Pick<AdmissionFilters, 'date' | 'date_from' | 'date_to'>) => {
+    const key = params ? `ipd-doctor-stats-${JSON.stringify(params)}` : 'ipd-doctor-stats';
+    return useSWR<IPDDoctorStatsResponse>(
+      key,
+      () => ipdService.getIPDDoctorStats(params),
+      {
+        revalidateOnFocus: false,
+        revalidateOnReconnect: true,
+        shouldRetryOnError: false,
+        refreshInterval: 60000,
+        onError: (err) => {
+          console.error('Failed to fetch IPD doctor statistics:', err);
+          setError(err.message || 'Failed to fetch IPD doctor statistics');
         }
       }
     );
@@ -518,7 +562,7 @@ export const useIPD = () => {
    * Fetch list of bed transfers.
    */
   const useBedTransfers = (params?: { admission?: number }) => {
-    const key = ['bed-transfers', params];
+    const key = params ? `bed-transfers-${JSON.stringify(params)}` : 'bed-transfers';
 
     return useSWR<PaginatedResponse<BedTransfer>>(
       key,
@@ -608,7 +652,7 @@ export const useIPD = () => {
    * Fetch list of billings with filters.
    */
   const useBillings = (params?: BillingFilters) => {
-    const key = ['ipd-billings', params];
+    const key = params ? `ipd-billings-${JSON.stringify(params)}` : 'ipd-billings';
 
     return useSWR<PaginatedResponse<IPDBilling | IPDBillingListItem>>(
       key,
@@ -642,6 +686,26 @@ export const useIPD = () => {
         onError: (err) => {
           console.error('Failed to fetch billing:', err);
           setError(err.message || 'Failed to fetch billing');
+        }
+      }
+    );
+  };
+
+  /**
+   * Fetch billing statistics from backend aggregate endpoint.
+   */
+  const useBillingStatistics = (params?: BillingFilters) => {
+    const key = params ? `ipd-billing-stats-${JSON.stringify(params)}` : 'ipd-billing-stats';
+    return useSWR<{ success: boolean; data: Record<string, number | null> }>(
+      key,
+      () => ipdService.getBillingStatistics(params),
+      {
+        revalidateOnFocus: false,
+        revalidateOnReconnect: true,
+        shouldRetryOnError: false,
+        onError: (err) => {
+          console.error('Failed to fetch billing statistics:', err);
+          setError(err.message || 'Failed to fetch billing statistics');
         }
       }
     );
@@ -790,7 +854,7 @@ export const useIPD = () => {
    * Fetch list of bill items.
    */
   const useBillItems = (params?: { billing?: number }) => {
-    const key = ['ipd-bill-items', params];
+    const key = params ? `ipd-bill-items-${JSON.stringify(params)}` : 'ipd-bill-items';
 
     return useSWR<PaginatedResponse<IPDBillItem>>(
       key,
@@ -947,6 +1011,8 @@ export const useIPD = () => {
     // Admission hooks
     useAdmissions,
     useActiveAdmissions,
+    useAdmissionStatistics,
+    useIPDDoctorStats,
     useAdmissionById,
     createAdmission,
     updateAdmission,
@@ -963,6 +1029,7 @@ export const useIPD = () => {
     // Billing hooks
     useBillings,
     useBillingById,
+    useBillingStatistics,
     createBilling,
     updateBilling,
     patchBilling,

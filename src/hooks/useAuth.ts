@@ -13,14 +13,8 @@ export const useAuth = () => {
   // Get user from localStorage initially
   const [user, setUser] = useState<User | null>(() => authService.getCurrentUser());
 
-  // Check authentication status
+  // Check authentication status (computed fresh on each render from localStorage)
   const isAuthenticated = authService.isAuthenticated();
-
-  // Update user state when auth service user changes
-  useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    setUser(currentUser);
-  }, [isAuthenticated]);
 
   // Login function
   const login = useCallback(async (payload: LoginPayload) => {
@@ -84,6 +78,10 @@ export const useAuth = () => {
     return authService.hasModuleAccess(module);
   }, [user]);
 
+  const hasPermission = useCallback((permissionKey: string) => {
+    return authService.hasPermission(permissionKey);
+  }, [user]);
+
   // Get tenant information
   const getTenant = useCallback(() => {
     return authService.getTenant();
@@ -120,6 +118,7 @@ export const useAuth = () => {
     logout,
     refreshUser,
     hasModuleAccess,
+    hasPermission,
     getTenant,
     getUserRoles,
     verifyToken,

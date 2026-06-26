@@ -1,6 +1,7 @@
 // src/services/userService.ts
 import { authClient } from '@/lib/client';
 import { API_CONFIG, buildQueryString } from '@/lib/apiConfig';
+import { authService } from '@/services/authService';
 import {
   User,
   UserListParams,
@@ -68,6 +69,7 @@ class UserService {
         API_CONFIG.AUTH.USERS.CREATE,
         userData
       );
+      await authService.refreshCurrentSession().catch(() => null);
       return response.data;
     } catch (error: any) {
       const message = error.response?.data?.error ||
@@ -84,6 +86,7 @@ class UserService {
         API_CONFIG.AUTH.USERS.UPDATE.replace(':id', id),
         userData
       );
+      await authService.refreshCurrentSession().catch(() => null);
       return response.data;
     } catch (error: any) {
       const message = error.response?.data?.error ||
@@ -100,6 +103,7 @@ class UserService {
         API_CONFIG.AUTH.USERS.UPDATE.replace(':id', id),
         userData
       );
+      await authService.refreshCurrentSession().catch(() => null);
       return response.data;
     } catch (error: any) {
       const message = error.response?.data?.error ||
@@ -115,6 +119,7 @@ class UserService {
       await authClient.delete(
         API_CONFIG.AUTH.USERS.DELETE.replace(':id', id)
       );
+      await authService.refreshCurrentSession().catch(() => null);
     } catch (error: any) {
       const message = error.response?.data?.error ||
                      error.response?.data?.message ||
@@ -132,6 +137,7 @@ class UserService {
         API_CONFIG.AUTH.USERS.ASSIGN_ROLES.replace(':id', id),
         rolesData
       );
+      await authService.refreshCurrentSession().catch(() => null);
       return response.data;
     } catch (error: any) {
       const message = error.response?.data?.error ||
@@ -148,6 +154,7 @@ class UserService {
         API_CONFIG.AUTH.USERS.REMOVE_ROLE.replace(':id', id),
         { data: roleData }
       );
+      await authService.refreshCurrentSession().catch(() => null);
       return response.data;
     } catch (error: any) {
       const message = error.response?.data?.error ||

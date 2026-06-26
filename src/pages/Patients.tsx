@@ -7,6 +7,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { DataTable, DataTableColumn } from '@/components/DataTable';
 import PatientsFormDrawer from '@/components/PatientsFormDrawer';
 import {
@@ -16,8 +22,11 @@ import {
   Users,
   Activity,
   Heart,
-  TrendingUp
+  TrendingUp,
+  Download,
+  ChevronDown,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { PatientListParams, Patient } from '@/types/patient.types';
 
 export const Patients: React.FC = () => {
@@ -27,7 +36,10 @@ export const Patients: React.FC = () => {
     hasHMSAccess,
     usePatients,
     deletePatient,
+    exportPatients,
   } = usePatient();
+
+  const [isExporting, setIsExporting] = useState(false);
 
   // State for search and filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,6 +111,22 @@ export const Patients: React.FC = () => {
 
   const handleDrawerDelete = () => {
     mutatePatients();
+  };
+
+  const handleExport = async (format: 'csv' | 'xlsx') => {
+    setIsExporting(true);
+    try {
+      await exportPatients({
+        format,
+        search: searchTerm || undefined,
+        status: statusFilter || undefined,
+      });
+      toast.success(`Patients exported as ${format.toUpperCase()}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Export failed');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // DataTable columns configuration
@@ -279,10 +307,33 @@ export const Patients: React.FC = () => {
             <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3" /> avg age <span className="font-semibold text-foreground">{patients.length > 0 ? Math.round(patients.reduce((sum, p) => sum + p.age, 0) / patients.length) : 0}</span></span>
           </div>
         </div>
-        <Button onClick={handleCreate} size="sm" className="w-full sm:w-auto h-7 text-[12px]">
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          Add Patient
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 text-[12px]" disabled={isExporting}>
+                {isExporting ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                ) : (
+                  <Download className="h-3.5 w-3.5 mr-1" />
+                )}
+                Export
+                <ChevronDown className="h-3 w-3 ml-1 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="text-[12px]">
+              <DropdownMenuItem onClick={() => handleExport('csv')} className="text-[12px] cursor-pointer">
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('xlsx')} className="text-[12px] cursor-pointer">
+                Export as Excel (.xlsx)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button onClick={handleCreate} size="sm" className="h-7 text-[12px] flex-1 sm:flex-none">
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            Add Patient
+          </Button>
+        </div>
       </div>
 
       {/* Mobile-only stats */}

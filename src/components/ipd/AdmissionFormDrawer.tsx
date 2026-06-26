@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useIPD } from '@/hooks/useIPD';
-import { AdmissionFormData } from '@/types/ipd.types';
+import { AdmissionFormData, CLAIM_STATUS_LABELS, TPA_OPTIONS, ClaimStatus } from '@/types/ipd.types';
 import { PatientSelect } from '@/components/form/PatientSelect';
 import { DoctorSelect } from '@/components/form/DoctorSelect';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
 import {
   Select,
@@ -16,6 +16,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { SideDrawer } from '@/components/SideDrawer';
+import { cn } from '@/lib/utils';
 
 interface AdmissionFormDrawerProps {
   open: boolean;
@@ -24,8 +25,15 @@ interface AdmissionFormDrawerProps {
   defaultPatientId?: number;
 }
 
+interface FormErrors {
+  patient?: string;
+  doctor_id?: string;
+  ward?: string;
+  admission_date?: string;
+  reason?: string;
+}
+
 export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPatientId }: AdmissionFormDrawerProps) {
-  // Form state
   const [formData, setFormData] = useState<AdmissionFormData>({
     patient: defaultPatientId || 0,
     doctor_id: '',
@@ -36,13 +44,18 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
     discharge_date: null,
     reason: '',
     provisional_diagnosis: '',
+    has_mediclaim: false,
+    tpa_name: '',
+    claim_status: 'not_applicable',
+    claim_reference_number: '',
+    claim_notes: '',
   });
 
-  // Local state for datetime picker
   const [admissionDate, setAdmissionDate] = useState<Date | undefined>();
   const [dischargeDate, setDischargeDate] = useState<Date | undefined>();
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Sync defaultPatientId when drawer opens
   useEffect(() => {
     if (open && defaultPatientId) {
       setFormData((prev) => ({ ...prev, patient: defaultPatientId }));
@@ -50,7 +63,6 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
   }, [open, defaultPatientId]);
 
   const { createAdmission, useWards, useAvailableBeds } = useIPD();
-
   const { data: wardsData, isLoading: isLoadingWards } = useWards({ is_active: true });
   const { data: availableBeds, isLoading: isLoadingBeds } = useAvailableBeds();
 
@@ -68,83 +80,58 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
       discharge_date: null,
       reason: '',
       provisional_diagnosis: '',
+      has_mediclaim: false,
+      tpa_name: '',
+      claim_status: 'not_applicable',
+      claim_reference_number: '',
+      claim_notes: '',
     });
     setAdmissionDate(undefined);
     setDischargeDate(undefined);
+    setErrors({});
+  };
+
+  // Validate all required fields at once — returns error map (empty = valid)
+  const validate = (): FormErrors => {
+    const e: FormErrors = {};
+    if (!formData.patient) e.patient = 'Please select a patient';
+    if (!formData.doctor_id) e.doctor_id = 'Please select a doctor';
+    if (!formData.ward) e.ward = 'Please select a ward';
+    if (!admissionDate) e.admission_date = 'Please enter admission date and time';
+    if (!formData.reason.trim()) e.reason = 'Please enter reason for admission';
+    return e;
   };
 
   const handleSubmit = async () => {
-    // Validation
-    if (!formData.patient) {
+    const newErrors = validate();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    // Extra cross-field check
+    if (dischargeDate && admissionDate && dischargeDate < admissionDate) {
       toast({
         title: 'Validation Error',
-        description: 'Please select a patient',
+        description: 'Discharge date cannot be before admission date',
         variant: 'destructive',
       });
       return;
     }
 
-    if (!formData.doctor_id) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please select a doctor',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!formData.ward) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please select a ward',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!admissionDate) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please enter admission date and time',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!formData.reason.trim()) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please enter reason for admission',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Validate discharge_date >= admission_date if discharge_date is provided
-    if (dischargeDate) {
-      if (dischargeDate < admissionDate) {
-        toast({
-          title: 'Validation Error',
-          description: 'Discharge date cannot be before admission date',
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
-
+    setIsSubmitting(true);
     try {
-      // Convert to ISO 8601 format
       const submissionData: AdmissionFormData = {
         ...formData,
-        admission_date: admissionDate.toISOString(),
+        claim_status: formData.has_mediclaim ? formData.claim_status || 'not_started' : 'not_applicable',
+        tpa_name: formData.has_mediclaim ? formData.tpa_name || '' : '',
+        claim_reference_number: formData.has_mediclaim ? formData.claim_reference_number || '' : '',
+        claim_notes: formData.has_mediclaim ? formData.claim_notes || '' : '',
+        admission_date: admissionDate!.toISOString(),
         discharge_date: dischargeDate ? dischargeDate.toISOString() : null,
       };
-
       await createAdmission(submissionData);
-      toast({
-        title: 'Success',
-        description: 'Patient admitted successfully',
-      });
+      toast({ title: 'Success', description: 'Patient admitted successfully' });
       onSuccess();
       onOpenChange(false);
       resetForm();
@@ -154,7 +141,14 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
         description: error.message || 'Failed to admit patient',
         variant: 'destructive',
       });
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  // Clear individual field error when user fills it
+  const clearError = (field: keyof FormErrors) => {
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
   return (
@@ -171,48 +165,63 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
           variant: 'outline',
         },
         {
-          label: 'Admit Patient',
+          label: isSubmitting ? 'Admitting...' : 'Admit Patient',
           onClick: handleSubmit,
+          disabled: isSubmitting,
         },
       ]}
     >
       <div className="grid gap-4 py-4">
-        <PatientSelect
-          value={formData.patient || null}
-          onChange={(patientId) => setFormData({ ...formData, patient: patientId })}
-          label="Patient"
-          required={true}
-        />
 
-        <div className="grid gap-2">
-          <Label htmlFor="admission_id">Admission Number (Optional)</Label>
-          <Input
-            id="admission_id"
-            value={formData.admission_id}
-            onChange={(e) => setFormData({ ...formData, admission_id: e.target.value })}
-            placeholder="Leave empty to auto-generate (e.g., IPD/20260507/001)"
+        {/* Patient */}
+        <div className="grid gap-1.5">
+          <PatientSelect
+            value={formData.patient || null}
+            onChange={(patientId) => {
+              setFormData({ ...formData, patient: patientId });
+              clearError('patient');
+            }}
+            label="Patient"
+            required={true}
+            error={errors.patient}
           />
-          <p className="text-xs text-muted-foreground">
-            If blank, system will auto-generate a unique ID
-          </p>
+          {errors.patient && (
+            <p className="text-xs text-destructive">{errors.patient}</p>
+          )}
         </div>
 
-        <DoctorSelect
-          value={formData.doctor_id || null}
-          onChange={(doctorUserId) => setFormData({ ...formData, doctor_id: doctorUserId as string })}
-          label="Doctor"
-          required={true}
-          returnUserId={true}
-        />
+        {/* Doctor */}
+        <div className="grid gap-1.5">
+          <DoctorSelect
+            value={formData.doctor_id || null}
+            onChange={(doctorUserId) => {
+              setFormData({ ...formData, doctor_id: doctorUserId as string });
+              clearError('doctor_id');
+            }}
+            label="Doctor"
+            required={true}
+            returnUserId={true}
+            error={errors.doctor_id}
+          />
+          {errors.doctor_id && (
+            <p className="text-xs text-destructive">{errors.doctor_id}</p>
+          )}
+        </div>
 
-        <div className="grid gap-2">
-          <Label htmlFor="ward">Ward *</Label>
+        {/* Ward */}
+        <div className="grid gap-1.5">
+          <Label htmlFor="ward" className={errors.ward ? 'text-destructive' : ''}>
+            Ward <span className="text-destructive">*</span>
+          </Label>
           <Select
             value={formData.ward ? formData.ward.toString() : ''}
-            onValueChange={(value) => setFormData({ ...formData, ward: parseInt(value), bed: null })}
+            onValueChange={(value) => {
+              setFormData({ ...formData, ward: parseInt(value), bed: null });
+              clearError('ward');
+            }}
           >
-            <SelectTrigger>
-              <SelectValue placeholder={isLoadingWards ? 'Loading wards...' : 'Select ward'} />
+            <SelectTrigger className={cn(errors.ward && 'border-destructive ring-destructive focus:ring-destructive')}>
+              <SelectValue placeholder={isLoadingWards ? 'Loading wards…' : 'Select ward'} />
             </SelectTrigger>
             <SelectContent>
               {wards.length === 0 && !isLoadingWards && (
@@ -227,40 +236,62 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
               ))}
             </SelectContent>
           </Select>
+          {errors.ward && <p className="text-xs text-destructive">{errors.ward}</p>}
         </div>
 
-        <div className="grid gap-2">
-          <Label htmlFor="bed">Bed (Optional)</Label>
+        {/* Bed (optional) */}
+        <div className="grid gap-1.5">
+          <Label htmlFor="bed">Bed <span className="text-muted-foreground text-xs">(optional)</span></Label>
           <Select
             value={formData.bed ? formData.bed.toString() : ''}
-            onValueChange={(value) => setFormData({ ...formData, bed: (value && value !== 'unassigned') ? parseInt(value) : null })}
+            onValueChange={(value) =>
+              setFormData({ ...formData, bed: value && value !== 'unassigned' ? parseInt(value) : null })
+            }
             disabled={!formData.ward}
           >
             <SelectTrigger>
-              <SelectValue placeholder={isLoadingBeds ? 'Loading beds...' : !formData.ward ? 'Select a ward first' : 'Select bed (optional)'} />
+              <SelectValue
+                placeholder={
+                  isLoadingBeds ? 'Loading beds…' : !formData.ward ? 'Select a ward first' : 'Select bed (optional)'
+                }
+              />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="unassigned">No bed assigned</SelectItem>
-              {beds.filter(bed => bed.ward === formData.ward).map((bed) => (
-                <SelectItem key={bed.id} value={bed.id.toString()}>
-                  {bed.bed_number} - {bed.ward_name}
-                </SelectItem>
-              ))}
+              {beds
+                .filter((bed) => bed.ward === formData.ward)
+                .map((bed) => (
+                  <SelectItem key={bed.id} value={bed.id.toString()}>
+                    {bed.bed_number} — {bed.ward_name}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>
 
-        <div className="grid gap-2">
-          <Label>Admission Date & Time *</Label>
-          <DateTimePicker
-            date={admissionDate}
-            onDateTimeChange={setAdmissionDate}
-            placeholder="Select admission date and time"
-          />
+        {/* Admission Date */}
+        <div className="grid gap-1.5">
+          <Label className={errors.admission_date ? 'text-destructive' : ''}>
+            Admission Date &amp; Time <span className="text-destructive">*</span>
+          </Label>
+          <div className={cn(errors.admission_date && 'ring-1 ring-destructive rounded-md')}>
+            <DateTimePicker
+              date={admissionDate}
+              onDateTimeChange={(d) => {
+                setAdmissionDate(d);
+                clearError('admission_date');
+              }}
+              placeholder="Select admission date and time"
+            />
+          </div>
+          {errors.admission_date && (
+            <p className="text-xs text-destructive">{errors.admission_date}</p>
+          )}
         </div>
 
-        <div className="grid gap-2">
-          <Label>Expected Discharge Date & Time (Optional)</Label>
+        {/* Expected Discharge (optional) */}
+        <div className="grid gap-1.5">
+          <Label>Expected Discharge <span className="text-muted-foreground text-xs">(optional)</span></Label>
           <DateTimePicker
             date={dischargeDate}
             onDateTimeChange={setDischargeDate}
@@ -268,19 +299,30 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
           />
         </div>
 
-        <div className="grid gap-2">
-          <Label htmlFor="reason">Reason for Admission *</Label>
+        {/* Reason for Admission */}
+        <div className="grid gap-1.5">
+          <Label htmlFor="reason" className={errors.reason ? 'text-destructive' : ''}>
+            Reason for Admission <span className="text-destructive">*</span>
+          </Label>
           <Textarea
             id="reason"
             value={formData.reason}
-            onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+            onChange={(e) => {
+              setFormData({ ...formData, reason: e.target.value });
+              clearError('reason');
+            }}
             placeholder="Enter reason for admission"
             rows={3}
+            className={cn(errors.reason && 'border-destructive focus-visible:ring-destructive')}
           />
+          {errors.reason && <p className="text-xs text-destructive">{errors.reason}</p>}
         </div>
 
-        <div className="grid gap-2">
-          <Label htmlFor="provisional_diagnosis">Provisional Diagnosis</Label>
+        {/* Provisional Diagnosis (optional) */}
+        <div className="grid gap-1.5">
+          <Label htmlFor="provisional_diagnosis">
+            Provisional Diagnosis <span className="text-muted-foreground text-xs">(optional)</span>
+          </Label>
           <Textarea
             id="provisional_diagnosis"
             value={formData.provisional_diagnosis}
@@ -289,6 +331,96 @@ export function AdmissionFormDrawer({ open, onOpenChange, onSuccess, defaultPati
             rows={3}
           />
         </div>
+
+        {/* Mediclaim / TPA */}
+        <div className="rounded-md border p-3 space-y-3">
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="has_mediclaim"
+              checked={formData.has_mediclaim}
+              onCheckedChange={(checked) => {
+                const enabled = checked === true;
+                setFormData({
+                  ...formData,
+                  has_mediclaim: enabled,
+                  claim_status: enabled ? 'not_started' : 'not_applicable',
+                  tpa_name: enabled ? formData.tpa_name : '',
+                  claim_reference_number: enabled ? formData.claim_reference_number : '',
+                  claim_notes: enabled ? formData.claim_notes : '',
+                });
+              }}
+            />
+            <div className="grid gap-1 leading-none">
+              <Label htmlFor="has_mediclaim">Mediclaim available</Label>
+              <p className="text-xs text-muted-foreground">
+                Enable this when the admission will be processed through insurance or a TPA.
+              </p>
+            </div>
+          </div>
+
+          {formData.has_mediclaim && (
+            <div className="grid gap-3">
+              <div className="grid gap-1.5">
+                <Label>TPA / Insurance Provider</Label>
+                <Select
+                  value={formData.tpa_name || ''}
+                  onValueChange={(value) => setFormData({ ...formData, tpa_name: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose TPA" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TPA_OPTIONS.map((tpa) => (
+                      <SelectItem key={tpa} value={tpa}>{tpa}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label>Claim Status</Label>
+                <Select
+                  value={formData.claim_status || 'not_started'}
+                  onValueChange={(value) => setFormData({ ...formData, claim_status: value as ClaimStatus })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select claim status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(CLAIM_STATUS_LABELS)
+                      .filter(([key]) => key !== 'not_applicable')
+                      .map(([key, label]) => (
+                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="claim_reference_number">Claim / Pre-auth Number</Label>
+                <input
+                  id="claim_reference_number"
+                  value={formData.claim_reference_number || ''}
+                  onChange={(e) => setFormData({ ...formData, claim_reference_number: e.target.value })}
+                  placeholder="Enter claim or pre-auth reference"
+                  className="h-8 rounded-md border border-input bg-background px-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                />
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="claim_notes">Claim Notes</Label>
+                <Textarea
+                  id="claim_notes"
+                  value={formData.claim_notes || ''}
+                  onChange={(e) => setFormData({ ...formData, claim_notes: e.target.value })}
+                  placeholder="Manual claim follow-up notes"
+                  rows={2}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
       </div>
     </SideDrawer>
   );

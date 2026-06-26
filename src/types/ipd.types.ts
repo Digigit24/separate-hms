@@ -39,11 +39,21 @@ export type AdmissionStatus =
   | 'referred'
   | 'death';
 
+export type ClaimStatus =
+  | 'not_applicable'
+  | 'not_started'
+  | 'documents_pending'
+  | 'submitted'
+  | 'under_review'
+  | 'approved'
+  | 'rejected'
+  | 'settled';
+
+// Backend IPDBilling.payment_status choices: 'unpaid' | 'partial' | 'paid'
 export type BillingStatus =
-  | 'pending'
+  | 'unpaid'
   | 'partial'
-  | 'paid'
-  | 'cancelled';
+  | 'paid';
 
 export type BillItemSource =
   | 'Bed'
@@ -144,6 +154,11 @@ export interface Admission {
   reason: string;
   provisional_diagnosis: string;
   final_diagnosis: string;
+  has_mediclaim: boolean;
+  tpa_name: string;
+  claim_status: ClaimStatus;
+  claim_reference_number: string;
+  claim_notes: string;
   discharge_date: string | null;
   discharge_summary: string;
   discharge_type: string;
@@ -166,6 +181,11 @@ export interface AdmissionFormData {
   reason: string;
   provisional_diagnosis?: string;
   final_diagnosis?: string;
+  has_mediclaim?: boolean;
+  tpa_name?: string;
+  claim_status?: ClaimStatus;
+  claim_reference_number?: string;
+  claim_notes?: string;
 }
 
 export interface AdmissionListItem {
@@ -178,6 +198,36 @@ export interface AdmissionListItem {
   bed_number: string;
   admission_date: string;
   status: AdmissionStatus;
+  has_mediclaim?: boolean;
+  tpa_name?: string;
+  claim_status?: ClaimStatus;
+  claim_reference_number?: string;
+}
+
+export interface IPDDoctorStat {
+  doctor: string;
+  doctor_id: string;
+  doctor_name: string;
+  doctor_specialty?: string | null;
+  admissions_count: number;
+  active: number;
+  discharged: number;
+  transferred: number;
+  mediclaim_count: number;
+  claim_pending: number;
+  claim_approved: number;
+  claim_rejected: number;
+  claim_settled: number;
+  avg_length_of_stay_days: number | null;
+}
+
+export interface IPDDoctorStatsResponse {
+  success: boolean;
+  date: string;
+  date_from: string;
+  date_to: string;
+  is_single_day: boolean;
+  data: IPDDoctorStat[];
 }
 
 export interface DischargeData {
@@ -218,23 +268,27 @@ export interface BedTransferFormData {
 export interface IPDBillItem {
   id: number;
   tenant_id: string;
-  billing: number;
+  bill: number;               // FK to IPDBilling (backend field: 'bill')
   item_name: string;
   source: BillItemSource;
   quantity: number;
+  system_calculated_price: string | null;
   unit_price: string;
+  actual_price: string;       // same as unit_price, for frontend clarity
   total_price: string;
+  is_price_overridden: boolean;
   notes: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface IPDBillItemFormData {
-  billing: number;
+  bill: number;               // backend field: 'bill' (not 'billing')
   item_name: string;
   source: BillItemSource;
   quantity: number;
   unit_price: string;
+  system_calculated_price?: string;
   notes?: string;
 }
 
@@ -242,26 +296,36 @@ export interface IPDBilling {
   id: number;
   tenant_id: string;
   admission: number;
-  admission_id?: string;
-  patient_name?: string;
+  admission_id?: string;      // read-only from admission.admission_id
+  patient_name?: string;      // read-only from admission.patient.full_name
   bill_number: string;
   bill_date: string;
+  doctor_id: string | null;
+  diagnosis: string;
+  remarks: string;
   total_amount: string;
-  discount: string;
-  tax: string;
-  paid_amount: string;
+  discount_percent: string;   // backend field (not 'discount')
+  discount_amount: string;    // backend field (computed)
+  payable_amount: string;     // total_amount - discount_amount
+  payment_mode: string;       // 'cash' | 'card' | 'upi' | 'netbanking' | 'insurance' | 'cheque' | 'other'
+  payment_details: string;
+  received_amount: string;    // backend field (not 'paid_amount')
   balance_amount: string;
-  status: BillingStatus;
+  payment_status: BillingStatus;  // backend field (not 'status')
+  billed_by_id: string | null;
   items?: IPDBillItem[];
-  created_by_user_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface IPDBillingFormData {
   admission: number;
-  discount?: string;
-  tax?: string;
+  doctor_id?: string;
+  diagnosis?: string;
+  remarks?: string;
+  discount_percent?: string;
+  payment_mode?: string;
+  payment_details?: string;
 }
 
 export interface IPDBillingListItem {
@@ -271,13 +335,15 @@ export interface IPDBillingListItem {
   patient_name: string;
   bill_date: string;
   total_amount: string;
-  paid_amount: string;
+  received_amount: string;    // backend field (not 'paid_amount')
   balance_amount: string;
-  status: BillingStatus;
+  payment_status: BillingStatus;  // backend field (not 'status')
 }
 
 export interface PaymentData {
   amount: string;
+  payment_mode?: string;
+  payment_details?: string;
 }
 
 // ============================================
@@ -307,6 +373,12 @@ export interface AdmissionFilters {
   search?: string;
   admission_date__gte?: string;
   admission_date__lte?: string;
+  has_mediclaim?: boolean;
+  claim_status?: ClaimStatus;
+  tpa_name?: string;
+  date?: string;
+  date_from?: string;
+  date_to?: string;
 }
 
 export interface BillingFilters {
@@ -361,11 +433,35 @@ export const ADMISSION_STATUS_LABELS: Record<AdmissionStatus, string> = {
   death: 'Death',
 };
 
+export const CLAIM_STATUS_LABELS: Record<ClaimStatus, string> = {
+  not_applicable: 'Not Applicable',
+  not_started: 'Not Started',
+  documents_pending: 'Documents Pending',
+  submitted: 'Submitted',
+  under_review: 'Under Review',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  settled: 'Settled',
+};
+
+export const TPA_OPTIONS = [
+  'Star Health',
+  'Medi Assist',
+  'MDIndia',
+  'FHPL',
+  'Paramount Health',
+  'Raksha TPA',
+  'Heritage Health',
+  'Health India TPA',
+  'Vidal Health',
+  'Ericson TPA',
+  'Other',
+];
+
 export const BILLING_STATUS_LABELS: Record<BillingStatus, string> = {
-  pending: 'Pending',
-  partial: 'Partially Paid',
+  unpaid: 'Unpaid',
+  partial: 'Partial',
   paid: 'Paid',
-  cancelled: 'Cancelled',
 };
 
 export const BILL_ITEM_SOURCE_LABELS: Record<BillItemSource, string> = {

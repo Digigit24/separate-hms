@@ -1,4 +1,5 @@
-import { Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
@@ -11,10 +12,17 @@ export const ModuleProtectedRoute = ({
   requiredModule,
   children,
 }: ModuleProtectedRouteProps) => {
-  const { hasModuleAccess, loading } = useAuth();
+  const { hasModuleAccess, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const hasAccess = hasModuleAccess(requiredModule);
 
-  // Show loading spinner while checking authentication
-  if (loading) {
+  useEffect(() => {
+    if (!isLoading && !hasAccess) {
+      navigate("/", { replace: true });
+    }
+  }, [hasAccess, isLoading, navigate]);
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -22,10 +30,8 @@ export const ModuleProtectedRoute = ({
     );
   }
 
-  // Check if user has access to the required module
-  if (!hasModuleAccess(requiredModule)) {
-    // Redirect to dashboard if module is not enabled
-    return <Navigate to="/" replace />;
+  if (!hasAccess) {
+    return null;
   }
 
   return <>{children}</>;

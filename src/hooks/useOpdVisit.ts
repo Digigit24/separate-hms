@@ -40,7 +40,7 @@ export const useOpdVisit = () => {
    * });
    */
   const useOpdVisits = (params?: OpdVisitListParams) => {
-    const key = ['opd-visits', params];
+    const key = `opd-visits-${JSON.stringify(params ?? null)}`;
 
     return useSWR<PaginatedResponse<OpdVisit>>(
       key,
@@ -50,6 +50,7 @@ export const useOpdVisit = () => {
         revalidateOnReconnect: true,
         shouldRetryOnError: false,
         keepPreviousData: true,
+        refreshWhenHidden: false,
         onError: (err) => {
           console.error('Failed to fetch OPD visits:', err);
           setError(err.message || 'Failed to fetch OPD visits');
@@ -74,6 +75,7 @@ export const useOpdVisit = () => {
         revalidateOnFocus: false,
         revalidateOnReconnect: true,
         shouldRetryOnError: false,
+        refreshWhenHidden: false,
         onError: (err) => {
           console.error('Failed to fetch OPD visit:', err);
           setError(err.message || 'Failed to fetch OPD visit');
@@ -89,7 +91,7 @@ export const useOpdVisit = () => {
    * const { data, error, isLoading, mutate } = useTodayVisits();
    */
   const useTodayVisits = (params?: OpdVisitListParams) => {
-    const key = ['opd-visits-today', params];
+    const key = params !== undefined ? `opd-visits-today-${JSON.stringify(params)}` : null;
 
     return useSWR<PaginatedResponse<OpdVisit>>(
       key,
@@ -100,6 +102,7 @@ export const useOpdVisit = () => {
         shouldRetryOnError: false,
         keepPreviousData: true,
         refreshInterval: 30000, // Refresh every 30 seconds
+        refreshWhenHidden: false,
         onError: (err) => {
           console.error('Failed to fetch today\'s visits:', err);
           setError(err.message || 'Failed to fetch today\'s visits');
@@ -124,10 +127,34 @@ export const useOpdVisit = () => {
         revalidateOnFocus: true,
         revalidateOnReconnect: true,
         shouldRetryOnError: false,
-        refreshInterval: 10000, // Refresh every 10 seconds
+        refreshInterval: 30000, // Refresh every 30 seconds
+        refreshWhenHidden: false,
         onError: (err) => {
           console.error('Failed to fetch OPD queue:', err);
           setError(err.message || 'Failed to fetch OPD queue');
+        }
+      }
+    );
+  };
+
+  /**
+   * Fetch per-doctor stats for admin dashboard.
+   * Returns visits_today, waiting, in_consultation, completed, revenue_today,
+   * avg_consultation_mins, ipd_admissions per doctor for the given date.
+   */
+  const useDoctorStats = (date?: string) => {
+    const key = date ? `doctor-stats-${date}` : 'doctor-stats-today';
+    return useSWR<{ success: boolean; date: string; data: any[] }>(
+      key,
+      () => opdVisitService.getDoctorStats(date),
+      {
+        revalidateOnFocus: true,
+        revalidateOnReconnect: true,
+        shouldRetryOnError: false,
+        refreshInterval: 60000,
+        onError: (err) => {
+          console.error('Failed to fetch doctor stats:', err);
+          setError(err.message || 'Failed to fetch doctor stats');
         }
       }
     );
@@ -339,11 +366,15 @@ export const useOpdVisit = () => {
     useTodayVisits,
     useOpdQueue,
     useOpdVisitStatistics,
+    useDoctorStats,
+
+    // Mutations
     createOpdVisit,
     updateOpdVisit,
     patchOpdVisit,
     completeOpdVisit,
     callNextPatient,
-    deleteOpdVisit,
+    deleteOpdVisit
   };
+  
 };
